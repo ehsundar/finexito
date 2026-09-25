@@ -1,4 +1,4 @@
-# Next.js standalone server. Built by deploy/compose.yml; see deploy/README.md.
+# Next.js standalone server. Built and pushed to GHCR by .github/workflows/deploy.yml; see deploy/README.md.
 FROM node:24-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./

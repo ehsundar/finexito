@@ -167,10 +167,12 @@ Admin: `https://example.com/api/admin/`.
 `.github/workflows/deploy.yml` SSHes in on every push to `main`. Its key is
 pinned to `deploy.sh` in `authorized_keys`, so a leaked key can only redeploy.
 
-`DJANGO_SECRET_KEY` comes from the `production` environment's secret: the
-Action pipes it into `deploy.sh`, which writes it into `deploy/.env` before
-restarting. Rotating it means updating the secret and re-running the Action;
-everyone is signed out, but no data is lost.
+`DJANGO_SECRET_KEY` and `RESEND_API_KEY` come from the `production`
+environment's secrets. A separate step pipes them into
+`deploy.sh sync-env`, which writes them into `deploy/.env`; the Deploy step
+then restarts without ever holding them. Rotating `DJANGO_SECRET_KEY` means
+updating the secret and re-running the Action; everyone is signed out, but no
+data is lost.
 
 1. Make a key just for CI and pin it on the server:
 

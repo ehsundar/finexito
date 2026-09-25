@@ -1,5 +1,7 @@
 # Production stack for the Hetzner box. Run from this directory; secrets come
 # from deploy/.env (copy .env.example), which never leaves the server.
+# backend and frontend images are built by CI and pulled from GHCR; IMAGE_TAG
+# picks the commit, `latest` otherwise.
 #
 #   Internet -> caddy :80/:443 -> /api/* -> backend (gunicorn :8000)
 #                              -> /*     -> frontend (next :3000) -> backend
@@ -25,7 +27,7 @@ services:
       - backend
 
   frontend:
-    build: ../frontend
+    image: ghcr.io/ehsundar/finexito-frontend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       BACKEND_INTERNAL_URL: http://backend:8000
@@ -34,11 +36,12 @@ services:
       - backend
 
   backend:
-    build: ../backend
+    image: ghcr.io/ehsundar/finexito-backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     environment:
       DJANGO_DEBUG: "false"
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in deploy/.env}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
       # `backend` is the Host header on the frontend's internal calls.
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set DJANGO_ALLOWED_HOSTS in deploy/.env},backend
       DATABASE_URL: postgres://finexito:${POSTGRES_PASSWORD}@db:5432/finexito

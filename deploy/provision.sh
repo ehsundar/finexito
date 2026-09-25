@@ -85,7 +85,7 @@ EOF
 step "Nightly database backup"
 remote "install -m 644 $APP_DIR/deploy/finexito-backup.cron /etc/cron.d/finexito-backup && echo installed"
 
-step "Build, migrate, start"
+step "Pull, migrate, start"
 remote "$APP_DIR/deploy/deploy.sh"
 
 step "Done: https://$DOMAIN"

@@ -1,4 +1,4 @@
-# Django behind gunicorn. Built by deploy/compose.yml; see deploy/README.md.
+# Django behind gunicorn. Built and pushed to GHCR by .github/workflows/deploy.yml; see deploy/README.md.
 FROM python:3.14-slim
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv

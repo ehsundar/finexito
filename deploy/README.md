@@ -12,7 +12,7 @@ Internet -> caddy :80/:443 -> /api/* -> backend  (Django, gunicorn :8000)
 | File                    | What it is                                                     |
 | ----------------------- | -------------------------------------------------------------- |
 | `provision.sh`          | Fresh Ubuntu box -> running site. Run from your machine.        |
-| `deploy.sh`             | On the server: pull `main`, rebuild, migrate, restart.          |
+| `deploy.sh`             | On the server: pull `main` and CI's images, migrate, restart.   |
 | `compose.yml`           | The stack.                                                     |
 | `Caddyfile`             | HTTPS, `/api/*` split, `www` -> bare-domain redirect.           |
 | `.env.example`          | Template for `deploy/.env`, which holds the secrets on the server only. |
