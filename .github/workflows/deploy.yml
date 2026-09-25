@@ -31,4 +31,9 @@ jobs:
         env:
           HOST: ${{ secrets.DEPLOY_HOST }}
           USER: ${{ secrets.DEPLOY_USER }}
-        run: ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$USER@$HOST"
+          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
+        # deploy.sh reads KEY=value lines from stdin into deploy/.env.
+        run: |
+          test -n "$DJANGO_SECRET_KEY" || { echo "DJANGO_SECRET_KEY secret is not set"; exit 1; }
+          printf 'DJANGO_SECRET_KEY=%s\n' "$DJANGO_SECRET_KEY" \
+            | ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$USER@$HOST"

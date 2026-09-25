@@ -167,6 +167,11 @@ Admin: `https://example.com/api/admin/`.
 `.github/workflows/deploy.yml` SSHes in on every push to `main`. Its key is
 pinned to `deploy.sh` in `authorized_keys`, so a leaked key can only redeploy.
 
+`DJANGO_SECRET_KEY` comes from the `production` environment's secret: the
+Action pipes it into `deploy.sh`, which writes it into `deploy/.env` before
+restarting. Rotating it means updating the secret and re-running the Action;
+everyone is signed out, but no data is lost.
+
 1. Make a key just for CI and pin it on the server:
 
    ```bash
@@ -183,6 +188,8 @@ pinned to `deploy.sh` in `authorized_keys`, so a leaked key can only redeploy.
    gh secret set DEPLOY_KNOWN_HOSTS --env production --body "$(ssh-keyscan -t ed25519 <server IPv4>)"
    gh secret set DEPLOY_HOST        --env production --body <server IPv4>
    gh secret set DEPLOY_USER        --env production --body root
+   openssl rand -base64 48 | tr -d '/+=' | cut -c1-50 | tr -d '\n' \
+     | gh secret set DJANGO_SECRET_KEY --env production
    rm /tmp/gha_deploy /tmp/gha_deploy.pub
    ```
 
