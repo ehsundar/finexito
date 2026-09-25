@@ -153,13 +153,42 @@ Admin: `https://example.com/api/admin/`.
 
 ## From here on
 
-- **Releasing:** `git push origin main && make deploy`. Follow the logs with
-  `make logs`.
+- **Releasing:** push to `main`. The *Deploy* GitHub Action runs
+  `deploy/deploy.sh` on the server (see below). `make deploy` still works by
+  hand. Follow the logs with `make logs`.
 - **Everyday commands, backups and restores:** see
   [`deploy/README.md`](../../deploy/README.md).
 - **Moving to a new server:** copy the old `deploy/.env` to the new server's
   `/opt/finexito/deploy/.env` before provisioning, then restore the latest
   backup. That keeps the same secret key, so existing sign-ins stay valid.
+
+## Deploying from GitHub Actions
+
+`.github/workflows/deploy.yml` SSHes in on every push to `main`. Its key is
+pinned to `deploy.sh` in `authorized_keys`, so a leaked key can only redeploy.
+
+1. Make a key just for CI and pin it on the server:
+
+   ```bash
+   ssh-keygen -t ed25519 -N '' -C github-actions-deploy -f /tmp/gha_deploy
+   ssh myserver "cat >> ~/.ssh/authorized_keys" <<EOF
+   command="/opt/finexito/deploy/deploy.sh",restrict $(cat /tmp/gha_deploy.pub)
+   EOF
+   ```
+
+2. Add the secrets to a `production` environment on the repo:
+
+   ```bash
+   gh secret set DEPLOY_SSH_KEY     --env production < /tmp/gha_deploy
+   gh secret set DEPLOY_KNOWN_HOSTS --env production --body "$(ssh-keyscan -t ed25519 <server IPv4>)"
+   gh secret set DEPLOY_HOST        --env production --body <server IPv4>
+   gh secret set DEPLOY_USER        --env production --body root
+   rm /tmp/gha_deploy /tmp/gha_deploy.pub
+   ```
+
+3. The server pulls over its own read-only deploy key, which `make provision`
+   registers. If the repo was recreated, re-run `make provision` (or add
+   `/root/.ssh/id_ed25519.pub` from the server under **Settings -> Deploy keys**).
 
 ## Worth doing afterwards
 
