@@ -1,0 +1,73 @@
+# Production stack for the Hetzner box. Run from this directory; secrets come
+# from deploy/.env (copy .env.example), which never leaves the server.
+#
+#   Internet -> caddy :80/:443 -> /api/* -> backend (gunicorn :8000)
+#                              -> /*     -> frontend (next :3000) -> backend
+#   db is reachable only from inside this network.
+name: finexito
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in deploy/.env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+
+  frontend:
+    build: ../frontend
+    restart: unless-stopped
+    environment:
+      BACKEND_INTERNAL_URL: http://backend:8000
+      SECURE_COOKIES: ${SECURE_COOKIES:-true}
+    depends_on:
+      - backend
+
+  backend:
+    build: ../backend
+    restart: unless-stopped
+    environment:
+      DJANGO_DEBUG: "false"
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in deploy/.env}
+      # `backend` is the Host header on the frontend's internal calls.
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set DJANGO_ALLOWED_HOSTS in deploy/.env},backend
+      DATABASE_URL: postgres://finexito:${POSTGRES_PASSWORD}@db:5432/finexito
+      CSRF_TRUSTED_ORIGINS: ${PUBLIC_ORIGIN:?set PUBLIC_ORIGIN in deploy/.env}
+      CORS_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN}
+      # Caddy owns the http->https redirect; see SECURE_SSL_REDIRECT in settings.
+      SECURE_SSL_REDIRECT: "false"
+      SECURE_COOKIES: ${SECURE_COOKIES:-true}
+      SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS:-0}
+      DEFAULT_PROGRAM_SLUG: ${DEFAULT_PROGRAM_SLUG:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: finexito
+      POSTGRES_DB: finexito
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finexito -d finexito"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

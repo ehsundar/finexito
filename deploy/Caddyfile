@@ -1,0 +1,18 @@
+# SITE_ADDRESS is the bare domain (e.g. example.com). Caddy fetches and renews
+# its HTTPS certificate itself and redirects http:// to https://.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# Same split as the old vercel.json rewrites: Django owns /api/, Next the rest.
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}
+
+www.{$SITE_ADDRESS} {
+	redir https://{$SITE_ADDRESS}{uri} permanent
+}

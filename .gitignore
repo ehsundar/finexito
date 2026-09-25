@@ -1,0 +1,21 @@
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+staticfiles/
+media/
+.pytest_cache/
+.ruff_cache/
+
+# --- node ---
+node_modules/
+.next/
+next-env.d.ts
+frontend/.next/
+
+# --- env and tooling ---
+.env
+.env*
+!.env.example
+.vercel
+.DS_Store

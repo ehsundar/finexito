@@ -1,0 +1,175 @@
+# Setting up the production server
+
+How to go from nothing to your domain (`example.com` below) running on a Hetzner Cloud
+server. Most of it is automated by `make provision`; this guide covers the
+steps around it that happen in web consoles, and the traps along the way.
+
+What you end up with:
+
+```
+Internet -> Caddy :80/:443 -> /api/* -> backend  (Django, gunicorn)
+                           -> /*     -> frontend (Next.js standalone) -> backend
+                              db (Postgres 17, not exposed)
+```
+
+All in Docker Compose, from [`deploy/`](../../deploy/README.md), with HTTPS
+certificates handled by Caddy.
+
+## Before you start
+
+- An SSH key on your machine (`~/.ssh/id_ed25519.pub`). Create one with
+  `ssh-keygen -t ed25519` if needed.
+- The GitHub CLI logged in (`gh auth login`), with admin access to
+  `ehsundar/finexito`. Provisioning uses it to register the server's deploy key.
+- A Hetzner Cloud account and a Cloudflare account holding the domain.
+
+## 1. Create the server
+
+1. In the Hetzner Cloud console, go to **Security -> SSH Keys -> Add SSH key**
+   and paste the output of `cat ~/.ssh/id_ed25519.pub`.
+2. **Add Server**: image **Ubuntu**, newest LTS. 2 vCPU / 4 GB is enough.
+3. Under **SSH Keys**, **tick your key**. This is the step that matters.
+
+> **The key must be chosen at creation.** A *Rebuild* reuses only the keys the
+> server was created with, and ignores keys you add to the project later,
+> even a default key. A server created without your key accepts no SSH login:
+> Ubuntu refuses root passwords over SSH (`PermitRootLogin prohibit-password`),
+> so resetting the root password in the console doesn't help either.
+>
+> **If you're locked out**, use Rescue rather than deleting the server:
+> 1. **Rescue -> Enable rescue**, choose `linux64`, and tick your key.
+> 2. **Power -> Power cycle.** Rescue only applies to the next boot. The
+>    SSH banner changes from `OpenSSH ... Ubuntu` to `... Debian` once you're in
+>    rescue: `nc <ip> 22`.
+> 3. `ssh root@<ip>`, then:
+>    ```bash
+>    mount /dev/sda1 /mnt
+>    cat >> /mnt/root/.ssh/authorized_keys   # paste your public key, then Ctrl-D
+>    umount /mnt && reboot
+>    ```
+
+## 2. Add an SSH alias
+
+In `~/.ssh/config`, above any `Host *` block:
+
+```
+Host myserver
+  HostName <server IPv4>
+  User root
+```
+
+Check it with `ssh myserver hostname`. If it complains about a changed host key
+after a rebuild, clear the old one with `ssh-keygen -R <server IPv4>`.
+
+Then check `/root/.ssh/authorized_keys` on the server. It should hold only
+keys you recognise.
+
+## 3. Point the domain at it
+
+In Cloudflare, go to **DNS -> Records** and add:
+
+| Type | Name  | Content            | Proxy status |
+| ---- | ----- | ------------------ | ------------ |
+| A    | `@`   | server IPv4        | DNS only     |
+| AAAA | `@`   | server IPv6        | DNS only     |
+| A    | `www` | server IPv4        | DNS only     |
+| AAAA | `www` | server IPv6        | DNS only     |
+
+The IPv6 address is on the server's page in Hetzner, or run
+`ssh myserver ip -6 addr show scope global`.
+
+> **Keep it DNS only (grey cloud).** Caddy gets its own certificate from
+> Let's Encrypt, which needs traffic to reach the server directly. If you turn
+> the Cloudflare proxy on later, set **SSL/TLS -> Full (strict)** first or you
+> will get redirect loops.
+>
+> `.dev` domains are HTTPS-only in every browser, so the site shows nothing
+> until the certificate is issued in the next step.
+
+Check the records have propagated before going on:
+
+```bash
+dig +short A example.com @1.1.1.1
+```
+
+## 4. Provision
+
+From the repo:
+
+```bash
+make provision                     # defaults: DEPLOY_HOST=myserver DOMAIN=example.com
+make provision DEPLOY_HOST=other DOMAIN=example.com
+```
+
+[`deploy/provision.sh`](../../deploy/provision.sh) then:
+
+1. installs Docker and Compose, adds 2 GB swap (the Next.js build needs it on
+   4 GB), sets up `ufw` to allow only 22/80/443, turns off SSH password login and
+   keeps unattended security upgrades on;
+2. creates a deploy key on the server and registers it on GitHub as
+   **read-only**;
+3. clones the repo to `/opt/finexito`;
+4. writes `/opt/finexito/deploy/.env` from `.env.example`, with the domain
+   filled in and a freshly generated `DJANGO_SECRET_KEY` and `POSTGRES_PASSWORD`;
+5. installs the nightly backup cron job;
+6. builds the images, runs migrations and starts everything.
+
+Caddy requests the certificate as soon as it starts, which usually takes a few
+seconds.
+
+It is safe to run again at any time. Every step checks first, and an existing
+`deploy/.env` is **never overwritten**, because Postgres keeps the password it
+was first created with. If you lose that file, you lose access to the data.
+
+## 5. Check it
+
+```bash
+curl -I https://example.com/api/healthz/        # 200
+curl -I http://example.com/                     # 308 -> https://
+curl -I https://www.example.com/                # 301 -> https://example.com/
+ssh myserver 'cd /opt/finexito/deploy && docker compose ps'
+```
+
+If HTTPS fails, Caddy's log says why. It is almost always DNS not pointing at
+the server yet, or the Cloudflare proxy being on:
+
+```bash
+ssh myserver 'cd /opt/finexito/deploy && docker compose logs caddy | grep -i certificate'
+```
+
+## 6. First admin and program
+
+```bash
+ssh myserver
+cd /opt/finexito/deploy
+docker compose exec backend python manage.py createsuperuser
+docker compose exec backend python manage.py createprogram <slug> --name "..." --apps profiles
+```
+
+To make that program the default, set `DEFAULT_PROGRAM_SLUG=<slug>` in
+`deploy/.env`, then run `docker compose up -d`.
+
+Admin: `https://example.com/api/admin/`.
+
+## From here on
+
+- **Releasing:** `git push origin main && make deploy`. Follow the logs with
+  `make logs`.
+- **Everyday commands, backups and restores:** see
+  [`deploy/README.md`](../../deploy/README.md).
+- **Moving to a new server:** copy the old `deploy/.env` to the new server's
+  `/opt/finexito/deploy/.env` before provisioning, then restore the latest
+  backup. That keeps the same secret key, so existing sign-ins stay valid.
+
+## Worth doing afterwards
+
+- **Copy backups off the server.** They sit on the same disk as the database.
+- **Cloudflare:**
+  - **Email -> Email Routing** to receive `you@example.com` in another inbox.
+  - A DMARC record: `TXT _dmarc "v=DMARC1; p=none; rua=mailto:you@example.com"`.
+  - CAA records allowing `letsencrypt.org` **and** `sectigo.com`. Caddy
+    falls back to ZeroSSL, which issues through Sectigo.
+  - DNSSEC.
+  - 2FA on the account.
+- **Raise HSTS:** set `SECURE_HSTS_SECONDS=31536000` in `deploy/.env` once
+  HTTPS has been stable for a while.
