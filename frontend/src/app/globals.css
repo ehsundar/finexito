@@ -130,3 +130,13 @@
     @apply font-sans;
   }
 }
+/* Code highlighted by Shiki (components/markdown/highlight.ts). Each token
+   carries both themes' colours; pick the set matching the page's theme. */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+}
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark);
+}

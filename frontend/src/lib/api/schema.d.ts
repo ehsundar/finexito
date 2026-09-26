@@ -203,6 +203,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pages/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Published pages. Anyone may read public ones; private ones need a session. */
+        get: operations["pages_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pages/{slug}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Published pages. Anyone may read public ones; private ones need a session. */
+        get: operations["pages_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/profiles/me/": {
         parameters: {
             query?: never;
@@ -275,6 +309,59 @@ export interface components {
         };
         Logout: {
             refresh: string;
+        };
+        /** @description What a listing needs: everything but the body. */
+        Page: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description The page lives at /pages/<slug>. */
+            readonly slug: string;
+            readonly title: string;
+            /** @description Shown in listings and link previews. */
+            readonly summary: string;
+            readonly visibility: components["schemas"]["VisibilityEnum"];
+            /**
+             * Format: date-time
+             * @description Set when first published. A future time schedules the page.
+             */
+            readonly published_at: string | null;
+            /** Format: date-time */
+            readonly updated_at: string;
+            /** @description Markdown. Raw HTML is shown as text. */
+            readonly body: string;
+        };
+        /** @description What a listing needs: everything but the body. */
+        PageSummary: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description The page lives at /pages/<slug>. */
+            readonly slug: string;
+            readonly title: string;
+            /** @description Shown in listings and link previews. */
+            readonly summary: string;
+            readonly visibility: components["schemas"]["VisibilityEnum"];
+            /**
+             * Format: date-time
+             * @description Set when first published. A future time schedules the page.
+             */
+            readonly published_at: string | null;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        PaginatedPageSummaryList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["PageSummary"][];
         };
         PaginatedPublicProfileList: {
             /** @example 123 */
@@ -409,6 +496,12 @@ export interface components {
             uid: string;
             token: string;
         };
+        /**
+         * @description * `public` - Public
+         *     * `private` - Signed-in members only
+         * @enum {string}
+         */
+        VisibilityEnum: "public" | "private";
     };
     responses: never;
     parameters: never;
@@ -755,6 +848,56 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicProfile"];
+                };
+            };
+        };
+    };
+    pages_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /**
+                 * @description * `public` - Public
+                 *     * `private` - Signed-in members only
+                 */
+                visibility?: "private" | "public";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPageSummaryList"];
+                };
+            };
+        };
+    };
+    pages_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Page"];
                 };
             };
         };

@@ -25,6 +25,7 @@ vercel.json The previous Vercel deployment, kept until it is retired.
 | ----------------------------------------------- | ----------------------------------------------------- |
 | [`accounts`](backend/apps/accounts/README.md)   | **User**: identity, sign-in, email verification.      |
 | [`profiles`](backend/apps/profiles/README.md)   | **Profile**: everything else about a person. One per user. |
+| [`content`](backend/apps/content/README.md)   | **Page**: public or private Markdown pages (a small CMS). |
 | [`common`](backend/apps/common/README.md)       | Base models, `extra` accessors, the error envelope.   |
 
 `User` stays deliberately thin; a display name, an avatar, or arbitrary
@@ -82,7 +83,8 @@ All routes are under `/api/v1/`.
 
 The endpoints are documented next to their code:
 [auth](backend/apps/accounts/README.md#api--apiv1auth),
-[profiles and members](backend/apps/profiles/README.md#api--apiv1), and
+[profiles and members](backend/apps/profiles/README.md#api--apiv1),
+[pages](backend/apps/content/README.md#api--apiv1), and
 `site/` in [common](backend/apps/common/README.md#everything-else).
 
 ### Everything else

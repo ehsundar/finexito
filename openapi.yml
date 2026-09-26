@@ -361,6 +361,72 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicProfile'
           description: ''
+  /api/v1/pages/:
+    get:
+      operationId: pages_list
+      description: Published pages. Anyone may read public ones; private ones need
+        a session.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: visibility
+        schema:
+          type: string
+          enum:
+          - private
+          - public
+        description: |-
+          * `public` - Public
+          * `private` - Signed-in members only
+      tags:
+      - pages
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPageSummaryList'
+          description: ''
+  /api/v1/pages/{slug}/:
+    get:
+      operationId: pages_retrieve
+      description: Published pages. Anyone may read public ones; private ones need
+        a session.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+          description: The page lives at /pages/<slug>.
+        required: true
+      tags:
+      - pages
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+          description: ''
   /api/v1/profiles/me/:
     get:
       operationId: profiles_me_retrieve
@@ -499,6 +565,118 @@ components:
           type: string
       required:
       - refresh
+    Page:
+      type: object
+      description: 'What a listing needs: everything but the body.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          description: The page lives at /pages/<slug>.
+          pattern: ^[-a-zA-Z0-9_]+$
+        title:
+          type: string
+          readOnly: true
+        summary:
+          type: string
+          readOnly: true
+          description: Shown in listings and link previews.
+        visibility:
+          allOf:
+          - $ref: '#/components/schemas/VisibilityEnum'
+          readOnly: true
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Set when first published. A future time schedules the page.
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+          description: Markdown. Raw HTML is shown as text.
+      required:
+      - body
+      - id
+      - published_at
+      - slug
+      - summary
+      - title
+      - updated_at
+      - visibility
+    PageSummary:
+      type: object
+      description: 'What a listing needs: everything but the body.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        slug:
+          type: string
+          readOnly: true
+          description: The page lives at /pages/<slug>.
+          pattern: ^[-a-zA-Z0-9_]+$
+        title:
+          type: string
+          readOnly: true
+        summary:
+          type: string
+          readOnly: true
+          description: Shown in listings and link previews.
+        visibility:
+          allOf:
+          - $ref: '#/components/schemas/VisibilityEnum'
+          readOnly: true
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Set when first published. A future time schedules the page.
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - published_at
+      - slug
+      - summary
+      - title
+      - updated_at
+      - visibility
+    PaginatedPageSummaryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PageSummary'
     PaginatedPublicProfileList:
       type: object
       required:
@@ -801,6 +979,14 @@ components:
       required:
       - token
       - uid
+    VisibilityEnum:
+      enum:
+      - public
+      - private
+      type: string
+      description: |-
+        * `public` - Public
+        * `private` - Signed-in members only
   securitySchemes:
     cookieAuth:
       type: apiKey
