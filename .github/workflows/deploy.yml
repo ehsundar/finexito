@@ -1,10 +1,7 @@
 # Ships main to the production server: run the tests, build the backend and frontend images
-# and push them to GHCR, then SSH in and ask the server to release this commit. The server
-# fetches the commit from GitHub itself (deploy/entry.sh), so the SSH key in DEPLOY_SSH_KEY
-# only names a commit on main; it is pinned to that one script and cannot open a shell.
-# See docs/ops/server-setup.md.
-#
-# App secrets are written by their own step, so the Deploy step never holds them.
+# and push them to GHCR, then `make deploy` with this commit's tag, which copies
+# deploy/compose.yml and the Caddyfile to the server and brings the stack up on those images.
+# See deploy/README.md.
 name: Deploy
 
 on:
@@ -121,31 +118,20 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - uses: actions/checkout@v5
+
       - name: Configure SSH
         env:
           SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          USER: ${{ secrets.DEPLOY_USER }}
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
-
-      - name: Write secrets to the server's shared/.env
-        env:
-          HOST: ${{ secrets.DEPLOY_HOST }}
-          USER: ${{ secrets.DEPLOY_USER }}
-          DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-        # entry.sh in sync-env mode reads KEY=value lines from stdin.
-        run: |
-          test -n "$DJANGO_SECRET_KEY" || { echo "DJANGO_SECRET_KEY secret is not set"; exit 1; }
-          test -n "$RESEND_API_KEY" || { echo "RESEND_API_KEY secret is not set"; exit 1; }
-          printf 'DJANGO_SECRET_KEY=%s\nRESEND_API_KEY=%s\n' "$DJANGO_SECRET_KEY" "$RESEND_API_KEY" \
-            | ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$USER@$HOST" sync-env
+          printf 'Host server\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n' "$HOST" "$USER" > ~/.ssh/config
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts ~/.ssh/config
 
       - name: Deploy
-        env:
-          HOST: ${{ secrets.DEPLOY_HOST }}
-          USER: ${{ secrets.DEPLOY_USER }}
-        run: ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$USER@$HOST" release "$GITHUB_SHA" < /dev/null
+        run: make deploy DEPLOY_HOST=server IMAGE_TAG=$GITHUB_SHA

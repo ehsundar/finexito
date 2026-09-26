@@ -1,4 +1,4 @@
-.PHONY: install db-up db-down run run-back run-front test lint fmt migrate shell schema schema-check provision deploy rollback logs
+.PHONY: install db-up db-down run run-back run-front test lint fmt migrate shell schema schema-check provision deploy logs
 
 # --- setup -----------------------------------------------------------------
 
@@ -60,21 +60,25 @@ shell:
 
 # --- production (Hetzner) --------------------------------------------------
 
-# See deploy/README.md. `provision` takes a fresh Ubuntu box to a running site
-# and is safe to re-run. `deploy` releases the tip of origin/main, whose images
-# CI must already have built, so push and let CI finish first. `rollback` puts
-# the previous release back.
-DEPLOY_HOST ?= myserver
-DOMAIN ?= example.com
+# See deploy/README.md. The server holds three files in /opt/finexito: the two
+# below, copied on every deploy, and .env, which only ever lives there.
+# `deploy` runs whatever IMAGE_TAG names (a commit CI has built; the tip of
+# origin/main by default), so rolling back is `make deploy IMAGE_TAG=<older sha>`.
+DEPLOY_HOST ?= hetzner
+DOMAIN ?= ehsandar.dev
+IMAGE_TAG ?= $(shell git rev-parse origin/main)
 
 provision:
 	deploy/provision.sh $(DEPLOY_HOST) $(DOMAIN)
 
 deploy:
-	ssh $(DEPLOY_HOST) /opt/finexito/bin/entry release main
-
-rollback:
-	ssh $(DEPLOY_HOST) /opt/finexito/bin/entry rollback
+	scp -q deploy/compose.yml deploy/Caddyfile $(DEPLOY_HOST):/opt/finexito/
+	ssh $(DEPLOY_HOST) 'set -e; cd /opt/finexito; \
+	  sed -i "/^IMAGE_TAG=/d" .env; echo "IMAGE_TAG=$(IMAGE_TAG)" >> .env; \
+	  install -d -o 999 -g 999 /var/backups/finexito; \
+	  docker compose pull -q; \
+	  docker compose up -d --wait --remove-orphans; \
+	  docker image prune -f >/dev/null; docker compose ps'
 
 logs:
-	ssh $(DEPLOY_HOST) 'cd /opt/finexito/current && docker compose logs -f --tail=100'
+	ssh $(DEPLOY_HOST) 'cd /opt/finexito && docker compose logs -f --tail=100'

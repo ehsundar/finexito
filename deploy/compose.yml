@@ -1,13 +1,34 @@
-# Production stack for the Hetzner box. Each release runs it from
-# /opt/finexito/releases/<sha>/, where .env links to /opt/finexito/shared/.env
-# (from .env.example), which never leaves the server. backend and frontend
-# images are built by CI and pulled from GHCR; IMAGE_TAG picks the commit,
-# `latest` otherwise. The fixed project name keeps volumes across releases.
+# Production stack. On the server this sits in /opt/finexito next to the
+# Caddyfile and .env (from .env.example), and `make deploy` is all it takes:
+# copy these files over, then pull, migrate and `up --wait`.
 #
 #   Internet -> caddy :80/:443 -> /api/* -> backend (gunicorn :8000)
 #                              -> /*     -> frontend (next :3000) -> backend
-#   db is reachable only from inside this network.
+#   db is reachable only from inside this network; backup dumps it nightly.
+#
+# IMAGE_TAG (a commit, set in .env by `make deploy`) picks CI's images.
 name: finexito
+
+x-backend: &backend
+  image: ghcr.io/ehsundar/finexito-backend:${IMAGE_TAG:-latest}
+  # Every line of .env reaches Django, so a new setting needs no change here.
+  # Only the backend gets the whole file: the others would hold secrets they
+  # never use.
+  env_file: .env
+  # Values derived from the file, or pinned for production. These win over
+  # env_file, and the `:?` checks refuse to start without a secret.
+  environment:
+    DJANGO_DEBUG: "false"
+    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in .env}
+    # `backend` is the Host header on the frontend's internal calls.
+    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set DJANGO_ALLOWED_HOSTS in .env},backend
+    DATABASE_URL: postgres://finexito:${POSTGRES_PASSWORD}@db:5432/finexito
+    CSRF_TRUSTED_ORIGINS: ${PUBLIC_ORIGIN:?set PUBLIC_ORIGIN in .env}
+    CORS_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN}
+    # Caddy owns the http->https redirect; see SECURE_SSL_REDIRECT in settings.
+    SECURE_SSL_REDIRECT: "false"
+    # Django defaults to a year of HSTS; stay off until .env raises it.
+    SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS:-0}
 
 services:
   caddy:
@@ -18,7 +39,7 @@ services:
       - "443:443"
       - "443:443/udp"
     environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in shared/.env}
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -33,33 +54,36 @@ services:
     environment:
       BACKEND_INTERNAL_URL: http://backend:8000
       SECURE_COOKIES: ${SECURE_COOKIES:-true}
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r => process.exit(r.status < 500 ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      start_period: 30s
+      retries: 3
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
-  backend:
-    image: ghcr.io/ehsundar/finexito-backend:${IMAGE_TAG:-latest}
-    restart: unless-stopped
-    # Every line of shared/.env reaches Django, so a new setting needs no change
-    # here. Only the backend gets the whole file: the other containers would be
-    # handed secrets they never use.
-    env_file: .env
-    # Values derived from the file, or pinned for production. These win over
-    # env_file, and the `:?` checks stop a release that is missing a secret.
-    environment:
-      DJANGO_DEBUG: "false"
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in shared/.env}
-      # `backend` is the Host header on the frontend's internal calls.
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set DJANGO_ALLOWED_HOSTS in shared/.env},backend
-      DATABASE_URL: postgres://finexito:${POSTGRES_PASSWORD}@db:5432/finexito
-      CSRF_TRUSTED_ORIGINS: ${PUBLIC_ORIGIN:?set PUBLIC_ORIGIN in shared/.env}
-      CORS_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN}
-      # Caddy owns the http->https redirect; see SECURE_SSL_REDIRECT in settings.
-      SECURE_SSL_REDIRECT: "false"
-      # Django defaults to a year of HSTS; stay off until .env raises it.
-      SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS:-0}
+  # Runs once per deploy; the backend only starts when it has succeeded.
+  migrate:
+    <<: *backend
+    command: ["python", "manage.py", "migrate", "--noinput"]
+    restart: "no"
     depends_on:
       db:
         condition: service_healthy
+
+  backend:
+    <<: *backend
+    restart: unless-stopped
+    healthcheck:
+      # Sent as Host: backend, which ALLOWED_HOSTS always accepts.
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen(u.Request('http://localhost:8000/api/healthz/', headers={'Host': 'backend'}), timeout=5)"]
+      interval: 10s
+      start_period: 20s
+      retries: 3
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
 
   db:
     image: postgres:17-alpine
@@ -67,13 +91,33 @@ services:
     environment:
       POSTGRES_USER: finexito
       POSTGRES_DB: finexito
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in shared/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U finexito -d finexito"]
       interval: 5s
       retries: 10
+
+  # Nightly pg_dump into /var/backups/finexito on the host, 14 days kept. These
+  # share a disk with the database: copy them off the box for real safety.
+  backup:
+    image: prodrigestivill/postgres-backup-local:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: finexito
+      POSTGRES_USER: finexito
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SCHEDULE: "30 3 * * *"
+      BACKUP_KEEP_DAYS: 14
+      BACKUP_KEEP_WEEKS: 0
+      BACKUP_KEEP_MONTHS: 0
+    volumes:
+      - /var/backups/finexito:/backups
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:
