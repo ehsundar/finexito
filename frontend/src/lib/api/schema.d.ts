@@ -272,6 +272,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/storage/uploads/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** @description Send the file as the raw body, with the Content-Type the ticket names and a Content-Length. Only the ticket's owner may upload, once, before it expires. */
+        put: operations["storage_upload"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -287,6 +304,16 @@ export interface components {
             readonly refresh: string;
             readonly user: components["schemas"]["User"];
         };
+        /**
+         * @description * `image/jpeg` - image/jpeg
+         *     * `image/png` - image/png
+         *     * `image/gif` - image/gif
+         *     * `image/webp` - image/webp
+         *     * `image/avif` - image/avif
+         *     * `application/pdf` - application/pdf
+         * @enum {string}
+         */
+        ContentTypeEnum: "image/jpeg" | "image/png" | "image/gif" | "image/webp" | "image/avif" | "application/pdf";
         Detail: {
             readonly detail: string;
         };
@@ -319,7 +346,7 @@ export interface components {
             readonly title: string;
             /** @description Shown in listings and link previews. */
             readonly summary: string;
-            readonly visibility: components["schemas"]["VisibilityEnum"];
+            readonly visibility: components["schemas"]["Visibility6ddEnum"];
             /**
              * Format: date-time
              * @description Set when first published. A future time schedules the page.
@@ -339,7 +366,7 @@ export interface components {
             readonly title: string;
             /** @description Shown in listings and link previews. */
             readonly summary: string;
-            readonly visibility: components["schemas"]["VisibilityEnum"];
+            readonly visibility: components["schemas"]["Visibility6ddEnum"];
             /**
              * Format: date-time
              * @description Set when first published. A future time schedules the page.
@@ -461,6 +488,23 @@ export interface components {
          * @enum {string}
          */
         StatusEnum: "active" | "pending" | "suspended";
+        StoredObject: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly content_type: components["schemas"]["ContentTypeEnum"];
+            readonly visibility: components["schemas"]["StoredObjectVisibilityEnum"];
+            readonly size: number | null;
+            readonly sha256: string;
+            /** Format: date-time */
+            readonly uploaded_at: string | null;
+            readonly url: string | null;
+        };
+        /**
+         * @description * `public` - Public, served and cached by anyone
+         *     * `private` - Private, only through signed links
+         * @enum {string}
+         */
+        StoredObjectVisibilityEnum: "public" | "private";
         /**
          * @description The refresh request really only accepts the refresh token.
          *
@@ -501,7 +545,7 @@ export interface components {
          *     * `private` - Signed-in members only
          * @enum {string}
          */
-        VisibilityEnum: "public" | "private";
+        Visibility6ddEnum: "public" | "private";
     };
     responses: never;
     parameters: never;
@@ -961,6 +1005,87 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Site"];
+                };
+            };
+        };
+    };
+    storage_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "*/*": string;
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoredObject"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            411: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

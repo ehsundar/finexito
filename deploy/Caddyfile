@@ -3,9 +3,46 @@
 {$SITE_ADDRESS} {
 	encode zstd gzip
 
+	# Public uploads (apps.storage), straight from the server's disk. Names are
+	# random and a file never changes once written, so a found file is cached
+	# for good; a miss is not, since the upload may still be on its way. The
+	# headers stop a file doing anything when opened: no scripts, no sniffing.
+	handle_path /api/media/* {
+		root * /srv/storage/public
+		@found file
+		header @found Cache-Control "public, max-age=31536000, immutable"
+		header X-Content-Type-Options nosniff
+		header Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+		file_server
+	}
+
+	# Uploads. The size cap matches STORAGE_MAX_UPLOAD_BYTES. Caddy buffers the
+	# whole body before passing it on, so a slow client ties up Caddy, which
+	# copes, rather than one of gunicorn's few workers.
+	handle /api/v1/storage/uploads/* {
+		request_body {
+			max_size 25MiB
+		}
+		reverse_proxy backend:8000 {
+			request_buffers 25MiB
+		}
+	}
+
 	# Same split as the old vercel.json rewrites: Django owns /api/, Next the rest.
 	handle /api/* {
-		reverse_proxy backend:8000
+		reverse_proxy backend:8000 {
+			# A private upload: Django has checked the signed link and names the
+			# file; Caddy sends it from the private directory, never exposed above.
+			@private header X-Accel-Redirect *
+			handle_response @private {
+				root * /srv/storage/private
+				rewrite * {rp.header.X-Accel-Redirect}
+				copy_response_headers {
+					include Cache-Control Content-Security-Policy X-Content-Type-Options
+				}
+				file_server
+			}
+		}
 	}
 
 	handle {

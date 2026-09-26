@@ -15,5 +15,6 @@ router.register("pages", PageViewSet, basename="page")
 urlpatterns = [
     path("site/", SiteView.as_view(), name="site"),
     path("auth/", include("apps.accounts.urls")),
+    path("storage/", include("apps.storage.urls")),
     path("", include(router.urls)),
 ]

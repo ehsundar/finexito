@@ -5,6 +5,8 @@
 #   Internet -> caddy :80/:443 -> /api/* -> backend (gunicorn :8000)
 #                              -> /*     -> frontend (next :3000) -> backend
 #   db is reachable only from inside this network; backup dumps it nightly.
+#   Uploads live in the `storage` volume: the backend writes them, Caddy serves
+#   them read-only.
 #
 # IMAGE_TAG (a commit, set in .env by `make deploy`) picks CI's images.
 name: finexito
@@ -29,6 +31,11 @@ x-backend: &backend
     SECURE_SSL_REDIRECT: "false"
     # Django defaults to a year of HSTS; stay off until .env raises it.
     SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS:-0}
+    STORAGE_ROOT: /srv/storage
+    # Caddy sends private files itself; see the Caddyfile.
+    STORAGE_ACCEL_REDIRECT: "true"
+  volumes:
+    - storage:/srv/storage
 
 services:
   caddy:
@@ -44,6 +51,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      - storage:/srv/storage:ro
     depends_on:
       - frontend
       - backend
@@ -63,10 +71,11 @@ services:
       backend:
         condition: service_healthy
 
-  # Runs once per deploy; the backend only starts when it has succeeded.
+  # Runs once per deploy; the backend only starts when it has succeeded. Also
+  # clears out abandoned uploads, which is all the housekeeping storage needs.
   migrate:
     <<: *backend
-    command: ["python", "manage.py", "migrate", "--noinput"]
+    command: ["sh", "-c", "python manage.py migrate --noinput && python manage.py purge_storage"]
     restart: "no"
     depends_on:
       db:
@@ -123,3 +132,4 @@ volumes:
   pgdata:
   caddy_data:
   caddy_config:
+  storage:

@@ -22,6 +22,9 @@ RUN python manage.py collectstatic --noinput
 
 # gunicorn's control server keeps its socket under $HOME, so the user needs one.
 RUN useradd --system --create-home --uid 1000 app
+# Where the `storage` volume mounts. A new volume copies this directory's owner,
+# so the app can write uploads without any setup on the server.
+RUN install -d -o app -g app /srv/storage
 USER app
 
 EXPOSE 8000

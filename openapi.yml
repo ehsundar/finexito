@@ -485,6 +485,79 @@ paths:
               schema:
                 $ref: '#/components/schemas/Site'
           description: ''
+  /api/v1/storage/uploads/{id}/:
+    put:
+      operationId: storage_upload
+      description: Send the file as the raw body, with the Content-Type the ticket
+        names and a Content-Length. Only the ticket's owner may upload, once, before
+        it expires.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - storage
+      requestBody:
+        content:
+          '*/*':
+            schema:
+              type: string
+              format: binary
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoredObject'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '410':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '411':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '415':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
 components:
   schemas:
     AuthResponse:
@@ -509,6 +582,22 @@ components:
       - access
       - refresh
       - user
+    ContentTypeEnum:
+      enum:
+      - image/jpeg
+      - image/png
+      - image/gif
+      - image/webp
+      - image/avif
+      - application/pdf
+      type: string
+      description: |-
+        * `image/jpeg` - image/jpeg
+        * `image/png` - image/png
+        * `image/gif` - image/gif
+        * `image/webp` - image/webp
+        * `image/avif` - image/avif
+        * `application/pdf` - application/pdf
     Detail:
       type: object
       properties:
@@ -587,7 +676,7 @@ components:
           description: Shown in listings and link previews.
         visibility:
           allOf:
-          - $ref: '#/components/schemas/VisibilityEnum'
+          - $ref: '#/components/schemas/Visibility6ddEnum'
           readOnly: true
         published_at:
           type: string
@@ -634,7 +723,7 @@ components:
           description: Shown in listings and link previews.
         visibility:
           allOf:
-          - $ref: '#/components/schemas/VisibilityEnum'
+          - $ref: '#/components/schemas/Visibility6ddEnum'
           readOnly: true
         published_at:
           type: string
@@ -906,6 +995,53 @@ components:
         * `active` - Active
         * `pending` - Pending
         * `suspended` - Suspended
+    StoredObject:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        content_type:
+          allOf:
+          - $ref: '#/components/schemas/ContentTypeEnum'
+          readOnly: true
+        visibility:
+          allOf:
+          - $ref: '#/components/schemas/StoredObjectVisibilityEnum'
+          readOnly: true
+        size:
+          type: integer
+          readOnly: true
+          nullable: true
+        sha256:
+          type: string
+          readOnly: true
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        url:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - content_type
+      - id
+      - sha256
+      - size
+      - uploaded_at
+      - url
+      - visibility
+    StoredObjectVisibilityEnum:
+      enum:
+      - public
+      - private
+      type: string
+      description: |-
+        * `public` - Public, served and cached by anyone
+        * `private` - Private, only through signed links
     TokenRefreshRequest:
       type: object
       description: |-
@@ -979,7 +1115,7 @@ components:
       required:
       - token
       - uid
-    VisibilityEnum:
+    Visibility6ddEnum:
       enum:
       - public
       - private

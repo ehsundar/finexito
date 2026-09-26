@@ -75,7 +75,7 @@ than by switching renderers.
 | Markdown + GFM      | `react-markdown` + `remark-gfm`         | Done    |
 | Code highlighting   | Shiki (`@shikijs/rehype`), server-side  | Done    |
 | Custom widgets      | `remark-directive` + a component registry | Planned |
-| Uploaded images     | An `Asset` model; storage to be decided  | Planned |
+| Uploaded images     | `apps.storage`, on the server's disk     | Storage done |
 
 **Code highlighting — Shiki.** It uses VS Code's grammars and themes and runs
 on the server, so pages arrive already coloured and the browser loads no
@@ -93,7 +93,6 @@ widget falls back to its raw text.
   different tag syntax and losing the remark/rehype plugin ecosystem. Worth
   revisiting only if widgets grow complex enough to need its validation.
 
-**Images.** Linked images (`![alt](https://…)`) already work. Uploads need
-somewhere to live: media is not served in production yet. The options are a
-server volume served by Caddy (simplest, but must be backed up) or S3-compatible
-storage via `django-storages` (durable, but needs credentials).
+**Images.** Linked images (`![alt](https://…)`) already work. Uploads are
+stored by `apps.storage` on the server's disk and served by Caddy; the admin
+still needs a way to upload one and insert its URL.

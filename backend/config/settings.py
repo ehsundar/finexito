@@ -87,6 +87,7 @@ LOCAL_APPS = [
     "apps.accounts",
     "apps.profiles",
     "apps.content",
+    "apps.storage",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -185,10 +186,19 @@ STORAGES = {
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
 
-# NB: the serverless filesystem is read-only and ephemeral, so MEDIA_ROOT is for
-# local use only. User uploads need Vercel Blob or S3 before they are added.
+# Uploads, handled by apps.storage. STORAGE_ROOT holds `public/`, served as is
+# under MEDIA_URL (by Caddy in production, by runserver locally), `private/`,
+# only reachable through signed links, and `tmp/` for uploads in progress.
+# In production it is a directory on the server's disk; see deploy/compose.yml.
+STORAGE_ROOT = Path(env_str("STORAGE_ROOT", str(BASE_DIR / "media")))
 MEDIA_URL = "/api/media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = STORAGE_ROOT / "public"
+# The largest file any ticket may allow. Caddy's limit in deploy/Caddyfile must match.
+STORAGE_MAX_UPLOAD_BYTES = int(env_str("STORAGE_MAX_UPLOAD_BYTES", str(25 * 1024 * 1024)))
+STORAGE_UPLOAD_TTL = timedelta(minutes=int(env_str("STORAGE_UPLOAD_TTL_MINUTES", "30")))
+# Behind Caddy, private files are handed over to it with X-Accel-Redirect
+# rather than streamed through a gunicorn worker.
+STORAGE_ACCEL_REDIRECT = env_bool("STORAGE_ACCEL_REDIRECT", False)
 
 # --- REST framework -------------------------------------------------------
 

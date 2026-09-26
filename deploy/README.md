@@ -8,12 +8,13 @@ Internet -> caddy :80/:443 -> /api/* -> backend  (Django, gunicorn :8000)
                            -> /*     -> frontend (Next standalone :3000) -> backend
                               db (Postgres 17, internal only, volume `finexito_pgdata`)
                               backup (nightly pg_dump to /var/backups/finexito)
+                              uploads (volume `finexito_storage`, written by backend, served by caddy)
 ```
 
 | File            | What it is                                                         |
 | --------------- | ------------------------------------------------------------------ |
 | `compose.yml`   | The whole stack, including migrations, health checks and backups.  |
-| `Caddyfile`     | HTTPS, `/api/*` split, `www` -> bare-domain redirect.               |
+| `Caddyfile`     | HTTPS, `/api/*` split, uploads, `www` -> bare-domain redirect.      |
 | `.env.example`  | The keys of the server's `.env`, filled from GitHub on every deploy. |
 | `render-env.sh` | Writes that `.env` from the GitHub secrets and variables.            |
 | `provision.sh`  | Fresh Ubuntu box -> running site. Run from your machine.            |
@@ -78,6 +79,12 @@ docker compose exec db psql -U finexito finexito
 ```
 
 ## Backups
+
+Uploaded files live in the `finexito_storage` volume, not in the database
+dumps. Browse them with `docker compose exec backend ls /srv/storage`, or copy
+them off from the host at `/var/lib/docker/volumes/finexito_storage/_data`.
+`docker compose down -v` deletes them along with the database. See
+`backend/apps/storage/README.md`.
 
 The `backup` service dumps the database nightly at 03:30 into
 `/var/backups/finexito` and keeps 14 days. They share a disk with the database,
