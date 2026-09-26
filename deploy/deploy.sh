@@ -33,7 +33,10 @@ if [ "${cmd:-}" = "deploy" ] && [ -n "${tag:-}" ]; then
   export IMAGE_TAG="$tag"
 fi
 
-git -C .. pull --ff-only
+# The checkout is a deploy artefact, never edited here: match origin exactly, so
+# a rewritten main (force-push) deploys instead of failing to fast-forward.
+git -C .. fetch origin
+git -C .. reset --hard origin/main
 docker compose pull backend frontend
 docker compose run --rm backend python manage.py migrate --noinput
 docker compose up -d --remove-orphans
