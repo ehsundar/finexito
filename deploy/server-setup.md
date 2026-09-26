@@ -12,7 +12,7 @@ Internet -> Caddy :80/:443 -> /api/* -> backend  (Django, gunicorn)
                               db (Postgres 17, not exposed)
 ```
 
-All in Docker Compose, from [`deploy/`](../../deploy/README.md), with HTTPS
+All in Docker Compose, from [`deploy/`](README.md), with HTTPS
 certificates handled by Caddy.
 
 ## Before you start
@@ -101,7 +101,7 @@ make provision                     # defaults: DEPLOY_HOST=hetzner DOMAIN=ehsand
 make provision DEPLOY_HOST=other DOMAIN=example.com
 ```
 
-[`deploy/provision.sh`](../../deploy/provision.sh) then:
+[`deploy/provision.sh`](provision.sh) then:
 
 1. installs Docker and Compose, adds 2 GB swap (the Next.js build needs it on
    4 GB), sets up `ufw` to allow only 22/80/443, turns off SSH password login and
@@ -157,7 +157,7 @@ Admin: `https://example.com/api/admin/`.
   for that commit. By hand, `make deploy` ships the tip of `main`,
   `make deploy IMAGE_TAG=<older sha>` rolls back, and `make logs` follows the logs.
 - **Everyday commands, backups and restores:** see
-  [`deploy/README.md`](../../deploy/README.md).
+  [`deploy/README.md`](README.md).
 - **Moving to a new server:** provision it, point `DEPLOY_HOST` and
   `DEPLOY_KNOWN_HOSTS` at it, run the Deploy Action, then restore the latest
   backup. The secrets come from GitHub, so existing sign-ins stay valid.
@@ -167,7 +167,7 @@ Admin: `https://example.com/api/admin/`.
 `.github/workflows/deploy.yml` runs `make deploy` on every push to `main`, over
 SSH as root with a key of its own. Before that it writes `/opt/finexito/.env`
 from the `production` environment's secrets and variables, one per key in
-[`deploy/.env.example`](../../deploy/.env.example). To rotate
+[`deploy/.env.example`](.env.example). To rotate
 `DJANGO_SECRET_KEY`, change the secret and run the Action; everyone is signed
 out, but no data is lost.
 

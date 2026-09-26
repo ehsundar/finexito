@@ -21,38 +21,19 @@ vercel.json The previous Vercel deployment, kept until it is retired.
 
 ## The model
 
-| Concept     | What it is                                                        |
-| ----------- | ----------------------------------------------------------------- |
-| **User**    | Identity. Can authenticate.                                        |
-| **Profile** | Everything else the app knows about a person. One per user.       |
+| App                                             | What it owns                                          |
+| ----------------------------------------------- | ----------------------------------------------------- |
+| [`accounts`](backend/apps/accounts/README.md)   | **User**: identity, sign-in, email verification.      |
+| [`profiles`](backend/apps/profiles/README.md)   | **Profile**: everything else about a person. One per user. |
+| [`common`](backend/apps/common/README.md)       | Base models, `extra` accessors, the error envelope.   |
 
 `User` stays deliberately thin; a display name, an avatar, or arbitrary
-attributes go on the profile.
-
-Every model built on `common.models.BaseModel` has `extra`, a flat
-`string → string` JSON map for anything app-specific. The code that owns a key
-decides what its value means. For the common types, declare a typed accessor
-from `common.fields` on the model instead of converting by hand:
-
-```python
-class Profile(BaseModel):
-    nickname = ExtraCharField(default="")
-    visits = ExtraIntField(default=0)
-    newsletter = ExtraBoolField(default=False)
-    last_seen = ExtraDateTimeField()        # aware datetimes, stored as ISO 8601
-
-profile.newsletter = True                   # extra == {"newsletter": "true"}
-profile.visits += 1
-profile.save()
-```
-
-Reading a missing or unparseable value returns the default; assigning `None`
-removes the key; assigning the wrong type raises `TypeError`. A profile is created at registration, or on first use of
-`profiles/me/` for accounts made another way.
+attributes go on the profile. Each app's README is the reference for its models
+and endpoints: update it in the same change as the code.
 
 ## Adding a facility later
 
-1. Build it as an app under `apps/`, add it to `LOCAL_APPS`.
+1. Build it as an app under `apps/` with its own `README.md`, add it to `LOCAL_APPS`.
 2. Register its routes in `config/api.py`.
 3. Anything that differs between deployments becomes a setting read from the
    environment in `config/settings.py`.
@@ -99,25 +80,10 @@ collected static files. The frontend owns the rest of the domain (see
 
 All routes are under `/api/v1/`.
 
-### Auth — `/api/v1/auth/`
-
-| Method | Path                | Purpose                                            |
-| ------ | ------------------- | -------------------------------------------------- |
-| POST   | `register/`         | Create an account and its profile                  |
-| POST   | `login/`            | Email + password → JWT pair + user                 |
-| POST   | `refresh/`          | Rotate the access token                            |
-| POST   | `verify/`           | Check a token                                      |
-| POST   | `logout/`           | Blacklist a refresh token                          |
-| GET    | `me/`               | The authenticated account                          |
-| POST   | `password/change/`  | Change password                                    |
-
-### Profiles — `/api/v1/profiles/`
-
-| Method     | Path             | Purpose                                             |
-| ---------- | ---------------- | --------------------------------------------------- |
-| GET/PATCH  | `me/`            | The caller's profile; PATCH replaces `extra` whole   |
-
-`GET /api/v1/members/` lists the active members.
+The endpoints are documented next to their code:
+[auth](backend/apps/accounts/README.md#api--apiv1auth),
+[profiles and members](backend/apps/profiles/README.md#api--apiv1), and
+`site/` in [common](backend/apps/common/README.md#everything-else).
 
 ### Everything else
 

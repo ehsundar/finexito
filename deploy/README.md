@@ -17,6 +17,7 @@ Internet -> caddy :80/:443 -> /api/* -> backend  (Django, gunicorn :8000)
 | `.env.example`  | The keys of the server's `.env`, filled from GitHub on every deploy. |
 | `render-env.sh` | Writes that `.env` from the GitHub secrets and variables.            |
 | `provision.sh`  | Fresh Ubuntu box -> running site. Run from your machine.            |
+| `server-setup.md` | Step-by-step guide to setting up a new server, start to finish.  |
 
 ## On the server
 
