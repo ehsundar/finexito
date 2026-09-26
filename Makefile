@@ -1,4 +1,4 @@
-.PHONY: install db-up db-down run run-back run-front test lint fmt migrate shell schema schema-check provision deploy logs
+.PHONY: install db-up db-down run run-back run-front run-worker test lint fmt migrate shell schema schema-check provision deploy logs
 
 # --- setup -----------------------------------------------------------------
 
@@ -23,6 +23,10 @@ run-back:
 
 run-front:
 	cd frontend && npm run dev
+
+# Background tasks (outgoing email and the like) wait in the database for these.
+run-worker:
+	cd backend && uv run python manage.py db_worker
 
 # --- the API contract ------------------------------------------------------
 

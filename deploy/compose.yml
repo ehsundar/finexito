@@ -5,6 +5,7 @@
 #   Internet -> caddy :80/:443 -> /api/* -> backend (gunicorn :8000)
 #                              -> /*     -> frontend (next :3000) -> backend
 #   db is reachable only from inside this network; backup dumps it nightly.
+#   worker runs the background tasks queued in db (django-tasks-db).
 #   Uploads live in the `storage` volume: the backend writes them, Caddy serves
 #   them read-only.
 #
@@ -90,6 +91,16 @@ services:
       interval: 10s
       start_period: 20s
       retries: 3
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Runs the tasks queued in Postgres (django-tasks-db). More replicas are safe.
+  worker:
+    <<: *backend
+    command: ["python", "manage.py", "db_worker", "--no-reload"]
+    restart: unless-stopped
+    stop_grace_period: 30s
     depends_on:
       migrate:
         condition: service_completed_successfully

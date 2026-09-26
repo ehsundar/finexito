@@ -48,6 +48,7 @@ THIRD_PARTY_APPS = [
     "corsheaders",
     "django_filters",
     "drf_spectacular",
+    "django_tasks_db",
 ]
 
 LOCAL_APPS = [
@@ -56,6 +57,7 @@ LOCAL_APPS = [
     "apps.profiles",
     "apps.content",
     "apps.storage",
+    "apps.messaging",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -201,6 +203,12 @@ DEFAULT_FROM_EMAIL = formataddr((SITE_NAME, env_str("EMAIL_FROM_ADDRESS", "no-re
 
 # Where the frontend is served, for links in outgoing email.
 PUBLIC_ORIGIN = env_str("PUBLIC_ORIGIN", "http://localhost:3000").rstrip("/")
+
+# --- Background tasks -----------------------------------------------------
+
+# django.tasks, queued in Postgres by django-tasks-db and run by
+# `manage.py db_worker`.
+TASKS = {"default": {"BACKEND": "django_tasks_db.DatabaseBackend"}}
 
 # --- CORS -----------------------------------------------------------------
 
