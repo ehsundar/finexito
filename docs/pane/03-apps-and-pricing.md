@@ -35,9 +35,8 @@ class OrderStatus(models.TextChoices):
     CANCELLED = "cancelled"
 
 class Order(BaseModel):
-    program      = FK(Program)
     contact      = FK(contacts.Contact, on_delete=PROTECT, related_name="orders")
-    number       = CharField(unique=True)        # human-facing, sequential per program
+    number       = CharField(unique=True)        # human-facing, sequential
     status       = CharField(choices=OrderStatus, default=ESTIMATE)
     promised_for = DateField(null=True, blank=True)
     notes        = TextField(blank=True)
@@ -121,13 +120,13 @@ In `orders` (or `common`), used by all three estimators:
 - **`Extra`** — a named add-on with a unit (`per_item`, `per_metre`, `per_sqm`,
   `flat`) and a rate. Bevelling, drilled holes, polished edge, backing board,
   fitting. Each app declares which extras apply to it.
-- **Rounding** — one rule, configured per program, applied last.
+- **Rounding** — one rule, configured per deployment, applied last.
 
 ### `panes` — priced by area
 
 ```python
 class GlassMaterial(BaseModel):     # "4mm mirror", "6mm clear", "10mm tempered"
-    program, name, thickness_mm, kind (glass|mirror|laminated|tempered)
+    name, thickness_mm, kind (glass|mirror|laminated|tempered)
     rate_per_sqm, minimum_charge, min_billed_sqm
     waste_factor = DecimalField(default=1.0)
 
@@ -156,7 +155,7 @@ is what the trade actually does and it keeps one formula.
 
 ```python
 class Moulding(BaseModel):
-    program, name, code, width_mm, rate_per_metre, wastage_allowance_mm
+    name, code, width_mm, rate_per_metre, wastage_allowance_mm
 
 class FrameLine(OrderLine):
     moulding   = FK(Moulding, on_delete=PROTECT)
@@ -198,7 +197,6 @@ class ContractStatus(models.TextChoices):
     LOST    = "lost"
 
 class Contract(BaseModel):
-    program    = FK(Program)
     contact    = FK(contacts.Contact, on_delete=PROTECT, related_name="contracts")
     title      = CharField()                  # "balustrade, second-floor flat"
     body       = TextField()                  # whatever they said, in his words

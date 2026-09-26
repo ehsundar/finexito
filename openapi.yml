@@ -2,7 +2,7 @@ openapi: 3.0.3
 info:
   title: ehsundar platform API
   version: 0.1.0
-  description: Shared backend facilities (auth, profiles, settings) for every program.
+  description: Shared backend facilities (auth, profiles, settings).
 paths:
   /api/v1/auth/login/:
     post:
@@ -70,7 +70,7 @@ paths:
   /api/v1/auth/me/:
     get:
       operationId: auth_me_retrieve
-      description: The authenticated account, independent of any program.
+      description: The authenticated account.
       tags:
       - auth
       security:
@@ -150,7 +150,7 @@ paths:
   /api/v1/auth/register/:
     post:
       operationId: auth_register_create
-      description: Create an account and, if a program is in scope, enrol into it.
+      description: Create an account and its profile.
       tags:
       - auth
       requestBody:
@@ -212,7 +212,7 @@ paths:
   /api/v1/members/:
     get:
       operationId: members_list
-      description: Other members of the current program, as they are publicly visible.
+      description: Other members, as they are publicly visible.
       parameters:
       - name: page
         required: false
@@ -253,7 +253,7 @@ paths:
   /api/v1/members/{id}/:
     get:
       operationId: members_retrieve
-      description: Other members of the current program, as they are publicly visible.
+      description: Other members, as they are publicly visible.
       parameters:
       - in: path
         name: id
@@ -274,90 +274,10 @@ paths:
               schema:
                 $ref: '#/components/schemas/PublicProfile'
           description: ''
-  /api/v1/profiles/:
-    get:
-      operationId: profiles_list
-      description: The caller's profiles, plus their profile in the current program.
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - name: page_size
-        required: false
-        in: query
-        description: Number of results to return per page.
-        schema:
-          type: integer
-      tags:
-      - profiles
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedProfileList'
-          description: ''
-  /api/v1/profiles/{id}/:
-    get:
-      operationId: profiles_retrieve
-      description: The caller's profiles, plus their profile in the current program.
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: string
-          format: uuid
-        description: A UUID string identifying this profile.
-        required: true
-      tags:
-      - profiles
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Profile'
-          description: ''
-  /api/v1/profiles/enrol/:
-    post:
-      operationId: profiles_enrol_create
-      description: Join a program -- the one in the body, or the current one.
-      tags:
-      - profiles
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Enrol'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Enrol'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Enrol'
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Profile'
-          description: ''
   /api/v1/profiles/me/:
     get:
       operationId: profiles_me_retrieve
-      description: Read or update the caller's profile in the current program.
+      description: Read or update the caller's profile.
       tags:
       - profiles
       security:
@@ -372,20 +292,20 @@ paths:
           description: ''
     patch:
       operationId: profiles_me_partial_update
-      description: Read or update the caller's profile in the current program.
+      description: Read or update the caller's profile.
       tags:
       - profiles
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedPublicProfile'
+              $ref: '#/components/schemas/PatchedProfile'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedPublicProfile'
+              $ref: '#/components/schemas/PatchedProfile'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedPublicProfile'
+              $ref: '#/components/schemas/PatchedProfile'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -395,99 +315,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Profile'
-          description: ''
-  /api/v1/profiles/me/settings/:
-    get:
-      operationId: profiles_me_settings_retrieve
-      description: Resolved settings for the current program, or merge overrides in.
-      tags:
-      - profiles
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          description: No response body
-    patch:
-      operationId: profiles_me_settings_partial_update
-      description: Resolved settings for the current program, or merge overrides in.
-      tags:
-      - profiles
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '200':
-          description: No response body
-  /api/v1/programs/:
-    get:
-      operationId: programs_list
-      description: Read-only catalogue of the programs this instance serves.
-      parameters:
-      - name: page
-        required: false
-        in: query
-        description: A page number within the paginated result set.
-        schema:
-          type: integer
-      - name: page_size
-        required: false
-        in: query
-        description: Number of results to return per page.
-        schema:
-          type: integer
-      tags:
-      - programs
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedProgramList'
-          description: ''
-  /api/v1/programs/{slug}/:
-    get:
-      operationId: programs_retrieve
-      description: Read-only catalogue of the programs this instance serves.
-      parameters:
-      - in: path
-        name: slug
-        schema:
-          type: string
-        required: true
-      tags:
-      - programs
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Program'
-          description: ''
-  /api/v1/programs/current/:
-    get:
-      operationId: programs_current_retrieve
-      description: The program resolved from the header, host or default.
-      tags:
-      - programs
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Program'
           description: ''
 components:
   schemas:
@@ -513,15 +340,6 @@ components:
       - access
       - refresh
       - user
-    Enrol:
-      type: object
-      properties:
-        program:
-          type: string
-          pattern: ^[-a-zA-Z0-9_]+$
-        display_name:
-          type: string
-          maxLength: 150
     Error:
       type: object
       description: Documents the single error envelope every failing response uses.
@@ -570,52 +388,6 @@ components:
           type: string
       required:
       - refresh
-    PaginatedProfileList:
-      type: object
-      required:
-      - count
-      - results
-      properties:
-        count:
-          type: integer
-          example: 123
-        next:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=4
-        previous:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=2
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/Profile'
-    PaginatedProgramList:
-      type: object
-      required:
-      - count
-      - results
-      properties:
-        count:
-          type: integer
-          example: 123
-        next:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=4
-        previous:
-          type: string
-          nullable: true
-          format: uri
-          example: http://api.example.org/accounts/?page=2
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/Program'
     PaginatedPublicProfileList:
       type: object
       required:
@@ -651,40 +423,12 @@ components:
       required:
       - current_password
       - new_password
-    PatchedPublicProfile:
-      type: object
-      description: What other members of the same program may see.
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        program:
-          type: string
-          readOnly: true
-        display_name:
-          type: string
-          readOnly: true
-        avatar_url:
-          type: string
-          format: uri
-          readOnly: true
-        bio:
-          type: string
-          readOnly: true
-        role:
-          allOf:
-          - $ref: '#/components/schemas/RoleEnum'
-          readOnly: true
-    Profile:
+    PatchedProfile:
       type: object
       properties:
         id:
           type: string
           format: uuid
-          readOnly: true
-        program:
-          type: string
           readOnly: true
         email:
           type: string
@@ -720,77 +464,68 @@ components:
           type: string
           format: date-time
           readOnly: true
-        data: {}
-        settings:
+        data:
           type: object
-          additionalProperties: {}
+          additionalProperties:
+            type: string
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
           readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        display_name:
+          type: string
+          maxLength: 150
+        avatar_url:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 200
+          - type: string
+            maxLength: 0
+        bio:
+          type: string
+        locale:
+          type: string
+          maxLength: 16
+        timezone:
+          type: string
+          maxLength: 64
+        role:
+          allOf:
+          - $ref: '#/components/schemas/RoleEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        enrolled_at:
+          type: string
+          format: date-time
+          readOnly: true
+        data:
+          type: object
+          additionalProperties:
+            type: string
       required:
       - email
       - enrolled_at
       - id
-      - program
       - role
-      - settings
       - status
-    Program:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        slug:
-          type: string
-          readOnly: true
-          pattern: ^[-a-zA-Z0-9_]+$
-        name:
-          type: string
-          readOnly: true
-        description:
-          type: string
-          readOnly: true
-        enabled_apps:
-          readOnly: true
-        allow_self_enrolment:
-          type: boolean
-          readOnly: true
-        default_settings:
-          readOnly: true
-        domains:
-          type: array
-          items:
-            $ref: '#/components/schemas/ProgramDomain'
-          readOnly: true
-      required:
-      - allow_self_enrolment
-      - default_settings
-      - description
-      - domains
-      - enabled_apps
-      - id
-      - name
-      - slug
-    ProgramDomain:
-      type: object
-      properties:
-        host:
-          type: string
-          maxLength: 253
-        is_primary:
-          type: boolean
-      required:
-      - host
     PublicProfile:
       type: object
-      description: What other members of the same program may see.
+      description: What other members may see.
       properties:
         id:
           type: string
           format: uuid
-          readOnly: true
-        program:
-          type: string
           readOnly: true
         display_name:
           type: string
@@ -811,7 +546,6 @@ components:
       - bio
       - display_name
       - id
-      - program
       - role
     Register:
       type: object
@@ -830,7 +564,7 @@ components:
       - password
     RegisterResponse:
       type: object
-      description: As above, plus the profile created when the program allows self-enrolment.
+      description: As above, plus the profile created alongside the account.
       properties:
         access:
           type: string
@@ -846,7 +580,6 @@ components:
           allOf:
           - $ref: '#/components/schemas/Profile'
           readOnly: true
-          nullable: true
       required:
       - access
       - profile

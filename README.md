@@ -4,8 +4,8 @@ A shared Django REST backend, plus a Next.js frontend, for every app I host on
 one server instance. Both live in this repository and deploy together to one
 Hetzner box behind Caddy (see [Deploying](#deploying)). The
 point is to write login, profiles, settings, and later OAuth, store and payments
-**once**, and have each new side project be a database row rather than a new
-codebase.
+**once**. Each app built on it is its own deployment, configured through Django
+settings (environment variables), with its own database.
 
 ## Layout
 
@@ -23,34 +23,21 @@ vercel.json The previous Vercel deployment, kept until it is retired.
 
 | Concept     | What it is                                                        |
 | ----------- | ----------------------------------------------------------------- |
-| **User**    | Identity. Can authenticate. Shared across every program.           |
-| **Program** | One app/website served by this instance. Switches on the platform apps it needs. |
-| **Profile** | A user's enrolment in one program. All program-specific data lives here. |
+| **User**    | Identity. Can authenticate.                                        |
+| **Profile** | Everything else the app knows about a person. One per user.       |
 
-One account, many profiles — one per program the person has joined. `User` stays
-deliberately thin so it can be reused everywhere; a program that wants a display
-name, an avatar, or arbitrary attributes puts them on the profile
-(`Profile.data` is a free-form JSON field for exactly that).
-
-## How a request finds its program
-
-`ProgramResolverMiddleware` sets `request.program`, in this order:
-
-1. the `X-Program: <slug>` header (what a frontend normally sends),
-2. a `?program=<slug>` query parameter,
-3. the request `Host`, matched against `ProgramDomain`,
-4. `DEFAULT_PROGRAM_SLUG` from the environment.
-
-It is `None` when nothing matches. Views that need one use the `HasProgram`
-permission, which returns 404 rather than leaking that a program exists.
+`User` stays deliberately thin; a display name, an avatar, or arbitrary
+attributes go on the profile. `Profile.data` is a flat `string → string` map for
+anything app-specific: the code that owns a key decides what its value means and
+does any conversion itself. A profile is created at registration, or on first use of
+`profiles/me/` for accounts made another way.
 
 ## Adding a facility later
 
 1. Build it as an app under `apps/`, add it to `LOCAL_APPS`.
 2. Register its routes in `config/api.py`.
-3. Set `program_app = "<label>"` on its views and add the `ProgramAppEnabled`
-   permission — the feature then only answers for programs that list it in
-   `Program.enabled_apps`.
+3. Anything that differs between deployments becomes a setting read from the
+   environment in `config/settings.py`.
 
 ## Running it
 
@@ -60,7 +47,6 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env.local
 make db-up
 make migrate
-cd backend && uv run python manage.py createprogram portfolio --name "Portfolio" --apps profiles
 cd backend && uv run python manage.py createsuperuser
 make run          # both services, with the bindings Vercel injects in production
 ```
@@ -93,14 +79,13 @@ collected static files. The frontend owns the rest of the domain (see
 
 ## API
 
-All routes are under `/api/v1/` and take an `X-Program` header where a program is
-in scope.
+All routes are under `/api/v1/`.
 
 ### Auth — `/api/v1/auth/`
 
 | Method | Path                | Purpose                                            |
 | ------ | ------------------- | -------------------------------------------------- |
-| POST   | `register/`         | Create an account; enrols into the current program |
+| POST   | `register/`         | Create an account and its profile                  |
 | POST   | `login/`            | Email + password → JWT pair + user                 |
 | POST   | `refresh/`          | Rotate the access token                            |
 | POST   | `verify/`           | Check a token                                      |
@@ -108,24 +93,13 @@ in scope.
 | GET    | `me/`               | The authenticated account                          |
 | POST   | `password/change/`  | Change password                                    |
 
-### Programs — `/api/v1/programs/`
-
-| Method | Path        | Purpose                                    |
-| ------ | ----------- | ------------------------------------------ |
-| GET    | `/`         | Public catalogue of active programs        |
-| GET    | `current/`  | The program resolved for this request      |
-| GET    | `<slug>/`   | One program                                |
-
 ### Profiles — `/api/v1/profiles/`
 
 | Method     | Path             | Purpose                                             |
 | ---------- | ---------------- | --------------------------------------------------- |
-| GET        | `/`              | Every profile of the caller, across all programs     |
-| GET/PATCH  | `me/`            | The caller's profile in the current program          |
-| GET/PATCH  | `me/settings/`   | Resolved settings; PATCH merges, `null` clears a key |
-| POST       | `enrol/`         | Join a program (body `program`, or the current one)  |
+| GET/PATCH  | `me/`            | The caller's profile; PATCH replaces `data` whole    |
 
-`GET /api/v1/members/` lists the other active members of the current program.
+`GET /api/v1/members/` lists the active members.
 
 ### Everything else
 
@@ -136,12 +110,6 @@ in scope.
 | `/api/schema/`  | OpenAPI schema                   |
 | `/api/healthz/` | Health check                     |
 | `/api/static/`  | Collected static files (CDN)     |
-
-### Settings resolution
-
-`Program.default_settings` overlaid with the profile's own `ProfileSetting`
-overrides. PATCHing a key to `null` removes the override and the program default
-applies again.
 
 ## Errors
 
@@ -275,7 +243,7 @@ vercel env pull --environment=production   # writes .env.local, loaded by settin
 DATABASE_NAME=ehsundar uv run python manage.py migrate
 ```
 
-The same applies to `createprogram` and `createsuperuser` against production.
+The same applies to `createsuperuser` against production.
 
 ### Serverless constraints worth knowing
 

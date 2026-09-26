@@ -1,8 +1,7 @@
 """Identity only.
 
-A User is the person who can authenticate. Anything program-specific about them
-(display name, avatar, preferences) belongs on a Profile, never here -- that is
-what lets one account move across every program on the instance.
+A User is the person who can authenticate. Anything app-specific about them
+(display name, avatar, preferences) belongs on their Profile, never here.
 """
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin

@@ -20,14 +20,13 @@ from apps.accounts.serializers import (
     UserSerializer,
 )
 from apps.common.serializers import ErrorSerializer
-from apps.profiles import services as profile_services
 from apps.profiles.serializers import ProfileSerializer
 
 User = get_user_model()
 
 
 class RegisterView(GenericAPIView):
-    """Create an account and, if a program is in scope, enrol into it."""
+    """Create an account and its profile."""
 
     serializer_class = RegisterSerializer
     permission_classes = (AllowAny,)
@@ -41,18 +40,11 @@ class RegisterView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        profile = None
-        program = getattr(request, "program", None)
-        if program is not None and program.allow_self_enrolment:
-            profile, _ = profile_services.enrol(
-                user, program, display_name=serializer.validated_data.get("display_name", "")
-            )
-
         refresh = RefreshToken.for_user(user)
         return Response(
             {
                 "user": UserSerializer(user).data,
-                "profile": ProfileSerializer(profile).data if profile else None,
+                "profile": ProfileSerializer(user.profile).data,
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
             },
@@ -104,7 +96,7 @@ class LogoutView(GenericAPIView):
 
 
 class MeView(GenericAPIView):
-    """The authenticated account, independent of any program."""
+    """The authenticated account."""
 
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated,)

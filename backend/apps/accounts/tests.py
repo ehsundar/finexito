@@ -8,7 +8,7 @@ User = get_user_model()
 
 
 class RegisterTests(PlatformTestCase):
-    def test_register_enrols_into_the_current_program(self):
+    def test_register_creates_the_account_and_its_profile(self):
         response = self.client.post(
             reverse("accounts:register"),
             {"email": "New@Example.com", "password": PASSWORD, "display_name": "New"},
@@ -19,20 +19,8 @@ class RegisterTests(PlatformTestCase):
         self.assertTrue(response.data["access"])
         self.assertTrue(response.data["refresh"])
         self.assertEqual(response.data["user"]["email"], "new@example.com")
-        self.assertEqual(response.data["profile"]["program"], self.program.slug)
-        self.assertTrue(
-            Profile.objects.filter(user__email="new@example.com", program=self.program).exists()
-        )
-
-    def test_register_without_a_program_creates_the_account_only(self):
-        response = self.anonymous_client.post(
-            reverse("accounts:register"),
-            {"email": "solo@example.com", "password": PASSWORD},
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, 201, response.data)
-        self.assertIsNone(response.data["profile"])
+        self.assertEqual(response.data["profile"]["display_name"], "New")
+        self.assertTrue(Profile.objects.filter(user__email="new@example.com").exists())
 
     def test_register_rejects_a_duplicate_email(self):
         response = self.client.post(
@@ -87,9 +75,7 @@ class LoginTests(PlatformTestCase):
 
     def test_logout_blacklists_the_refresh_token(self):
         tokens = self.login().data
-        self.client.credentials(
-            HTTP_AUTHORIZATION=f"Bearer {tokens['access']}", HTTP_X_PROGRAM=self.program.slug
-        )
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
 
         logout = self.client.post(
             reverse("accounts:logout"), {"refresh": tokens["refresh"]}, format="json"

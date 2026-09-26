@@ -14,9 +14,7 @@ export default async function RegisterPage() {
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Create an account</CardTitle>
-          <CardDescription>
-            You are enrolled into the current program automatically where it allows it.
-          </CardDescription>
+          <CardDescription>Sign up with your email address.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <AuthForm action={register} submitLabel="Create account" withDisplayName />

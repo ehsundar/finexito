@@ -3,6 +3,7 @@ from django.db import transaction
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from apps.profiles import services as profile_services
 from apps.profiles.serializers import ProfileSerializer
 
 User = get_user_model()
@@ -32,10 +33,11 @@ class RegisterSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data: dict):
-        validated_data.pop("display_name", "")
-        return User.objects.create_user(
+        user = User.objects.create_user(
             email=validated_data["email"], password=validated_data["password"]
         )
+        profile_services.create_profile(user, display_name=validated_data.get("display_name", ""))
+        return user
 
 
 class LoginSerializer(TokenObtainPairSerializer):
@@ -86,9 +88,9 @@ class AuthResponseSerializer(serializers.Serializer):
 
 
 class RegisterResponseSerializer(AuthResponseSerializer):
-    """As above, plus the profile created when the program allows self-enrolment."""
+    """As above, plus the profile created alongside the account."""
 
-    profile = ProfileSerializer(read_only=True, allow_null=True)
+    profile = ProfileSerializer(read_only=True)
 
 
 class TokenRefreshRequestSerializer(serializers.Serializer):

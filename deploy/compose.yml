@@ -51,7 +51,6 @@ services:
       SECURE_SSL_REDIRECT: "false"
       SECURE_COOKIES: ${SECURE_COOKIES:-true}
       SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS:-0}
-      DEFAULT_PROGRAM_SLUG: ${DEFAULT_PROGRAM_SLUG:-}
     depends_on:
       db:
         condition: service_healthy

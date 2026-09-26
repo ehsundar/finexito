@@ -35,7 +35,6 @@ make logs          # follow all services
 
 ```bash
 docker compose ps
-docker compose exec backend python manage.py createprogram <slug> --name "..." --apps profiles
 docker compose exec db psql -U finexito finexito
 ```
 

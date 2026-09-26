@@ -45,7 +45,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The authenticated account, independent of any program. */
+        /** @description The authenticated account. */
         get: operations["auth_me_retrieve"];
         put?: never;
         post?: never;
@@ -102,7 +102,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Create an account and, if a program is in scope, enrol into it. */
+        /** @description Create an account and its profile. */
         post: operations["auth_register_create"];
         delete?: never;
         options?: never;
@@ -137,7 +137,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Other members of the current program, as they are publicly visible. */
+        /** @description Other members, as they are publicly visible. */
         get: operations["members_list"];
         put?: never;
         post?: never;
@@ -154,61 +154,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Other members of the current program, as they are publicly visible. */
+        /** @description Other members, as they are publicly visible. */
         get: operations["members_retrieve"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/profiles/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The caller's profiles, plus their profile in the current program. */
-        get: operations["profiles_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/profiles/{id}/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The caller's profiles, plus their profile in the current program. */
-        get: operations["profiles_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/profiles/enrol/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Join a program -- the one in the body, or the current one. */
-        post: operations["profiles_enrol_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -222,84 +171,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description Read or update the caller's profile in the current program. */
+        /** @description Read or update the caller's profile. */
         get: operations["profiles_me_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Read or update the caller's profile in the current program. */
+        /** @description Read or update the caller's profile. */
         patch: operations["profiles_me_partial_update"];
-        trace?: never;
-    };
-    "/api/v1/profiles/me/settings/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Resolved settings for the current program, or merge overrides in. */
-        get: operations["profiles_me_settings_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        /** @description Resolved settings for the current program, or merge overrides in. */
-        patch: operations["profiles_me_settings_partial_update"];
-        trace?: never;
-    };
-    "/api/v1/programs/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Read-only catalogue of the programs this instance serves. */
-        get: operations["programs_list"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/programs/{slug}/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description Read-only catalogue of the programs this instance serves. */
-        get: operations["programs_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/programs/current/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description The program resolved from the header, host or default. */
-        get: operations["programs_current_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
 }
@@ -316,10 +196,6 @@ export interface components {
             readonly access: string;
             readonly refresh: string;
             readonly user: components["schemas"]["User"];
-        };
-        Enrol: {
-            program?: string;
-            display_name?: string;
         };
         /** @description Documents the single error envelope every failing response uses. */
         Error: {
@@ -341,36 +217,6 @@ export interface components {
         Logout: {
             refresh: string;
         };
-        PaginatedProfileList: {
-            /** @example 123 */
-            count: number;
-            /**
-             * Format: uri
-             * @example http://api.example.org/accounts/?page=4
-             */
-            next?: string | null;
-            /**
-             * Format: uri
-             * @example http://api.example.org/accounts/?page=2
-             */
-            previous?: string | null;
-            results: components["schemas"]["Profile"][];
-        };
-        PaginatedProgramList: {
-            /** @example 123 */
-            count: number;
-            /**
-             * Format: uri
-             * @example http://api.example.org/accounts/?page=4
-             */
-            next?: string | null;
-            /**
-             * Format: uri
-             * @example http://api.example.org/accounts/?page=2
-             */
-            previous?: string | null;
-            results: components["schemas"]["Program"][];
-        };
         PaginatedPublicProfileList: {
             /** @example 123 */
             count: number;
@@ -390,21 +236,27 @@ export interface components {
             current_password: string;
             new_password: string;
         };
-        /** @description What other members of the same program may see. */
-        PatchedPublicProfile: {
+        PatchedProfile: {
             /** Format: uuid */
             readonly id?: string;
-            readonly program?: string;
-            readonly display_name?: string;
-            /** Format: uri */
-            readonly avatar_url?: string;
-            readonly bio?: string;
+            /** Format: email */
+            readonly email?: string;
+            display_name?: string;
+            avatar_url?: string;
+            bio?: string;
+            locale?: string;
+            timezone?: string;
             readonly role?: components["schemas"]["RoleEnum"];
+            readonly status?: components["schemas"]["StatusEnum"];
+            /** Format: date-time */
+            readonly enrolled_at?: string;
+            data?: {
+                [key: string]: string;
+            };
         };
         Profile: {
             /** Format: uuid */
             readonly id: string;
-            readonly program: string;
             /** Format: email */
             readonly email: string;
             display_name?: string;
@@ -416,31 +268,14 @@ export interface components {
             readonly status: components["schemas"]["StatusEnum"];
             /** Format: date-time */
             readonly enrolled_at: string;
-            data?: unknown;
-            readonly settings: {
-                [key: string]: unknown;
+            data?: {
+                [key: string]: string;
             };
         };
-        Program: {
-            /** Format: uuid */
-            readonly id: string;
-            readonly slug: string;
-            readonly name: string;
-            readonly description: string;
-            readonly enabled_apps: unknown;
-            readonly allow_self_enrolment: boolean;
-            readonly default_settings: unknown;
-            readonly domains: components["schemas"]["ProgramDomain"][];
-        };
-        ProgramDomain: {
-            host: string;
-            is_primary?: boolean;
-        };
-        /** @description What other members of the same program may see. */
+        /** @description What other members may see. */
         PublicProfile: {
             /** Format: uuid */
             readonly id: string;
-            readonly program: string;
             readonly display_name: string;
             /** Format: uri */
             readonly avatar_url: string;
@@ -453,12 +288,12 @@ export interface components {
             password: string;
             display_name?: string;
         };
-        /** @description As above, plus the profile created when the program allows self-enrolment. */
+        /** @description As above, plus the profile created alongside the account. */
         RegisterResponse: {
             readonly access: string;
             readonly refresh: string;
             readonly user: components["schemas"]["User"];
-            readonly profile: components["schemas"]["Profile"] | null;
+            readonly profile: components["schemas"]["Profile"];
         };
         /**
          * @description * `member` - Member
@@ -773,77 +608,6 @@ export interface operations {
             };
         };
     };
-    profiles_list: {
-        parameters: {
-            query?: {
-                /** @description A page number within the paginated result set. */
-                page?: number;
-                /** @description Number of results to return per page. */
-                page_size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedProfileList"];
-                };
-            };
-        };
-    };
-    profiles_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description A UUID string identifying this profile. */
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Profile"];
-                };
-            };
-        };
-    };
-    profiles_enrol_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["Enrol"];
-                "application/x-www-form-urlencoded": components["schemas"]["Enrol"];
-                "multipart/form-data": components["schemas"]["Enrol"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Profile"];
-                };
-            };
-        };
-    };
     profiles_me_retrieve: {
         parameters: {
             query?: never;
@@ -872,9 +636,9 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["PatchedPublicProfile"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedPublicProfile"];
-                "multipart/form-data": components["schemas"]["PatchedPublicProfile"];
+                "application/json": components["schemas"]["PatchedProfile"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedProfile"];
+                "multipart/form-data": components["schemas"]["PatchedProfile"];
             };
         };
         responses: {
@@ -884,106 +648,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Profile"];
-                };
-            };
-        };
-    };
-    profiles_me_settings_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    profiles_me_settings_partial_update: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description No response body */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-        };
-    };
-    programs_list: {
-        parameters: {
-            query?: {
-                /** @description A page number within the paginated result set. */
-                page?: number;
-                /** @description Number of results to return per page. */
-                page_size?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PaginatedProgramList"];
-                };
-            };
-        };
-    };
-    programs_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                slug: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Program"];
-                };
-            };
-        };
-    };
-    programs_current_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Program"];
                 };
             };
         };

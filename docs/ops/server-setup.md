@@ -137,17 +137,13 @@ the server yet, or the Cloudflare proxy being on:
 ssh myserver 'cd /opt/finexito/deploy && docker compose logs caddy | grep -i certificate'
 ```
 
-## 6. First admin and program
+## 6. First admin
 
 ```bash
 ssh myserver
 cd /opt/finexito/deploy
 docker compose exec backend python manage.py createsuperuser
-docker compose exec backend python manage.py createprogram <slug> --name "..." --apps profiles
 ```
-
-To make that program the default, set `DEFAULT_PROGRAM_SLUG=<slug>` in
-`deploy/.env`, then run `docker compose up -d`.
 
 Admin: `https://example.com/api/admin/`.
 

@@ -8,7 +8,7 @@
 **Pane** is a working codename for the product, not a brand for the shop. The
 shop trades under its own name and that is the name that appears in the UI,
 on printed slips and in customer SMS. Pane is what we call the codebase, the
-repo directory and the Program record — deliberately generic, because the same
+repo directory and the deployment — deliberately generic, because the same
 software should fit the next workshop without a rename.
 
 ## What Pane is
@@ -52,8 +52,8 @@ him. So the brief starts from the problems a shop like his actually has:
 
 ## Shape of the build
 
-This is a **Program** on the existing platform, not a new codebase: it reuses
-`User` for identity and a Pane `Profile` per staff member, and adds its own
+This is a **deployment** of the existing platform, not a new codebase: it reuses
+`User` for identity and a `Profile` per staff member, and adds its own
 domain models (Order, Item, Material, Price rule, Off-cut). The frontend is a
 new route group in the Next.js app.
 

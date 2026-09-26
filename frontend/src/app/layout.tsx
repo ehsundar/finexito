@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "ehsundar",
-  description: "Shared platform for every program.",
+  description: "Shared platform.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

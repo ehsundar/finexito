@@ -1,7 +1,7 @@
 """Django settings for the ehsundar platform backend.
 
-A single settings module driven by environment variables, so the same image can
-serve every program (app/website) hosted on the instance.
+A single settings module driven by environment variables. Each app built on the
+platform is its own deployment, configured through these variables.
 """
 
 from datetime import timedelta
@@ -74,12 +74,9 @@ THIRD_PARTY_APPS = [
     "drf_spectacular",
 ]
 
-# Platform apps. Every future facility (store, payments, ...) is added here and
-# then switched on per program via Program.enabled_apps.
 LOCAL_APPS = [
     "apps.common",
     "apps.accounts",
-    "apps.programs",
     "apps.profiles",
 ]
 
@@ -97,7 +94,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "apps.programs.middleware.ProgramResolverMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -212,7 +208,7 @@ SIMPLE_JWT = {
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "ehsundar platform API",
-    "DESCRIPTION": "Shared backend facilities (auth, profiles, settings) for every program.",
+    "DESCRIPTION": "Shared backend facilities (auth, profiles, settings).",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": "/api/v1",
@@ -231,7 +227,6 @@ CORS_ALLOW_HEADERS = (
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
-    "x-program",
 )
 CSRF_TRUSTED_ORIGINS = (
     env_list("CSRF_TRUSTED_ORIGINS", [])
@@ -257,10 +252,3 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = env_bool("SECURE_COOKIES", True)
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = "DENY"
-
-# --- Platform -------------------------------------------------------------
-
-# Header a frontend sends to say which program it is acting on behalf of.
-PROGRAM_HEADER = "X-Program"
-# Fallback program slug when a request carries no program hint at all.
-DEFAULT_PROGRAM_SLUG = env_str("DEFAULT_PROGRAM_SLUG", "")

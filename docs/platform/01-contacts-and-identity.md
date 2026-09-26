@@ -24,9 +24,9 @@ User            identity. Can authenticate. Thin.
        └─ Address          home, shop, site, …
 ```
 
-`Contact` is platform-level, not Pane-level: every program that deals with real
+`Contact` is platform-level, not Pane-level: every app that deals with real
 people needs a phone number and an address, and none of them should invent their
-own. Program-specific facts about a person still go on `Profile`.
+own. App-specific facts about a person still go on `Profile`.
 
 ## Models
 
@@ -48,10 +48,10 @@ Three changes, each one load-bearing:
    email, and gain a sibling that creates from a phone instead.
 2. **`name` is added, and is optional.** This contradicts the README's rule that
    display names live on `Profile`, so it is worth being explicit about why:
-   a customer the shop typed in has no profile in any program yet, and "unknown
+   a customer the shop typed in has no profile yet, and "unknown
    person, 0912…" is a bad thing to show a shop owner. The rule becomes: `User.name`
    is the person's actual name, one value everywhere; `Profile.display_name`
-   stays as the per-program handle that may differ from it. If we would rather
+   stays as the in-app handle that may differ from it. If we would rather
    not touch `User`, the alternative is `Contact.full_name` and no `name` on
    `User` at all — cleaner by the README's letter, but every caller then has to
    join through `Contact` for something as ordinary as a name.
@@ -167,16 +167,13 @@ Two rules worth writing down now, because they are the security story:
 - **Only a verified channel grants a session.** The shop typing a number never
   authenticates anybody.
 - **The shop can edit a contact it created; it cannot edit one that has been
-  claimed**, beyond adding its own program-local notes. Once the person owns the
+  claimed**, beyond adding its own notes. Once the person owns the
   account, their name and number are theirs.
 
 ## What this does not do
 
 - No contact merging UI. Duplicates will happen (a landline typed as a mobile,
   a second number for the same person). Merging is a later tool, not a v1.
-- No sharing of contacts between programs' *views* — the `Contact` row is
-  shared, but whether a given program may read it is a permissions question
-  deliberately left until a second program needs the same person.
 - No import from the phone's address book.
 
 ## Order of work
