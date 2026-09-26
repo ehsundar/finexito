@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Nightly pg_dump, run by /etc/cron.d/finexito-backup. Keeps 14 days.
+# Nightly pg_dump, run by /etc/cron.d/finexito-backup from the live release. Keeps 14 days.
 # These live on the same disk as the database: copy them off-box for real safety.
 set -euo pipefail
 cd "$(dirname "$0")"

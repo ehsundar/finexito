@@ -1,4 +1,4 @@
-.PHONY: install db-up db-down run run-back run-front test lint fmt migrate shell schema schema-check provision deploy logs
+.PHONY: install db-up db-down run run-back run-front test lint fmt migrate shell schema schema-check provision deploy rollback logs
 
 # --- setup -----------------------------------------------------------------
 
@@ -61,7 +61,9 @@ shell:
 # --- production (Hetzner) --------------------------------------------------
 
 # See deploy/README.md. `provision` takes a fresh Ubuntu box to a running site
-# and is safe to re-run; `deploy` ships whatever is on origin/main, so push first.
+# and is safe to re-run. `deploy` releases the tip of origin/main, whose images
+# CI must already have built, so push and let CI finish first. `rollback` puts
+# the previous release back.
 DEPLOY_HOST ?= myserver
 DOMAIN ?= example.com
 
@@ -69,7 +71,10 @@ provision:
 	deploy/provision.sh $(DEPLOY_HOST) $(DOMAIN)
 
 deploy:
-	ssh $(DEPLOY_HOST) /opt/finexito/deploy/deploy.sh
+	ssh $(DEPLOY_HOST) /opt/finexito/bin/entry release main
+
+rollback:
+	ssh $(DEPLOY_HOST) /opt/finexito/bin/entry rollback
 
 logs:
-	ssh $(DEPLOY_HOST) 'cd /opt/finexito/deploy && docker compose logs -f --tail=100'
+	ssh $(DEPLOY_HOST) 'cd /opt/finexito/current && docker compose logs -f --tail=100'

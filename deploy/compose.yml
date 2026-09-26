@@ -1,7 +1,8 @@
-# Production stack for the Hetzner box. Run from this directory; secrets come
-# from deploy/.env (copy .env.example), which never leaves the server.
-# backend and frontend images are built by CI and pulled from GHCR; IMAGE_TAG
-# picks the commit, `latest` otherwise.
+# Production stack for the Hetzner box. Each release runs it from
+# /opt/finexito/releases/<sha>/, where .env links to /opt/finexito/shared/.env
+# (from .env.example), which never leaves the server. backend and frontend
+# images are built by CI and pulled from GHCR; IMAGE_TAG picks the commit,
+# `latest` otherwise. The fixed project name keeps volumes across releases.
 #
 #   Internet -> caddy :80/:443 -> /api/* -> backend (gunicorn :8000)
 #                              -> /*     -> frontend (next :3000) -> backend
@@ -17,7 +18,7 @@ services:
       - "443:443"
       - "443:443/udp"
     environment:
-      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in deploy/.env}
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in shared/.env}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
@@ -38,18 +39,23 @@ services:
   backend:
     image: ghcr.io/ehsundar/finexito-backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
+    # Every line of shared/.env reaches Django, so a new setting needs no change
+    # here. Only the backend gets the whole file: the other containers would be
+    # handed secrets they never use.
+    env_file: .env
+    # Values derived from the file, or pinned for production. These win over
+    # env_file, and the `:?` checks stop a release that is missing a secret.
     environment:
       DJANGO_DEBUG: "false"
-      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in deploy/.env}
-      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in shared/.env}
       # `backend` is the Host header on the frontend's internal calls.
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set DJANGO_ALLOWED_HOSTS in deploy/.env},backend
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set DJANGO_ALLOWED_HOSTS in shared/.env},backend
       DATABASE_URL: postgres://finexito:${POSTGRES_PASSWORD}@db:5432/finexito
-      CSRF_TRUSTED_ORIGINS: ${PUBLIC_ORIGIN:?set PUBLIC_ORIGIN in deploy/.env}
+      CSRF_TRUSTED_ORIGINS: ${PUBLIC_ORIGIN:?set PUBLIC_ORIGIN in shared/.env}
       CORS_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN}
       # Caddy owns the http->https redirect; see SECURE_SSL_REDIRECT in settings.
       SECURE_SSL_REDIRECT: "false"
-      SECURE_COOKIES: ${SECURE_COOKIES:-true}
+      # Django defaults to a year of HSTS; stay off until .env raises it.
       SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS:-0}
     depends_on:
       db:
@@ -61,7 +67,7 @@ services:
     environment:
       POSTGRES_USER: finexito
       POSTGRES_DB: finexito
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in deploy/.env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in shared/.env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

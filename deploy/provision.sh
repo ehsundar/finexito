@@ -4,8 +4,9 @@
 #   deploy/provision.sh <ssh-host> <domain>      e.g. deploy/provision.sh myserver example.com
 #
 # Safe to re-run: every step checks before it changes anything, and an existing
-# deploy/.env (with the database password the volume was created with) is never
-# overwritten. Needs key-based root SSH to the host and an authenticated `gh`.
+# shared/.env (with the database password the volume was created with) is never
+# overwritten. A server still on the old git-checkout layout is moved over to
+# releases, keeping its .env. Needs key-based root SSH to the host and an authenticated `gh`.
 set -euo pipefail
 
 HOST=${1:?usage: provision.sh <ssh-host> <domain>}
@@ -21,7 +22,7 @@ remote 'bash -s' <<'EOF'
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq docker.io docker-compose-v2 docker-buildx git unattended-upgrades >/dev/null
+apt-get install -y -qq docker.io docker-compose-v2 git unattended-upgrades >/dev/null
 systemctl enable --now docker >/dev/null 2>&1
 
 # Next's production build wants more than the 4 GB of a small box.
@@ -55,39 +56,55 @@ else
   rm -f "$tmp"
 fi
 
-step "Checkout at $APP_DIR"
+step "Mirror of $REPO at $APP_DIR/repo.git"
 remote "bash -s" <<EOF
 set -euo pipefail
 grep -q 'Host github.com' ~/.ssh/config 2>/dev/null ||
   printf 'Host github.com\n  IdentityFile ~/.ssh/deploy_finexito\n  IdentitiesOnly yes\n' >>~/.ssh/config
 grep -q '^github.com ' ~/.ssh/known_hosts 2>/dev/null || ssh-keyscan -t ed25519 github.com 2>/dev/null >>~/.ssh/known_hosts
-if [ -d $APP_DIR/.git ]; then git -C $APP_DIR pull -q --ff-only; else git clone -q git@github.com:$REPO.git $APP_DIR; fi
-git -C $APP_DIR log -1 --oneline
+mkdir -p $APP_DIR/bin $APP_DIR/shared $APP_DIR/releases
+[ -d $APP_DIR/repo.git ] || git clone -q --bare git@github.com:$REPO.git $APP_DIR/repo.git
+git -C $APP_DIR/repo.git fetch -q origin '+refs/heads/main:refs/heads/main'
+git -C $APP_DIR/repo.git log -1 --oneline main
 EOF
 
-step "Secrets in $APP_DIR/deploy/.env"
+step "Retire the old git checkout, if this server still has one"
 remote "bash -s" <<EOF
 set -euo pipefail
-f=$APP_DIR/deploy/.env
+cd $APP_DIR
+[ -d .git ] || { echo "none"; exit 0; }
+if [ -f deploy/.env ] && [ ! -f shared/.env ]; then install -m 600 deploy/.env shared/.env; fi
+[ -f shared/.env ] || { echo "no deploy/.env to carry over; leaving the checkout alone" >&2; exit 1; }
+sed -i 's|command="$APP_DIR/deploy/deploy.sh"|command="$APP_DIR/bin/entry"|' ~/.ssh/authorized_keys
+rm -f /etc/cron.d/finexito-backup
+find . -mindepth 1 -maxdepth 1 ! -name bin ! -name shared ! -name releases ! -name repo.git \
+  ! -name current ! -name previous -exec rm -rf {} +
+echo "retired; .env kept in shared/, CI key now pinned to bin/entry"
+EOF
+
+step "Secrets in $APP_DIR/shared/.env"
+remote "bash -s" <<EOF
+set -euo pipefail
+f=$APP_DIR/shared/.env
 if [ -f \$f ]; then echo "exists, left untouched"; exit 0; fi
 gen() { openssl rand -base64 48 | tr -d '/+=' | cut -c1-50; }
-sed -E \
+git -C $APP_DIR/repo.git show main:deploy/.env.example | sed -E \
   -e "s|^SITE_ADDRESS=.*|SITE_ADDRESS=$DOMAIN|" \
   -e "s|^PUBLIC_ORIGIN=.*|PUBLIC_ORIGIN=https://$DOMAIN|" \
   -e "s|^DJANGO_ALLOWED_HOSTS=.*|DJANGO_ALLOWED_HOSTS=$DOMAIN|" \
   -e "s|^DJANGO_SECRET_KEY=.*|DJANGO_SECRET_KEY=\$(gen)|" \
   -e "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=\$(gen)|" \
-  $APP_DIR/deploy/.env.example >\$f
+  >\$f
 chmod 600 \$f
 echo "generated"
 EOF
 
-step "Nightly database backup"
-remote "install -m 644 $APP_DIR/deploy/finexito-backup.cron /etc/cron.d/finexito-backup && echo installed"
+step "Entry point at $APP_DIR/bin/entry"
+remote "git -C $APP_DIR/repo.git show main:deploy/entry.sh >$APP_DIR/bin/entry && chmod 755 $APP_DIR/bin/entry && echo installed"
 
-step "Pull, migrate, start"
-remote "$APP_DIR/deploy/deploy.sh"
+step "Release the tip of main (pull images, migrate, start)"
+remote "$APP_DIR/bin/entry release main"
 
 step "Done: https://$DOMAIN"
 echo "Needs A/AAAA records for $DOMAIN and www.$DOMAIN pointing here (DNS only) for HTTPS."
-echo "First admin: ssh $HOST 'cd $APP_DIR/deploy && docker compose exec backend python manage.py createsuperuser'"
+echo "First admin: ssh $HOST 'cd $APP_DIR/current && docker compose exec backend python manage.py createsuperuser'"

@@ -1,6 +1,8 @@
 # Ships main to the production server: run the tests, build the backend and frontend images
-# and push them to GHCR, then SSH in and run deploy/deploy.sh, which pulls them. The key in DEPLOY_SSH_KEY is pinned on the
-# server to that one command, so it cannot open a shell. See docs/ops/server-setup.md.
+# and push them to GHCR, then SSH in and ask the server to release this commit. The server
+# fetches the commit from GitHub itself (deploy/entry.sh), so the SSH key in DEPLOY_SSH_KEY
+# only names a commit on main; it is pinned to that one script and cannot open a shell.
+# See docs/ops/server-setup.md.
 #
 # App secrets are written by their own step, so the Deploy step never holds them.
 name: Deploy
@@ -37,6 +39,22 @@ jobs:
         working-directory: backend
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      # A migration that has run anywhere is history: editing or deleting it leaves
+      # databases that no longer match. Add a new migration instead.
+      - name: Applied migrations are unchanged
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            echo "No previous commit to compare against (first push, manual run or force-push); skipping."
+            exit 0
+          fi
+          changed=$(git diff --name-only --diff-filter=MDR "$BEFORE" HEAD -- '*/migrations/*.py')
+          if [ -n "$changed" ]; then
+            echo "::error::Existing migrations were modified or removed:"; echo "$changed"; exit 1
+          fi
       - uses: astral-sh/setup-uv@v7
       - run: uv sync --frozen
       - run: uv run ruff check .
@@ -113,13 +131,13 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
 
-      - name: Write secrets to deploy/.env
+      - name: Write secrets to the server's shared/.env
         env:
           HOST: ${{ secrets.DEPLOY_HOST }}
           USER: ${{ secrets.DEPLOY_USER }}
           DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-        # deploy.sh in sync-env mode reads KEY=value lines from stdin.
+        # entry.sh in sync-env mode reads KEY=value lines from stdin.
         run: |
           test -n "$DJANGO_SECRET_KEY" || { echo "DJANGO_SECRET_KEY secret is not set"; exit 1; }
           test -n "$RESEND_API_KEY" || { echo "RESEND_API_KEY secret is not set"; exit 1; }
@@ -130,4 +148,4 @@ jobs:
         env:
           HOST: ${{ secrets.DEPLOY_HOST }}
           USER: ${{ secrets.DEPLOY_USER }}
-        run: ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$USER@$HOST" deploy "$GITHUB_SHA" < /dev/null
+        run: ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$USER@$HOST" release "$GITHUB_SHA" < /dev/null
