@@ -43,22 +43,22 @@ class ProfileEndpointTests(PlatformTestCase):
         self.assertEqual(self.profile.display_name, "Renamed")
         self.assertEqual(self.profile.role, "member")
 
-    def test_me_patch_stores_data_as_strings(self):
+    def test_me_patch_stores_extra_as_strings(self):
         response = self.client.patch(
-            reverse("profile-me"), {"data": {"theme": "dark", "newsletter": ""}}, format="json"
+            reverse("profile-me"), {"extra": {"theme": "dark", "newsletter": ""}}, format="json"
         )
 
         self.assertEqual(response.status_code, 200, response.data)
         self.profile.refresh_from_db()
-        self.assertEqual(self.profile.data, {"theme": "dark", "newsletter": ""})
+        self.assertEqual(self.profile.extra, {"theme": "dark", "newsletter": ""})
 
-    def test_me_patch_rejects_non_string_data_values(self):
+    def test_me_patch_rejects_non_string_extra_values(self):
         for data in ({"count": 3}, {"nested": {"a": "b"}}, {"missing": None}, ["nope"]):
             with self.subTest(data=data):
-                response = self.client.patch(reverse("profile-me"), {"data": data}, format="json")
+                response = self.client.patch(reverse("profile-me"), {"extra": data}, format="json")
 
                 self.assertEqual(response.status_code, 400)
-                self.assertIn("data", response.data["error"]["fields"])
+                self.assertIn("extra", response.data["error"]["fields"])
 
     def test_suspended_profile_cannot_use_me(self):
         self.profile.status = ProfileStatus.SUSPENDED

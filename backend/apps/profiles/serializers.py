@@ -1,20 +1,12 @@
 from rest_framework import serializers
 
+from apps.common.serializers import ExtraField
 from apps.profiles.models import Profile
-
-
-class StrictCharField(serializers.CharField):
-    """A CharField that rejects numbers and booleans instead of stringifying them."""
-
-    def to_internal_value(self, data):
-        if not isinstance(data, str):
-            self.fail("invalid")
-        return super().to_internal_value(data)
 
 
 class ProfileSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email", read_only=True)
-    data = serializers.DictField(child=StrictCharField(allow_blank=True), required=False)
+    extra = ExtraField()
 
     class Meta:
         model = Profile
@@ -29,7 +21,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "role",
             "status",
             "enrolled_at",
-            "data",
+            "extra",
         )
         read_only_fields = ("id", "email", "role", "status", "enrolled_at")
 

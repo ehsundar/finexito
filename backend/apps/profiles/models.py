@@ -38,10 +38,6 @@ class Profile(BaseModel):
     status = models.CharField(max_length=20, choices=ProfileStatus, default=ProfileStatus.ACTIVE)
     enrolled_at = models.DateTimeField(default=tz.now)
 
-    # Free-form string-to-string attributes. Whoever owns a key decides what its
-    # value means and handles any conversion; the platform only stores strings.
-    data = models.JSONField(default=dict, blank=True)
-
     class Meta:
         verbose_name = _("profile")
         verbose_name_plural = _("profiles")

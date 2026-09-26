@@ -27,9 +27,27 @@ vercel.json The previous Vercel deployment, kept until it is retired.
 | **Profile** | Everything else the app knows about a person. One per user.       |
 
 `User` stays deliberately thin; a display name, an avatar, or arbitrary
-attributes go on the profile. `Profile.data` is a flat `string → string` map for
-anything app-specific: the code that owns a key decides what its value means and
-does any conversion itself. A profile is created at registration, or on first use of
+attributes go on the profile.
+
+Every model built on `common.models.BaseModel` has `extra`, a flat
+`string → string` JSON map for anything app-specific. The code that owns a key
+decides what its value means. For the common types, declare a typed accessor
+from `common.fields` on the model instead of converting by hand:
+
+```python
+class Profile(BaseModel):
+    nickname = ExtraCharField(default="")
+    visits = ExtraIntField(default=0)
+    newsletter = ExtraBoolField(default=False)
+    last_seen = ExtraDateTimeField()        # aware datetimes, stored as ISO 8601
+
+profile.newsletter = True                   # extra == {"newsletter": "true"}
+profile.visits += 1
+profile.save()
+```
+
+Reading a missing or unparseable value returns the default; assigning `None`
+removes the key; assigning the wrong type raises `TypeError`. A profile is created at registration, or on first use of
 `profiles/me/` for accounts made another way.
 
 ## Adding a facility later
@@ -97,7 +115,7 @@ All routes are under `/api/v1/`.
 
 | Method     | Path             | Purpose                                             |
 | ---------- | ---------------- | --------------------------------------------------- |
-| GET/PATCH  | `me/`            | The caller's profile; PATCH replaces `data` whole    |
+| GET/PATCH  | `me/`            | The caller's profile; PATCH replaces `extra` whole   |
 
 `GET /api/v1/members/` lists the active members.
 

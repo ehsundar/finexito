@@ -23,5 +23,9 @@ class UUIDModel(models.Model):
 
 
 class BaseModel(UUIDModel, TimeStampedModel):
+    # Free-form string-to-string attributes. Whoever owns a key decides what its
+    # value means; the ``Extra*Field`` descriptors in ``common.fields`` cover the common types.
+    extra = models.JSONField(default=dict, blank=True)
+
     class Meta:
         abstract = True

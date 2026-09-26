@@ -250,7 +250,7 @@ export interface components {
             readonly status?: components["schemas"]["StatusEnum"];
             /** Format: date-time */
             readonly enrolled_at?: string;
-            data?: {
+            extra?: {
                 [key: string]: string;
             };
         };
@@ -268,7 +268,7 @@ export interface components {
             readonly status: components["schemas"]["StatusEnum"];
             /** Format: date-time */
             readonly enrolled_at: string;
-            data?: {
+            extra?: {
                 [key: string]: string;
             };
         };

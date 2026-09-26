@@ -464,7 +464,7 @@ components:
           type: string
           format: date-time
           readOnly: true
-        data:
+        extra:
           type: object
           additionalProperties:
             type: string
@@ -509,7 +509,7 @@ components:
           type: string
           format: date-time
           readOnly: true
-        data:
+        extra:
           type: object
           additionalProperties:
             type: string
