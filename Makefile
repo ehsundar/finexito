@@ -14,9 +14,9 @@ db-down:
 
 # --- running ---------------------------------------------------------------
 
-# Runs both services with the bindings Vercel would inject in production.
+# Runs both services side by side; Ctrl-C stops both.
 run:
-	vercel dev
+	$(MAKE) -j2 run-back run-front
 
 run-back:
 	cd backend && uv run python manage.py runserver

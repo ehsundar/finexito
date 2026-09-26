@@ -7,10 +7,9 @@ import type { paths } from "@/lib/api/schema";
 /**
  * Where the Django service lives.
  *
- * On Vercel this is injected by the `backend` service binding declared in
- * vercel.json, so it always points at the Django build from *this* deployment --
- * previews included. Locally `vercel dev` injects the same variable; plain
- * `next dev` falls back to the runserver default.
+ * In production deploy/compose.yml sets BACKEND_INTERNAL_URL to the backend
+ * container. Locally `next dev` reads BACKEND_ORIGIN from .env.local, or falls
+ * back to the runserver default.
  */
 export const backendOrigin =
   process.env.BACKEND_INTERNAL_URL ?? process.env.BACKEND_ORIGIN ?? "http://127.0.0.1:8000";

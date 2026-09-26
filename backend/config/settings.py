@@ -9,29 +9,18 @@ from email.utils import formataddr
 from pathlib import Path
 
 import dj_database_url
-from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 from config.env import env_bool, env_list, env_str
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Read before any dotenv file is loaded: `vercel env pull` writes VERCEL=1 into
-# .env.local, and picking that up locally would switch on production behaviour
-# (SSL-only database, DEBUG off) on a development machine.
-ON_VERCEL = env_bool("VERCEL", False)
-
-# .env is the hand-written local config and wins deliberately: .env.local holds
-# remote credentials and must never quietly become the database that local
-# development and tests talk to.
+# Local config. In production the environment comes from deploy/compose.yml,
+# which also pins DEBUG off and refuses to start without a secret key.
 load_dotenv(BASE_DIR / ".env")
-load_dotenv(BASE_DIR / ".env.local")
 
-SECRET_KEY = env_str("DJANGO_SECRET_KEY", "" if ON_VERCEL else "insecure-dev-key-change-me")
-DEBUG = env_bool("DJANGO_DEBUG", not ON_VERCEL)
-
-if ON_VERCEL and not SECRET_KEY:
-    raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set on Vercel.")
+SECRET_KEY = env_str("DJANGO_SECRET_KEY", "insecure-dev-key-change-me")
+DEBUG = env_bool("DJANGO_DEBUG", True)
 
 # --- Identity ---------------------------------------------------------------
 
@@ -40,28 +29,7 @@ if ON_VERCEL and not SECRET_KEY:
 # frontend via /api/v1/site/) reads this rather than spelling out a name.
 SITE_NAME = env_str("SITE_NAME", "ehsundar")
 
-# Vercel gives each deployment its own hostname, so trust them alongside any
-# custom domains listed in DJANGO_ALLOWED_HOSTS.
-VERCEL_HOSTS = [
-    host
-    for host in (
-        env_str("VERCEL_URL"),
-        env_str("VERCEL_BRANCH_URL"),
-        env_str("VERCEL_PROJECT_PRODUCTION_URL"),
-    )
-    if host
-]
-# On a Vercel Services deployment the frontend reaches this service over
-# Vercel's internal network, so the Host header is an opaque per-deployment
-# name like `backend.<id>.services.vercel-infra.com` that no env var exposes.
-# The leading dot makes Django trust that whole internal domain.
-VERCEL_INTERNAL_HOST_SUFFIX = ".services.vercel-infra.com"
-
-ALLOWED_HOSTS = (
-    env_list("DJANGO_ALLOWED_HOSTS", ["*"] if DEBUG else [])
-    + VERCEL_HOSTS
-    + ([VERCEL_INTERNAL_HOST_SUFFIX] if ON_VERCEL else [])
-)
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["*"] if DEBUG else [])
 
 # --- Applications ---------------------------------------------------------
 
@@ -95,8 +63,7 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
-    # Serves static files under `vercel dev` and `runserver`; on Vercel the CDN
-    # serves the collected files and WhiteNoise simply stands down.
+    # Serves the collected static files (the admin's CSS and JS) from gunicorn.
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -107,8 +74,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = "config.urls"
-# Vercel picks the ASGI entrypoint whenever ASGI_APPLICATION is also set. This
-# is a synchronous app, so it deliberately declares WSGI only.
+# A synchronous app, served by gunicorn; it deliberately declares WSGI only.
 WSGI_APPLICATION = "config.wsgi.application"
 
 TEMPLATES = [
@@ -130,29 +96,11 @@ TEMPLATES = [
 
 # Postgres everywhere, including tests -- `docker compose up -d db` locally.
 LOCAL_DATABASE_URL = "postgres://ehsundar:ehsundar@localhost:5434/ehsundar"
-DATABASE_URL = env_str("DATABASE_URL", "" if ON_VERCEL else LOCAL_DATABASE_URL)
+DATABASE_URL = env_str("DATABASE_URL", LOCAL_DATABASE_URL)
 
-if not DATABASE_URL:
-    raise ImproperlyConfigured("DATABASE_URL must be set on Vercel.")
-
-# Serverless invocations are short-lived and Neon pools connections upstream, so
-# persistent connections are off on Vercel and on locally.
 DATABASES = {
-    "default": dj_database_url.parse(
-        DATABASE_URL,
-        conn_max_age=0 if ON_VERCEL else 600,
-        conn_health_checks=not ON_VERCEL,
-        ssl_require=ON_VERCEL,
-    )
+    "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600, conn_health_checks=True)
 }
-
-# The Neon store is shared with another project, so this platform gets a database
-# of its own inside it. Overriding the name here leaves the integration-managed
-# DATABASE_URL untouched. (A search_path override is not an option: Neon's pooled
-# endpoint rejects `options=-c search_path=...` as a startup parameter.)
-DATABASE_NAME = env_str("DATABASE_NAME", "")
-if DATABASE_NAME:
-    DATABASES["default"]["NAME"] = DATABASE_NAME
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "accounts.User"
@@ -175,9 +123,9 @@ USE_TZ = True
 
 # --- Static and media -----------------------------------------------------
 
-# Vercel runs collectstatic during the build and serves STATIC_ROOT from its CDN.
-# Kept under /api/ with everything else, so a single frontend rewrite covers the
-# admin's CSS and JS too.
+# Collected into the image at build time and served by WhiteNoise. Kept under
+# /api/ with everything else, so Caddy's one /api/ route covers the admin's CSS
+# and JS too.
 STATIC_URL = "/api/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
@@ -268,16 +216,12 @@ CORS_ALLOW_HEADERS = (
     "x-csrftoken",
     "x-requested-with",
 )
-CSRF_TRUSTED_ORIGINS = (
-    env_list("CSRF_TRUSTED_ORIGINS", [])
-    + [f"https://{host}" for host in VERCEL_HOSTS]
-    + ([f"https://*{VERCEL_INTERNAL_HOST_SUFFIX}"] if ON_VERCEL else [])
-)
+CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", [])
 
 # --- Security -------------------------------------------------------------
 
 if not DEBUG:
-    # The web server in front (Vercel's edge, or Caddy on our own box) terminates
+    # Caddy, in front, terminates
     # TLS and forwards the original scheme.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     # Behind Caddy this stays off: Caddy does the http->https redirect itself, and

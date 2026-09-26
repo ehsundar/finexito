@@ -8,8 +8,7 @@ import { clearSession, getRefreshToken, setSession } from "@/lib/auth/session";
  *
  * `proxy.ts` sends requests here when the access cookie has expired but the
  * refresh cookie is still alive. The work happens in a route handler rather than
- * in the proxy itself because service bindings -- how we reach Django on Vercel
- * -- are injected into functions, not into the proxy layer.
+ * in the proxy itself, which only decides where a request goes.
  */
 export async function GET(request: NextRequest) {
   const next = safeNext(request.nextUrl.searchParams.get("next"));

@@ -9,8 +9,8 @@ LOCAL_HOSTS = {"", "localhost", "127.0.0.1", "::1", "db"}
 class SafeDiscoverRunner(DiscoverRunner):
     """Refuses to run anywhere but a local Postgres.
 
-    `vercel env pull` drops real credentials into .env.local, so this is what
-    stops a stray test run from creating tables on Neon.
+    A DATABASE_URL left pointing at a real server is what this guards against:
+    a stray test run must never create tables there.
     """
 
     def setup_databases(self, **kwargs):

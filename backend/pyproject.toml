@@ -28,7 +28,3 @@ exclude = ["**/migrations/*"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "DJ", "C4"]
-
-[tool.vercel]
-# Pinned explicitly, though Vercel also infers it from WSGI_APPLICATION.
-entrypoint = "config.wsgi:application"

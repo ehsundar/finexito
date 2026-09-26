@@ -14,10 +14,9 @@ backend/    Django + DRF. Owns data, auth and the OpenAPI schema.
 frontend/   Next.js App Router. Owns the domain and every non-/api route.
 openapi.yml Generated from the backend; the contract between the two.
 deploy/     Production: Docker Compose stack, Caddy, provisioning and deploy scripts.
-vercel.json The previous Vercel deployment, kept until it is retired.
 ```
 
-`make install` sets both up; `make run` starts both through `vercel dev`.
+`make install` sets both up; `make run` starts both.
 
 ## The model
 
@@ -48,15 +47,14 @@ cp frontend/.env.example frontend/.env.local
 make db-up
 make migrate
 cd backend && uv run python manage.py createsuperuser
-make run          # both services, with the bindings Vercel injects in production
+make run          # Django on :8000 and Next on :3000
 ```
 
-`make run` needs the Vercel CLI. To run one side at a time instead, use
-`make run-back` (Django on :8000) and `make run-front` (Next on :3000).
+To run one side at a time instead, use `make run-back` and `make run-front`.
 
 Postgres everywhere, including tests — `make db-up` starts one on port 5434
 (5432 and 5433 are taken by other projects on this machine). `DATABASE_URL`
-defaults to that container locally and is required on Vercel.
+defaults to that container.
 
 ```bash
 make test           # Django's own runner
@@ -67,7 +65,7 @@ make schema-check   # fails if either is stale -- run this in CI
 ```
 
 `config/test_runner.py` refuses to run the suite against a non-local database
-host, so a stray `manage.py test` cannot build tables on Neon. Shared setUp
+host, so a stray `manage.py test` cannot build tables on a real server. Shared setUp
 scaffolding lives in `apps/common/testing.py`.
 
 Interactive API docs: <http://localhost:8000/api/docs/>.
@@ -95,7 +93,7 @@ The endpoints are documented next to their code:
 | `/api/docs/`    | Swagger UI                       |
 | `/api/schema/`  | OpenAPI schema                   |
 | `/api/healthz/` | Health check                     |
-| `/api/static/`  | Collected static files (CDN)     |
+| `/api/static/`  | Collected static files           |
 
 ## Errors
 
@@ -148,94 +146,9 @@ make provision     # fresh Ubuntu box -> running site; safe to re-run
 git push && make deploy
 ```
 
-## Deploying to Vercel (previous setup)
+### Same-domain routing
 
-A Vercel project auto-deploying from `main` on this repo.
-
-Both services ship as one Vercel project, declared in `vercel.json`:
-
-```json
-{
-  "services": {
-    "frontend": { "root": "frontend", "framework": "nextjs", "bindings": [ ... ] },
-    "backend":  { "root": "backend" }
-  },
-  "rewrites": [
-    { "source": "/api/(.*)", "destination": { "service": "backend" } },
-    { "source": "/(.*)",     "destination": { "service": "frontend" } }
-  ]
-}
-```
-
-This is why the whole restructure was worth it. Every deployment builds and ships
-both services together, so a preview URL always has a frontend and a backend that
-agree with each other — no version skew, and rollbacks are atomic.
-
-The frontend reaches Django through a **service binding**, which injects
-`BACKEND_INTERNAL_URL` pointing at the Django build *from the same deployment*.
-Nothing hardcodes a hostname, and preview deployments call their own backend
-rather than production. Internal calls skip the public CDN, firewall and
-deployment protection.
-
-The public `/api/(.*)` rewrite exists for the routes a browser genuinely needs:
-`/api/docs/`, `/api/admin/`, `/api/schema/`, `/api/healthz/` and `/api/static/`.
-Because it hands the whole `/api` namespace to Django, **the Next.js app must not
-add Route Handlers under `app/api`** — the session routes live at `/auth/*`
-instead.
-
-Since both sides share one origin, **there is no CORS to configure**.
-
-Vercel has zero-config Django support: it finds `manage.py`, reads
-`WSGI_APPLICATION` to locate the entrypoint, runs `collectstatic` during the
-build, serves `STATIC_ROOT` from the CDN, and runs Django as one Fluid Compute
-function.
-
-The database is the Neon store shared with `restoration-disaster`, but this
-platform owns a separate database inside it called `ehsundar` — its `public`
-schema was already taken by that project's Prisma tables. `DATABASE_NAME`
-selects it, which leaves the integration-managed `DATABASE_URL` alone.
-
-Isolating by `search_path` instead does **not** work here: Neon's pooled
-endpoint rejects `options=-c search_path=...` as a startup parameter.
-
-What the repo already sets up for this:
-
-- `vercel.json` — the two services, the ingress order, and a 60s `maxDuration`
-  on `config/wsgi.py` with tests excluded from the bundle.
-- `[tool.vercel] entrypoint` in `backend/pyproject.toml` — pins the WSGI callable.
-- `settings.py` — when `VERCEL=1`: `DEBUG` off, `DJANGO_SECRET_KEY` and
-  `DATABASE_URL` required (loud failure rather than an insecure default), the
-  deployment hostnames trusted in `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS`,
-  `CONN_MAX_AGE=0` and `sslmode=require` for pooled Postgres, HSTS and secure
-  cookies on.
-- WhiteNoise for `vercel dev` and `runserver`; the CDN serves static in production.
-
-Once a custom domain is attached, add it to the environment so session-based
-admin logins through it pass CSRF:
-
-```bash
-vercel env add DJANGO_ALLOWED_HOSTS production    # example.com
-vercel env add CSRF_TRUSTED_ORIGINS production    # https://example.com
-```
-
-### Migrations
-
-They are not run during the build — run them yourself against the deployed
-database:
-
-```bash
-cd backend
-vercel env pull --environment=production   # writes .env.local, loaded by settings.py
-DATABASE_NAME=ehsundar uv run python manage.py migrate
-```
-
-The same applies to `createsuperuser` against production.
-
-### Serverless constraints worth knowing
-
-- **No persistent filesystem.** `MEDIA_ROOT` is local-only. `Profile.avatar_url`
-  is a URL, so nothing uploads today; the first real upload needs Vercel Blob.
-- **No background workers.** No Celery worker or `cron` daemon — use Vercel Cron
-  hitting an endpoint, or Vercel Queues.
-- **Use Neon's pooled connection string.** One function instance per concurrent
-  request means direct connections exhaust Postgres quickly.
+Caddy sends `/api/*` to Django and everything else to Next.js, so both share one
+origin and there is no CORS to configure in production. Because Django owns the
+whole `/api` namespace, **the Next.js app must not add Route Handlers under
+`app/api`**: the session routes live at `/auth/*` instead.

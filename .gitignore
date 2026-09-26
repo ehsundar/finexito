@@ -17,5 +17,4 @@ frontend/.next/
 .env
 .env*
 !.env.example
-.vercel
 .DS_Store
