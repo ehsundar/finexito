@@ -61,7 +61,7 @@ shell:
 # --- production (Hetzner) --------------------------------------------------
 
 # See deploy/README.md. The server holds three files in /opt/finexito: the two
-# below, copied on every deploy, and .env, which only ever lives there.
+# below, copied on every deploy, and .env, which the Deploy Action writes from GitHub.
 # `deploy` runs whatever IMAGE_TAG names (a commit CI has built; the tip of
 # origin/main by default), so rolling back is `make deploy IMAGE_TAG=<older sha>`.
 DEPLOY_HOST ?= hetzner

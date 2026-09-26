@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: ehsundar platform API
+  title: ehsundar API
   version: 0.1.0
   description: Shared backend facilities (auth, profiles, settings).
 paths:
@@ -150,7 +150,8 @@ paths:
   /api/v1/auth/register/:
     post:
       operationId: auth_register_create
-      description: Create an account and its profile.
+      description: Create an inactive account and its profile, and email a verification
+        link.
       tags:
       - auth
       requestBody:
@@ -208,6 +209,80 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /api/v1/auth/verify-email/:
+    post:
+      operationId: auth_verify_email_create
+      description: Activate an account from its emailed link and sign it in.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyEmail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyEmail'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/verify-email/resend/:
+    post:
+      operationId: auth_verify_email_resend_create
+      description: |-
+        Send a fresh link to an unverified account.
+
+        Answers the same whether or not the address has an account, so it cannot be
+        used to discover who is registered.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendVerification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResendVerification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResendVerification'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Detail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
           description: ''
   /api/v1/members/:
     get:
@@ -316,6 +391,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/Profile'
           description: ''
+  /api/v1/site/:
+    get:
+      operationId: site_retrieve
+      description: What this deployment is called, so the frontend never hard-codes
+        it.
+      tags:
+      - site
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+          description: ''
 components:
   schemas:
     AuthResponse:
@@ -340,6 +431,14 @@ components:
       - access
       - refresh
       - user
+    Detail:
+      type: object
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
     Error:
       type: object
       description: Documents the single error envelope every failing response uses.
@@ -564,12 +663,9 @@ components:
       - password
     RegisterResponse:
       type: object
-      description: As above, plus the profile created alongside the account.
+      description: 'No tokens: the account stays inactive until its email is verified.'
       properties:
-        access:
-          type: string
-          readOnly: true
-        refresh:
+        detail:
           type: string
           readOnly: true
         user:
@@ -581,10 +677,17 @@ components:
           - $ref: '#/components/schemas/Profile'
           readOnly: true
       required:
-      - access
+      - detail
       - profile
-      - refresh
       - user
+    ResendVerification:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
     RoleEnum:
       enum:
       - member
@@ -595,6 +698,14 @@ components:
         * `member` - Member
         * `moderator` - Moderator
         * `admin` - Admin
+    Site:
+      type: object
+      properties:
+        name:
+          type: string
+          readOnly: true
+      required:
+      - name
     StatusEnum:
       enum:
       - active
@@ -668,6 +779,16 @@ components:
       - id
       - is_email_verified
       - last_login
+    VerifyEmail:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+      required:
+      - token
+      - uid
   securitySchemes:
     cookieAuth:
       type: apiKey

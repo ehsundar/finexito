@@ -3,10 +3,10 @@
 #
 #   deploy/provision.sh <ssh-host> <domain>      e.g. deploy/provision.sh hetzner example.com
 #
-# Safe to re-run: every step checks before it changes anything, and an existing
-# /opt/finexito/.env (with the database password the volume was created with) is
-# never overwritten. Needs key-based root SSH to the host, and CI to have built
-# images for origin/main.
+# Safe to re-run: every step checks before it changes anything. Needs key-based
+# root SSH to the host, CI to have built images for origin/main, and the server's
+# .env, which only the Deploy Action writes, from the production environment's
+# secrets and variables in GitHub.
 set -euo pipefail
 
 HOST=${1:?usage: provision.sh <ssh-host> <domain>}
@@ -44,27 +44,12 @@ printf 'PasswordAuthentication no\nKbdInteractiveAuthentication no\nPermitRootLo
 sshd -t && systemctl reload ssh
 EOF
 
-step "Secrets in $APP_DIR/.env"
-remote "bash -s" <<EOF
-set -euo pipefail
-mkdir -p $APP_DIR
-f=$APP_DIR/.env
-if [ -f \$f ]; then echo "exists, left untouched"; exit 0; fi
-gen() { openssl rand -base64 48 | tr -d '/+=' | cut -c1-50; }
-sed -E \
-  -e "s|^SITE_ADDRESS=.*|SITE_ADDRESS=$DOMAIN|" \
-  -e "s|^PUBLIC_ORIGIN=.*|PUBLIC_ORIGIN=https://$DOMAIN|" \
-  -e "s|^DJANGO_ALLOWED_HOSTS=.*|DJANGO_ALLOWED_HOSTS=$DOMAIN|" \
-  -e "s|^DJANGO_SECRET_KEY=.*|DJANGO_SECRET_KEY=\$(gen)|" \
-  -e "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=\$(gen)|" \
-  >\$f <<'TEMPLATE'
-$(cat deploy/.env.example)
-TEMPLATE
-chmod 600 \$f
-echo "generated"
-EOF
-
 step "Deploy"
+if ! remote "test -f $APP_DIR/.env"; then
+  echo "No $APP_DIR/.env yet. Set the production secrets and variables in GitHub, then:"
+  echo "  gh workflow run deploy.yml"
+  exit 0
+fi
 make deploy DEPLOY_HOST="$HOST"
 
 step "Done: https://$DOMAIN"

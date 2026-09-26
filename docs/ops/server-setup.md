@@ -106,21 +106,24 @@ make provision DEPLOY_HOST=other DOMAIN=example.com
 1. installs Docker and Compose, adds 2 GB swap (the Next.js build needs it on
    4 GB), sets up `ufw` to allow only 22/80/443, turns off SSH password login and
    keeps unattended security upgrades on;
-2. writes `/opt/finexito/.env` from `.env.example`, with the domain filled in
-   and a freshly generated `DJANGO_SECRET_KEY` and `POSTGRES_PASSWORD`;
-3. runs `make deploy`: copies `compose.yml` and the `Caddyfile` over and brings
+2. runs `make deploy`, once the Deploy Action has written `/opt/finexito/.env`
+   (see [Deploying from GitHub Actions](#deploying-from-github-actions));
+   until then it stops and says so. It: copies `compose.yml` and the `Caddyfile` over and brings
    the stack up on CI's images for the tip of `main`, migrating first and
    waiting for it to report healthy.
 
-CI must have built images for that commit, so push and let the Deploy Action
-build before the first provision.
+On a fresh server, provision first (Docker must be there), then set the
+secrets and variables below and run `gh workflow run deploy.yml`. That writes
+`.env` and brings the site up.
 
 Caddy requests the certificate as soon as it starts, which usually takes a few
 seconds.
 
-It is safe to run again at any time. Every step checks first, and an existing
-`.env` is **never overwritten**, because Postgres keeps the password it
-was first created with. If you lose that file, you lose access to the data.
+It is safe to run again at any time. Every step checks first.
+
+Postgres keeps the password it was first created with, so the
+`POSTGRES_PASSWORD` secret must never change once the database exists. Losing
+it means losing access to the data.
 
 ## 5. Check it
 
@@ -155,16 +158,18 @@ Admin: `https://example.com/api/admin/`.
   `make deploy IMAGE_TAG=<older sha>` rolls back, and `make logs` follows the logs.
 - **Everyday commands, backups and restores:** see
   [`deploy/README.md`](../../deploy/README.md).
-- **Moving to a new server:** copy the old `/opt/finexito/.env` to the same
-  path on the new server before provisioning, then restore the latest
-  backup. That keeps the same secret key, so existing sign-ins stay valid.
+- **Moving to a new server:** provision it, point `DEPLOY_HOST` and
+  `DEPLOY_KNOWN_HOSTS` at it, run the Deploy Action, then restore the latest
+  backup. The secrets come from GitHub, so existing sign-ins stay valid.
 
 ## Deploying from GitHub Actions
 
 `.github/workflows/deploy.yml` runs `make deploy` on every push to `main`, over
-SSH as root with a key of its own. Secrets are not part of it: they live only
-in `/opt/finexito/.env` on the server. To rotate `DJANGO_SECRET_KEY`, edit it
-there and run `make deploy`; everyone is signed out, but no data is lost.
+SSH as root with a key of its own. Before that it writes `/opt/finexito/.env`
+from the `production` environment's secrets and variables, one per key in
+[`deploy/.env.example`](../../deploy/.env.example). To rotate
+`DJANGO_SECRET_KEY`, change the secret and run the Action; everyone is signed
+out, but no data is lost.
 
 1. Make a key just for CI and authorise it on the server:
 
@@ -183,6 +188,23 @@ there and run `make deploy`; everyone is signed out, but no data is lost.
    rm /tmp/gha_deploy /tmp/gha_deploy.pub
    ```
 
+3. Add the app's settings. Generate each secret with
+   `openssl rand -base64 48 | tr -d '/+=' | cut -c1-50`:
+
+   ```bash
+   gh secret   set DJANGO_SECRET_KEY    --env production
+   gh secret   set POSTGRES_PASSWORD    --env production
+   gh secret   set RESEND_API_KEY       --env production
+   gh variable set SITE_ADDRESS         --env production --body example.com
+   gh variable set PUBLIC_ORIGIN        --env production --body https://example.com
+   gh variable set DJANGO_ALLOWED_HOSTS --env production --body example.com
+   gh variable set SITE_NAME            --env production --body 'Example'
+   gh variable set EMAIL_FROM_ADDRESS   --env production --body no-reply@example.com
+   ```
+
+   `SECURE_COOKIES` and `SECURE_HSTS_SECONDS` default to the values in
+   `.env.example`; set them as variables to override.
+
 ## Worth doing afterwards
 
 - **Copy backups off the server.** They sit on the same disk as the database.
@@ -193,5 +215,5 @@ there and run `make deploy`; everyone is signed out, but no data is lost.
     falls back to ZeroSSL, which issues through Sectigo.
   - DNSSEC.
   - 2FA on the account.
-- **Raise HSTS:** set `SECURE_HSTS_SECONDS=31536000` in `/opt/finexito/.env` once
+- **Raise HSTS:** set the `SECURE_HSTS_SECONDS` variable to `31536000` once
   HTTPS has been stable for a while.

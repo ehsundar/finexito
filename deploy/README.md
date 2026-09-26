@@ -14,13 +14,15 @@ Internet -> caddy :80/:443 -> /api/* -> backend  (Django, gunicorn :8000)
 | --------------- | ------------------------------------------------------------------ |
 | `compose.yml`   | The whole stack, including migrations, health checks and backups.  |
 | `Caddyfile`     | HTTPS, `/api/*` split, `www` -> bare-domain redirect.               |
-| `.env.example`  | Template for the server's `.env`, which holds the secrets there only. |
+| `.env.example`  | The keys of the server's `.env`, filled from GitHub on every deploy. |
+| `render-env.sh` | Writes that `.env` from the GitHub secrets and variables.            |
 | `provision.sh`  | Fresh Ubuntu box -> running site. Run from your machine.            |
 
 ## On the server
 
 `/opt/finexito` holds three files and nothing else: `compose.yml` and
-`Caddyfile`, copied on every deploy, and `.env`, which only ever lives there.
+`Caddyfile`, copied on every deploy, and `.env`, which the Deploy Action
+rewrites on every run from GitHub.
 There is no git checkout and no build: the images come from CI.
 
 ## Deploying
@@ -45,9 +47,26 @@ CI fails any push that edits or deletes a migration already on `main`.
 
 ## Settings and secrets
 
-The backend receives every line of `.env`, so a new Django setting is one line
-there plus `make deploy`. The other containers get only the few values they need,
-listed in `compose.yml`.
+They live in GitHub, on the `production` environment: secrets for anything
+sensitive (`DJANGO_SECRET_KEY`, `POSTGRES_PASSWORD`, `RESEND_API_KEY`), variables
+for the rest. On every run the Deploy Action writes `/opt/finexito/.env` from
+them, taking each key listed in `.env.example`, so never edit the server's copy:
+the next deploy overwrites it.
+
+```bash
+gh secret   set RESEND_API_KEY     --env production
+gh variable set EMAIL_FROM_ADDRESS --env production --body no-reply@example.com
+gh workflow run deploy.yml          # apply without a new commit
+```
+
+A new Django setting is a key in `.env.example` plus a secret or variable of the
+same name. The backend receives every line of `.env`; the other containers get
+only the few values they need, listed in `compose.yml`.
+
+`POSTGRES_PASSWORD` must stay the one the database volume was created with.
+Changing the secret does not change the database's password.
+
+`make deploy` by hand reuses the `.env` the last Action run wrote.
 
 ## Everyday commands (on the server, in /opt/finexito)
 
@@ -70,6 +89,5 @@ gunzip -c /var/backups/finexito/daily/<file>.sql.gz | docker compose exec -T db 
 ## Changing the domain
 
 Point the new domain's records at the server, then edit `SITE_ADDRESS`,
-`PUBLIC_ORIGIN` and `DJANGO_ALLOWED_HOSTS` in `/opt/finexito/.env` and run
-`make deploy`. Raise `SECURE_HSTS_SECONDS` once HTTPS has been stable for a
+`PUBLIC_ORIGIN` and `DJANGO_ALLOWED_HOSTS` in GitHub and run the Deploy Action. Raise `SECURE_HSTS_SECONDS` once HTTPS has been stable for a
 while.

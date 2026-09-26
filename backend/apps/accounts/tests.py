@@ -1,4 +1,7 @@
+import re
+
 from django.contrib.auth import get_user_model
+from django.core import mail
 from django.urls import reverse
 
 from apps.common.testing import PASSWORD, PlatformTestCase
@@ -8,7 +11,7 @@ User = get_user_model()
 
 
 class RegisterTests(PlatformTestCase):
-    def test_register_creates_the_account_and_its_profile(self):
+    def test_register_creates_an_inactive_account_and_its_profile(self):
         response = self.client.post(
             reverse("accounts:register"),
             {"email": "New@Example.com", "password": PASSWORD, "display_name": "New"},
@@ -16,11 +19,12 @@ class RegisterTests(PlatformTestCase):
         )
 
         self.assertEqual(response.status_code, 201, response.data)
-        self.assertTrue(response.data["access"])
-        self.assertTrue(response.data["refresh"])
+        self.assertNotIn("access", response.data)
         self.assertEqual(response.data["user"]["email"], "new@example.com")
         self.assertEqual(response.data["profile"]["display_name"], "New")
         self.assertTrue(Profile.objects.filter(user__email="new@example.com").exists())
+        self.assertFalse(User.objects.get(email="new@example.com").is_active)
+        self.assertEqual(mail.outbox[0].to, ["new@example.com"])
 
     def test_register_rejects_a_duplicate_email(self):
         response = self.client.post(
@@ -41,6 +45,105 @@ class RegisterTests(PlatformTestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("password", response.data["error"]["fields"])
+
+
+class EmailVerificationTests(PlatformTestCase):
+    email = "new@example.com"
+
+    def register(self):
+        self.client.post(
+            reverse("accounts:register"),
+            {"email": self.email, "password": PASSWORD},
+            format="json",
+        )
+
+    def link_params(self, message=None):
+        body = (message or mail.outbox[-1]).body
+        return dict(re.findall(r"[?&](uid|token)=([^&\s]+)", body))
+
+    def verify(self, params):
+        return self.client.post(reverse("accounts:verify-email"), params, format="json")
+
+    def login(self):
+        return self.client.post(
+            reverse("accounts:login"),
+            {"email": self.email, "password": PASSWORD},
+            format="json",
+        )
+
+    def test_email_carries_the_site_name(self):
+        with self.settings(SITE_NAME="Acme"):
+            self.register()
+
+        self.assertIn("Acme", mail.outbox[0].subject)
+
+    def test_unverified_account_cannot_log_in(self):
+        self.register()
+
+        response = self.login()
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data["error"]["code"], "email_not_verified")
+
+    def test_unverified_account_with_a_wrong_password_gets_the_generic_error(self):
+        self.register()
+
+        response = self.client.post(
+            reverse("accounts:login"),
+            {"email": self.email, "password": "wrong-password"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+    def test_link_activates_the_account_and_signs_it_in(self):
+        self.register()
+
+        response = self.verify(self.link_params())
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertTrue(response.data["access"])
+        self.assertTrue(response.data["user"]["is_email_verified"])
+        user = User.objects.get(email=self.email)
+        self.assertTrue(user.is_active)
+        self.assertEqual(self.login().status_code, 200)
+
+    def test_link_works_only_once(self):
+        self.register()
+        params = self.link_params()
+        self.verify(params)
+
+        response = self.verify(params)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["error"]["code"], "invalid_link")
+
+    def test_a_tampered_link_is_rejected(self):
+        self.register()
+        params = self.link_params()
+
+        self.assertEqual(self.verify({**params, "token": "nope"}).status_code, 400)
+        self.assertEqual(self.verify({**params, "uid": "garbage"}).status_code, 400)
+
+    def test_resend_sends_a_new_link_to_an_unverified_account(self):
+        self.register()
+
+        response = self.client.post(
+            reverse("accounts:verify-email-resend"), {"email": self.email}, format="json"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 2)
+        self.assertEqual(self.verify(self.link_params()).status_code, 200)
+
+    def test_resend_answers_the_same_for_unknown_and_active_accounts(self):
+        for email in ("nobody@example.com", self.user.email):
+            response = self.client.post(
+                reverse("accounts:verify-email-resend"), {"email": email}, format="json"
+            )
+            self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(len(mail.outbox), 0)
 
 
 class LoginTests(PlatformTestCase):

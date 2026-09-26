@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
+from django.urls import reverse
 
 from apps.common.fields import (
     ExtraBoolField,
@@ -8,6 +9,7 @@ from apps.common.fields import (
     ExtraDateTimeField,
     ExtraIntField,
 )
+from apps.common.testing import PlatformTestCase
 
 
 class Thing:
@@ -83,3 +85,12 @@ class ExtraFieldTests(SimpleTestCase):
         thing.renamed = 7
 
         self.assertEqual(thing.extra, {"stored-as": "7"})
+
+
+class SiteTests(PlatformTestCase):
+    @override_settings(SITE_NAME="Acme")
+    def test_site_reports_its_name_without_authentication(self):
+        response = self.client.get(reverse("site"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data, {"name": "Acme"})

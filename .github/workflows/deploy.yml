@@ -1,5 +1,6 @@
 # Ships main to the production server: run the tests, build the backend and frontend images
-# and push them to GHCR, then `make deploy` with this commit's tag, which copies
+# and push them to GHCR, write the server's .env from the production environment's
+# secrets and variables, then `make deploy` with this commit's tag, which copies
 # deploy/compose.yml and the Caddyfile to the server and brings the stack up on those images.
 # See deploy/README.md.
 name: Deploy
@@ -132,6 +133,19 @@ jobs:
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
           printf 'Host server\n  HostName %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  IdentitiesOnly yes\n' "$HOST" "$USER" > ~/.ssh/config
           chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts ~/.ssh/config
+
+      # Every secret and variable of the environment goes in; render-env.sh keeps
+      # only the keys listed in deploy/.env.example.
+      - name: Write the server's .env
+        env:
+          SECRETS: ${{ toJSON(secrets) }}
+          VARS: ${{ toJSON(vars) }}
+        run: |
+          (umask 077; deploy/render-env.sh > "$RUNNER_TEMP/finexito.env")
+          ssh server 'mkdir -p /opt/finexito'
+          scp -q "$RUNNER_TEMP/finexito.env" server:/opt/finexito/.env.new
+          ssh server 'chmod 600 /opt/finexito/.env.new && mv /opt/finexito/.env.new /opt/finexito/.env'
+          rm "$RUNNER_TEMP/finexito.env"
 
       - name: Deploy
         run: make deploy DEPLOY_HOST=server IMAGE_TAG=$GITHUB_SHA

@@ -102,7 +102,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Create an account and its profile. */
+        /** @description Create an inactive account and its profile, and email a verification link. */
         post: operations["auth_register_create"];
         delete?: never;
         options?: never;
@@ -124,6 +124,45 @@ export interface paths {
          *     information about a token's fitness for a particular use.
          */
         post: operations["auth_verify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/verify-email/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Activate an account from its emailed link and sign it in. */
+        post: operations["auth_verify_email_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/verify-email/resend/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Send a fresh link to an unverified account.
+         *
+         *     Answers the same whether or not the address has an account, so it cannot be
+         *     used to discover who is registered.
+         */
+        post: operations["auth_verify_email_resend_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -182,6 +221,23 @@ export interface paths {
         patch: operations["profiles_me_partial_update"];
         trace?: never;
     };
+    "/api/v1/site/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What this deployment is called, so the frontend never hard-codes it. */
+        get: operations["site_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -196,6 +252,9 @@ export interface components {
             readonly access: string;
             readonly refresh: string;
             readonly user: components["schemas"]["User"];
+        };
+        Detail: {
+            readonly detail: string;
         };
         /** @description Documents the single error envelope every failing response uses. */
         Error: {
@@ -288,12 +347,15 @@ export interface components {
             password: string;
             display_name?: string;
         };
-        /** @description As above, plus the profile created alongside the account. */
+        /** @description No tokens: the account stays inactive until its email is verified. */
         RegisterResponse: {
-            readonly access: string;
-            readonly refresh: string;
+            readonly detail: string;
             readonly user: components["schemas"]["User"];
             readonly profile: components["schemas"]["Profile"];
+        };
+        ResendVerification: {
+            /** Format: email */
+            email: string;
         };
         /**
          * @description * `member` - Member
@@ -302,6 +364,9 @@ export interface components {
          * @enum {string}
          */
         RoleEnum: "member" | "moderator" | "admin";
+        Site: {
+            readonly name: string;
+        };
         /**
          * @description * `active` - Active
          *     * `pending` - Pending
@@ -339,6 +404,10 @@ export interface components {
             readonly date_joined: string;
             /** Format: date-time */
             readonly last_login: string | null;
+        };
+        VerifyEmail: {
+            uid: string;
+            token: string;
         };
     };
     responses: never;
@@ -556,6 +625,72 @@ export interface operations {
             };
         };
     };
+    auth_verify_email_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmail"];
+                "application/x-www-form-urlencoded": components["schemas"]["VerifyEmail"];
+                "multipart/form-data": components["schemas"]["VerifyEmail"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthResponse"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    auth_verify_email_resend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResendVerification"];
+                "application/x-www-form-urlencoded": components["schemas"]["ResendVerification"];
+                "multipart/form-data": components["schemas"]["ResendVerification"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Detail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     members_list: {
         parameters: {
             query?: {
@@ -648,6 +783,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Profile"];
+                };
+            };
+        };
+    };
+    site_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Site"];
                 };
             };
         };

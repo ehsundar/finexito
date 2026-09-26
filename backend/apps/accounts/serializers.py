@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model, password_validation
 from django.db import transaction
-from rest_framework import serializers
+from rest_framework import exceptions, serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from apps.profiles import services as profile_services
@@ -33,11 +33,17 @@ class RegisterSerializer(serializers.Serializer):
 
     @transaction.atomic
     def create(self, validated_data: dict):
+        # Inactive until the emailed link is followed; see accounts.services.
         user = User.objects.create_user(
-            email=validated_data["email"], password=validated_data["password"]
+            email=validated_data["email"], password=validated_data["password"], is_active=False
         )
         profile_services.create_profile(user, display_name=validated_data.get("display_name", ""))
         return user
+
+
+class EmailNotVerified(exceptions.PermissionDenied):
+    default_detail = "Confirm your email address before signing in."
+    default_code = "email_not_verified"
 
 
 class LoginSerializer(TokenObtainPairSerializer):
@@ -46,7 +52,20 @@ class LoginSerializer(TokenObtainPairSerializer):
     username_field = User.USERNAME_FIELD
 
     def validate(self, attrs: dict) -> dict:
-        data = super().validate(attrs)
+        try:
+            data = super().validate(attrs)
+        except exceptions.AuthenticationFailed:
+            # Only someone holding the right password learns the account is
+            # waiting on verification; everyone else gets the generic failure.
+            email = str(attrs.get(self.username_field, "")).lower().strip()
+            user = User.objects.filter(email=email, is_active=False).first()
+            if (
+                user
+                and not user.is_email_verified
+                and user.check_password(attrs.get("password", ""))
+            ):
+                raise EmailNotVerified() from None
+            raise
         data["user"] = UserSerializer(self.user).data
         return data
 
@@ -71,6 +90,19 @@ class PasswordChangeSerializer(serializers.Serializer):
         return user
 
 
+class VerifyEmailSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+
+
+class ResendVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class DetailSerializer(serializers.Serializer):
+    detail = serializers.CharField(read_only=True)
+
+
 class LogoutSerializer(serializers.Serializer):
     refresh = serializers.CharField()
 
@@ -87,9 +119,11 @@ class AuthResponseSerializer(serializers.Serializer):
     user = UserSerializer(read_only=True)
 
 
-class RegisterResponseSerializer(AuthResponseSerializer):
-    """As above, plus the profile created alongside the account."""
+class RegisterResponseSerializer(serializers.Serializer):
+    """No tokens: the account stays inactive until its email is verified."""
 
+    detail = serializers.CharField(read_only=True)
+    user = UserSerializer(read_only=True)
     profile = ProfileSerializer(read_only=True)
 
 

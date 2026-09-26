@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { getSite } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,10 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "ehsundar",
-  description: "Shared platform.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { name } = await getSite();
+  return { title: { default: name, template: `%s · ${name}` } };
+}
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

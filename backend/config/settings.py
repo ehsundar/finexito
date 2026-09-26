@@ -1,10 +1,11 @@
-"""Django settings for the ehsundar platform backend.
+"""Django settings for the platform backend.
 
 A single settings module driven by environment variables. Each app built on the
 platform is its own deployment, configured through these variables.
 """
 
 from datetime import timedelta
+from email.utils import formataddr
 from pathlib import Path
 
 import dj_database_url
@@ -31,6 +32,13 @@ DEBUG = env_bool("DJANGO_DEBUG", not ON_VERCEL)
 
 if ON_VERCEL and not SECRET_KEY:
     raise ImproperlyConfigured("DJANGO_SECRET_KEY must be set on Vercel.")
+
+# --- Identity ---------------------------------------------------------------
+
+# Each deployment is its own white-labelled product built from the same apps.
+# Everything that names it to people (emails, the admin, the API docs, the
+# frontend via /api/v1/site/) reads this rather than spelling out a name.
+SITE_NAME = env_str("SITE_NAME", "ehsundar")
 
 # Vercel gives each deployment its own hostname, so trust them alongside any
 # custom domains listed in DJANGO_ALLOWED_HOSTS.
@@ -207,12 +215,32 @@ SIMPLE_JWT = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "ehsundar platform API",
+    "TITLE": f"{SITE_NAME} API",
     "DESCRIPTION": "Shared backend facilities (auth, profiles, settings).",
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": "/api/v1",
 }
+
+# --- Email ----------------------------------------------------------------
+
+# Resend over SMTP, so Django's own backend does the sending. Without a key,
+# mail is printed to the console, which is all local development needs.
+RESEND_API_KEY = env_str("RESEND_API_KEY")
+if RESEND_API_KEY:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = "smtp.resend.com"
+    EMAIL_PORT = 465
+    EMAIL_USE_SSL = True
+    EMAIL_HOST_USER = "resend"
+    EMAIL_HOST_PASSWORD = RESEND_API_KEY
+    EMAIL_TIMEOUT = 10
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = formataddr((SITE_NAME, env_str("EMAIL_FROM_ADDRESS", "no-reply@localhost")))
+
+# Where the frontend is served, for links in outgoing email.
+PUBLIC_ORIGIN = env_str("PUBLIC_ORIGIN", "http://localhost:3000").rstrip("/")
 
 # --- CORS -----------------------------------------------------------------
 
