@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
+from django.db import transaction
 from drf_spectacular.utils import OpenApiResponse, extend_schema
-from rest_framework import status
+from rest_framework import exceptions, status
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -29,6 +30,12 @@ from apps.profiles.serializers import ProfileSerializer
 User = get_user_model()
 
 
+class EmailUnavailable(exceptions.APIException):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    default_detail = "We could not send the verification email. Please try again shortly."
+    default_code = "email_unavailable"
+
+
 class RegisterView(GenericAPIView):
     """Create an inactive account and its profile, and email a verification link."""
 
@@ -37,13 +44,19 @@ class RegisterView(GenericAPIView):
 
     @extend_schema(
         request=RegisterSerializer,
-        responses={201: RegisterResponseSerializer, 400: ErrorSerializer},
+        responses={201: RegisterResponseSerializer, 400: ErrorSerializer, 503: ErrorSerializer},
     )
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        services.send_verification_email(user)
+        # One unit: an account whose link never went out could neither sign in
+        # nor register again, so a failed send takes the account back out.
+        try:
+            with transaction.atomic():
+                user = serializer.save()
+                services.send_verification_email(user)
+        except OSError as exc:
+            raise EmailUnavailable() from exc
 
         return Response(
             {
@@ -103,7 +116,7 @@ class ResendVerificationView(GenericAPIView):
 
     @extend_schema(
         request=ResendVerificationSerializer,
-        responses={200: DetailSerializer, 400: ErrorSerializer},
+        responses={200: DetailSerializer, 400: ErrorSerializer, 503: ErrorSerializer},
     )
     def post(self, request):
         serializer = self.get_serializer(data=request.data)
@@ -111,7 +124,10 @@ class ResendVerificationView(GenericAPIView):
         email = serializer.validated_data["email"].lower().strip()
         user = User.objects.filter(email=email, is_active=False, is_email_verified=False).first()
         if user:
-            services.send_verification_email(user)
+            try:
+                services.send_verification_email(user)
+            except OSError as exc:
+                raise EmailUnavailable() from exc
         return Response({"detail": "If that account needs verifying, a new link is on its way."})
 
 

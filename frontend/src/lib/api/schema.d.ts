@@ -598,6 +598,14 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     auth_verify_create: {
@@ -682,6 +690,14 @@ export interface operations {
                 };
             };
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -1,4 +1,5 @@
 import re
+from unittest import mock
 
 from django.contrib.auth import get_user_model
 from django.core import mail
@@ -25,6 +26,18 @@ class RegisterTests(PlatformTestCase):
         self.assertTrue(Profile.objects.filter(user__email="new@example.com").exists())
         self.assertFalse(User.objects.get(email="new@example.com").is_active)
         self.assertEqual(mail.outbox[0].to, ["new@example.com"])
+
+    def test_a_failed_send_leaves_no_account_behind(self):
+        with mock.patch("apps.accounts.services.send_mail", side_effect=TimeoutError("timed out")):
+            response = self.client.post(
+                reverse("accounts:register"),
+                {"email": "new@example.com", "password": PASSWORD},
+                format="json",
+            )
+
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.data["error"]["code"], "email_unavailable")
+        self.assertFalse(User.objects.filter(email="new@example.com").exists())
 
     def test_register_rejects_a_duplicate_email(self):
         response = self.client.post(
