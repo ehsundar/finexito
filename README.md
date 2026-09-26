@@ -34,7 +34,8 @@ and endpoints: update it in the same change as the code.
 ## Adding a facility later
 
 1. Build it as an app under `apps/` with its own `README.md`, add it to `LOCAL_APPS`.
-2. Register its routes in `config/api.py`.
+2. Put its routes in the app's `urls.py`, full paths included; every installed
+   app's `urls.py` is served under `/api/v1/`.
 3. Anything that differs between deployments becomes a setting read from the
    environment in `config/settings.py`.
 
