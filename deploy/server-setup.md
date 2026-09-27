@@ -168,7 +168,7 @@ Admin: `https://example.com/api/admin/`.
 SSH as root with a key of its own. Before that it writes `/opt/finexito/.env`
 from the `production` environment's secrets and variables, one per key in
 [`deploy/.env.example`](.env.example). To rotate
-`DJANGO_SECRET_KEY`, change the secret and run the Action; everyone is signed
+`FINEXITO_SECRET_KEY`, change the secret and run the Action; everyone is signed
 out, but no data is lost.
 
 1. Make a key just for CI and authorise it on the server:
@@ -192,17 +192,17 @@ out, but no data is lost.
    `openssl rand -base64 48 | tr -d '/+=' | cut -c1-50`:
 
    ```bash
-   gh secret   set DJANGO_SECRET_KEY    --env production
+   gh secret   set FINEXITO_SECRET_KEY    --env production
    gh secret   set POSTGRES_PASSWORD    --env production
-   gh secret   set RESEND_API_KEY       --env production
+   gh secret   set FINEXITO_MESSAGING_RESEND_API_KEY --env production
    gh variable set SITE_ADDRESS         --env production --body example.com
-   gh variable set PUBLIC_ORIGIN        --env production --body https://example.com
-   gh variable set DJANGO_ALLOWED_HOSTS --env production --body example.com
-   gh variable set SITE_NAME            --env production --body 'Example'
-   gh variable set EMAIL_FROM_ADDRESS   --env production --body no-reply@example.com
+   gh variable set FINEXITO_PUBLIC_ORIGIN        --env production --body https://example.com
+   gh variable set FINEXITO_ALLOWED_HOSTS --env production --body example.com
+   gh variable set FINEXITO_SITE_NAME            --env production --body 'Example'
+   gh variable set FINEXITO_MESSAGING_FROM_ADDRESS --env production --body no-reply@example.com
    ```
 
-   `SECURE_COOKIES` and `SECURE_HSTS_SECONDS` default to the values in
+   `FINEXITO_SECURE_COOKIES` and `FINEXITO_SECURE_HSTS_SECONDS` default to the values in
    `.env.example`; set them as variables to override.
 
 ## Worth doing afterwards
@@ -215,5 +215,5 @@ out, but no data is lost.
     falls back to ZeroSSL, which issues through Sectigo.
   - DNSSEC.
   - 2FA on the account.
-- **Raise HSTS:** set the `SECURE_HSTS_SECONDS` variable to `31536000` once
+- **Raise HSTS:** set the `FINEXITO_SECURE_HSTS_SECONDS` variable to `31536000` once
   HTTPS has been stable for a while.

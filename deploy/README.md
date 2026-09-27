@@ -50,14 +50,14 @@ CI fails any push that edits or deletes a migration already on `main`.
 ## Settings and secrets
 
 They live in GitHub, on the `production` environment: secrets for anything
-sensitive (`DJANGO_SECRET_KEY`, `POSTGRES_PASSWORD`, `RESEND_API_KEY`), variables
+sensitive (`FINEXITO_SECRET_KEY`, `POSTGRES_PASSWORD`, `FINEXITO_MESSAGING_RESEND_API_KEY`), variables
 for the rest. On every run the Deploy Action writes `/opt/finexito/.env` from
 them, taking each key listed in `.env.example`, so never edit the server's copy:
 the next deploy overwrites it.
 
 ```bash
-gh secret   set RESEND_API_KEY     --env production
-gh variable set EMAIL_FROM_ADDRESS --env production --body no-reply@example.com
+gh secret   set FINEXITO_MESSAGING_RESEND_API_KEY --env production
+gh variable set FINEXITO_MESSAGING_FROM_ADDRESS --env production --body no-reply@example.com
 gh workflow run deploy.yml          # apply without a new commit
 ```
 
@@ -97,5 +97,5 @@ gunzip -c /var/backups/finexito/daily/<file>.sql.gz | docker compose exec -T db 
 ## Changing the domain
 
 Point the new domain's records at the server, then edit `SITE_ADDRESS`,
-`PUBLIC_ORIGIN` and `DJANGO_ALLOWED_HOSTS` in GitHub and run the Deploy Action. Raise `SECURE_HSTS_SECONDS` once HTTPS has been stable for a
+`FINEXITO_PUBLIC_ORIGIN` and `FINEXITO_ALLOWED_HOSTS` in GitHub and run the Deploy Action. Raise `FINEXITO_SECURE_HSTS_SECONDS` once HTTPS has been stable for a
 while.

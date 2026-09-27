@@ -19,7 +19,7 @@ jobs:
   test-backend:
     runs-on: ubuntu-latest
     services:
-      # Matches the local default DATABASE_URL, so no settings are needed.
+      # Matches the local default FINEXITO_DATABASE_URL, so no settings are needed.
       db:
         image: postgres:17-alpine
         env:

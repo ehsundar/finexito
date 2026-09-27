@@ -10,10 +10,12 @@ the file is then served with CDN-friendly cache headers. No external service.
 from apps.storage import services
 
 obj = services.create_upload(
-    user, content_type="image/png", max_size=2_000_000,  # bytes
-    visibility="public",                                  # or "private"
+    user,
+    content_type="image/png",
+    max_size=2_000_000,  # bytes
+    visibility="public",  # or "private"
 )
-services.upload_url(obj)   # -> /api/v1/storage/uploads/<id>/, give it to the user
+services.upload_url(obj)  # -> /api/v1/storage/uploads/<id>/, give it to the user
 
 # The user's client:  PUT <upload url>   (JWT or session)
 #                     Content-Type: image/png
@@ -22,7 +24,7 @@ services.upload_url(obj)   # -> /api/v1/storage/uploads/<id>/, give it to the us
 
 obj.refresh_from_db()
 if obj.is_ready:
-    services.object_url(obj)   # public: /api/media/<key>; private: a signed link
+    services.object_url(obj)  # public: /api/media/<key>; private: a signed link
 ```
 
 Any keyword arguments to `create_upload` beyond those go into `extra`, e.g. to
@@ -32,15 +34,15 @@ note what the file is for.
 
 `StoredObject` extends `common.models.BaseModel`.
 
-| Field          | Meaning                                                              |
-| -------------- | -------------------------------------------------------------------- |
-| `owner`        | The only account allowed to upload.                                  |
-| `content_type` | One of `formats.FORMATS`. Fixed by the ticket.                       |
-| `max_size`     | Upper bound for the upload, at most `STORAGE_MAX_UPLOAD_BYTES`.      |
-| `visibility`   | `public` (cached by anyone) / `private` (signed links only).         |
-| `status`       | `pending` -> `uploading` -> `ready`. A failed upload goes back to `pending`. |
-| `expires_at`   | The upload must finish before this (`STORAGE_UPLOAD_TTL_MINUTES`, 30). |
-| `size`, `sha256`, `uploaded_at` | Filled in once the file is stored.                  |
+| Field                           | Meaning                                                                         |
+|---------------------------------|---------------------------------------------------------------------------------|
+| `owner`                         | The only account allowed to upload.                                             |
+| `content_type`                  | One of `formats.FORMATS`. Fixed by the ticket.                                  |
+| `max_size`                      | Upper bound for the upload, at most `FINEXITO_STORAGE_MAX_UPLOAD_BYTES`.        |
+| `visibility`                    | `public` (cached by anyone) / `private` (signed links only).                    |
+| `status`                        | `pending` -> `uploading` -> `ready`. A failed upload goes back to `pending`.    |
+| `expires_at`                    | The upload must finish before this (`FINEXITO_STORAGE_UPLOAD_TTL_MINUTES`, 30). |
+| `size`, `sha256`, `uploaded_at` | Filled in once the file is stored.                                              |
 
 A ready file never changes: to replace one, open a new ticket and delete the
 old row. Deleting a row (directly, in the admin or with its owner) deletes the
@@ -76,16 +78,16 @@ Whoever holds a link can open the file: hand links only to people who may see it
 
 ## Defences
 
-| Attack                            | Defence                                                      |
-| --------------------------------- | ------------------------------------------------------------ |
-| Uploading for someone else        | Only the ticket's owner, authenticated; others get `404`.    |
-| Replaying or racing an upload     | One upload per ticket, claimed atomically; `409` after.      |
-| Stored XSS (HTML, SVG, JS)        | Allow-list of binary types, checked against the file's first bytes; `nosniff`; `CSP: sandbox`; Content-Type from the fixed extension. |
-| Path traversal                    | Keys built from the UUID only.                               |
-| Filling the disk                  | Per-ticket `max_size`, a global cap enforced by Caddy and Django, tickets expire, `purge_storage` clears leftovers. |
-| Slow uploads tying up workers     | Caddy buffers the body before Django sees it.                |
-| Guessing private URLs             | Not served by Caddy at all; signed, expiring links.          |
-| Half-written files being served   | Written to `tmp/`, fsynced, then renamed into place.         |
+| Attack                          | Defence                                                                                                                               |
+|---------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| Uploading for someone else      | Only the ticket's owner, authenticated; others get `404`.                                                                             |
+| Replaying or racing an upload   | One upload per ticket, claimed atomically; `409` after.                                                                               |
+| Stored XSS (HTML, SVG, JS)      | Allow-list of binary types, checked against the file's first bytes; `nosniff`; `CSP: sandbox`; Content-Type from the fixed extension. |
+| Path traversal                  | Keys built from the UUID only.                                                                                                        |
+| Filling the disk                | Per-ticket `max_size`, a global cap enforced by Caddy and Django, tickets expire, `purge_storage` clears leftovers.                   |
+| Slow uploads tying up workers   | Caddy buffers the body before Django sees it.                                                                                         |
+| Guessing private URLs           | Not served by Caddy at all; signed, expiring links.                                                                                   |
+| Half-written files being served | Written to `tmp/`, fsynced, then renamed into place.                                                                                  |
 
 ## Housekeeping
 
@@ -94,12 +96,12 @@ and files with no row. It runs on every deploy (in the `migrate` service).
 
 ## Settings
 
-| Setting                      | Default   |                                                  |
-| ---------------------------- | --------- | ------------------------------------------------ |
-| `STORAGE_ROOT`               | `media/`  | Pinned to `/srv/storage` in `deploy/compose.yml`. |
-| `STORAGE_MAX_UPLOAD_BYTES`   | 25 MiB    | Keep equal to `max_size` in `deploy/Caddyfile`.  |
-| `STORAGE_UPLOAD_TTL_MINUTES` | 30        |                                                  |
-| `STORAGE_ACCEL_REDIRECT`     | off       | On in production, where Caddy serves private files. |
+| Setting                               | Default  |                                                     |
+|---------------------------------------|----------|-----------------------------------------------------|
+| `STORAGE_ROOT`                        | `media/` | Pinned to `/srv/storage` in `deploy/compose.yml`.   |
+| `FINEXITO_STORAGE_MAX_UPLOAD_BYTES`   | 25 MiB   | Keep equal to `max_size` in `deploy/Caddyfile`.     |
+| `FINEXITO_STORAGE_UPLOAD_TTL_MINUTES` | 30       |                                                     |
+| `FINEXITO_STORAGE_ACCEL_REDIRECT`     | off      | On in production, where Caddy serves private files. |
 
 ## Adding a type
 

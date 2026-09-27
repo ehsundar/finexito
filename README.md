@@ -54,7 +54,7 @@ make run          # Django on :8000 and Next on :3000
 To run one side at a time instead, use `make run-back` and `make run-front`.
 
 Postgres everywhere, including tests — `make db-up` starts one on port 5434
-(5432 and 5433 are taken by other projects on this machine). `DATABASE_URL`
+(5432 and 5433 are taken by other projects on this machine). `FINEXITO_DATABASE_URL`
 defaults to that container.
 
 ```bash

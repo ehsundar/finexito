@@ -21,20 +21,20 @@ x-backend: &backend
   # Values derived from the file, or pinned for production. These win over
   # env_file, and the `:?` checks refuse to start without a secret.
   environment:
-    DJANGO_DEBUG: "false"
-    DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?set DJANGO_SECRET_KEY in .env}
+    FINEXITO_DEBUG: "false"
+    FINEXITO_SECRET_KEY: ${FINEXITO_SECRET_KEY:?set FINEXITO_SECRET_KEY in .env}
     # `backend` is the Host header on the frontend's internal calls.
-    DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:?set DJANGO_ALLOWED_HOSTS in .env},backend
-    DATABASE_URL: postgres://finexito:${POSTGRES_PASSWORD}@db:5432/finexito
-    CSRF_TRUSTED_ORIGINS: ${PUBLIC_ORIGIN:?set PUBLIC_ORIGIN in .env}
-    CORS_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN}
+    FINEXITO_ALLOWED_HOSTS: ${FINEXITO_ALLOWED_HOSTS:?set FINEXITO_ALLOWED_HOSTS in .env},backend
+    FINEXITO_DATABASE_URL: postgres://finexito:${POSTGRES_PASSWORD}@db:5432/finexito
+    FINEXITO_CSRF_TRUSTED_ORIGINS: ${FINEXITO_PUBLIC_ORIGIN:?set FINEXITO_PUBLIC_ORIGIN in .env}
+    FINEXITO_CORS_ALLOWED_ORIGINS: ${FINEXITO_PUBLIC_ORIGIN}
     # Caddy owns the http->https redirect; see SECURE_SSL_REDIRECT in settings.
-    SECURE_SSL_REDIRECT: "false"
+    FINEXITO_SECURE_SSL_REDIRECT: "false"
     # Django defaults to a year of HSTS; stay off until .env raises it.
-    SECURE_HSTS_SECONDS: ${SECURE_HSTS_SECONDS:-0}
-    STORAGE_ROOT: /srv/storage
+    FINEXITO_SECURE_HSTS_SECONDS: ${FINEXITO_SECURE_HSTS_SECONDS:-0}
+    FINEXITO_STORAGE_ROOT: /srv/storage
     # Caddy sends private files itself; see the Caddyfile.
-    STORAGE_ACCEL_REDIRECT: "true"
+    FINEXITO_STORAGE_ACCEL_REDIRECT: "true"
   volumes:
     - storage:/srv/storage
 
@@ -62,7 +62,7 @@ services:
     restart: unless-stopped
     environment:
       BACKEND_INTERNAL_URL: http://backend:8000
-      SECURE_COOKIES: ${SECURE_COOKIES:-true}
+      SECURE_COOKIES: ${FINEXITO_SECURE_COOKIES:-true}
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r => process.exit(r.status < 500 ? 0 : 1), () => process.exit(1))"]
       interval: 10s

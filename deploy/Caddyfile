@@ -16,7 +16,7 @@
 		file_server
 	}
 
-	# Uploads. The size cap matches STORAGE_MAX_UPLOAD_BYTES. Caddy buffers the
+	# Uploads. The size cap matches FINEXITO_STORAGE_MAX_UPLOAD_BYTES. Caddy buffers the
 	# whole body before passing it on, so a slow client ties up Caddy, which
 	# copes, rather than one of gunicorn's few workers.
 	handle /api/v1/storage/uploads/* {

@@ -4,7 +4,6 @@ A single settings module driven by environment variables. Each app built on the
 platform is its own deployment, configured through these variables.
 """
 
-from datetime import timedelta
 from email.utils import formataddr
 from pathlib import Path
 
@@ -19,8 +18,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # which also pins DEBUG off and refuses to start without a secret key.
 load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = env_str("DJANGO_SECRET_KEY", "insecure-dev-key-change-me")
-DEBUG = env_bool("DJANGO_DEBUG", True)
+SECRET_KEY = env_str("SECRET_KEY", "insecure-dev-key-change-me")
+DEBUG = env_bool("DEBUG", True)
 
 # --- Identity ---------------------------------------------------------------
 
@@ -29,7 +28,7 @@ DEBUG = env_bool("DJANGO_DEBUG", True)
 # frontend via /api/v1/site/) reads this rather than spelling out a name.
 SITE_NAME = env_str("SITE_NAME", "ehsundar")
 
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", ["*"] if DEBUG else [])
+ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ["*"] if DEBUG else [])
 
 # --- Applications ---------------------------------------------------------
 
@@ -61,6 +60,15 @@ LOCAL_APPS = [
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+# Each app's own settings, under names it prefixes itself (STORAGE_*) or a
+# package's own name (SIMPLE_JWT). Removing an app means removing its line here.
+from apps.accounts.settings import *  # noqa: E402, F403
+from apps.common.settings import *  # noqa: E402, F403
+from apps.content.settings import *  # noqa: E402, F403
+from apps.messaging.settings import *  # noqa: E402, F403
+from apps.profiles.settings import *  # noqa: E402, F403
+from apps.storage.settings import *  # noqa: E402, F403
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -143,12 +151,7 @@ STORAGES = {
 STORAGE_ROOT = Path(env_str("STORAGE_ROOT", str(BASE_DIR / "media")))
 MEDIA_URL = "/api/media/"
 MEDIA_ROOT = STORAGE_ROOT / "public"
-# The largest file any ticket may allow. Caddy's limit in deploy/Caddyfile must match.
-STORAGE_MAX_UPLOAD_BYTES = int(env_str("STORAGE_MAX_UPLOAD_BYTES", str(25 * 1024 * 1024)))
-STORAGE_UPLOAD_TTL = timedelta(minutes=int(env_str("STORAGE_UPLOAD_TTL_MINUTES", "30")))
-# Behind Caddy, private files are handed over to it with X-Accel-Redirect
-# rather than streamed through a gunicorn worker.
-STORAGE_ACCEL_REDIRECT = env_bool("STORAGE_ACCEL_REDIRECT", False)
+# Storage's other settings are in apps/storage/settings.py.
 
 # --- REST framework -------------------------------------------------------
 
@@ -165,16 +168,6 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.common.exceptions.exception_handler",
 }
 
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=int(env_str("JWT_ACCESS_MINUTES", "30"))),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=int(env_str("JWT_REFRESH_DAYS", "14"))),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
-    "UPDATE_LAST_LOGIN": True,
-    "USER_ID_FIELD": "id",
-    "USER_ID_CLAIM": "user_id",
-}
-
 SPECTACULAR_SETTINGS = {
     "TITLE": f"{SITE_NAME} API",
     "DESCRIPTION": "Shared backend facilities (auth, profiles, settings).",
@@ -185,9 +178,10 @@ SPECTACULAR_SETTINGS = {
 
 # --- Email ----------------------------------------------------------------
 
-# Resend over SMTP, so Django's own backend does the sending. Without a key,
-# mail is printed to the console, which is all local development needs.
-RESEND_API_KEY = env_str("RESEND_API_KEY")
+# Owned by apps.messaging, hence the MESSAGING_ prefix; Django's mail reads it
+# from here. Resend over SMTP, so Django's own backend does the sending. Without
+# a key, mail is printed to the console, which is all local development needs.
+RESEND_API_KEY = env_str("MESSAGING_RESEND_API_KEY")
 if RESEND_API_KEY:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = "smtp.resend.com"
@@ -199,7 +193,9 @@ if RESEND_API_KEY:
     EMAIL_TIMEOUT = 10
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = formataddr((SITE_NAME, env_str("EMAIL_FROM_ADDRESS", "no-reply@localhost")))
+DEFAULT_FROM_EMAIL = formataddr(
+    (SITE_NAME, env_str("MESSAGING_FROM_ADDRESS", "no-reply@localhost"))
+)
 
 # Where the frontend is served, for links in outgoing email.
 PUBLIC_ORIGIN = env_str("PUBLIC_ORIGIN", "http://localhost:3000").rstrip("/")
