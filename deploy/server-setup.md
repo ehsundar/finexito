@@ -194,7 +194,7 @@ out, but no data is lost.
    ```bash
    gh secret   set FINEXITO_SECRET_KEY    --env production
    gh secret   set POSTGRES_PASSWORD    --env production
-   gh secret   set FINEXITO_MESSAGING_RESEND_API_KEY --env production
+   gh secret   set FINEXITO_EMAIL_HOST_PASSWORD --env production
    gh variable set SITE_ADDRESS         --env production --body example.com
    gh variable set FINEXITO_PUBLIC_ORIGIN        --env production --body https://example.com
    gh variable set FINEXITO_ALLOWED_HOSTS --env production --body example.com

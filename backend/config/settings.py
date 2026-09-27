@@ -178,18 +178,17 @@ SPECTACULAR_SETTINGS = {
 
 # --- Email ----------------------------------------------------------------
 
-# Owned by apps.messaging, hence the MESSAGING_ prefix; Django's mail reads it
-# from here. Resend over SMTP, so Django's own backend does the sending. Without
-# a key, mail is printed to the console, which is all local development needs.
-RESEND_API_KEY = env_str("MESSAGING_RESEND_API_KEY")
-if RESEND_API_KEY:
+# Resend over SMTP, so Django's own backend does the sending; the password is a
+# Resend API key. Without one, mail is printed to the console, which is all local
+# development needs.
+EMAIL_HOST_PASSWORD = env_str("EMAIL_HOST_PASSWORD")
+if EMAIL_HOST_PASSWORD:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = "smtp.resend.com"
     # STARTTLS on 587: hosts such as Hetzner block outbound 465 (and 25).
     EMAIL_PORT = 587
     EMAIL_USE_TLS = True
     EMAIL_HOST_USER = "resend"
-    EMAIL_HOST_PASSWORD = RESEND_API_KEY
     EMAIL_TIMEOUT = 10
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

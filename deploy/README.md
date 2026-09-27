@@ -50,13 +50,13 @@ CI fails any push that edits or deletes a migration already on `main`.
 ## Settings and secrets
 
 They live in GitHub, on the `production` environment: secrets for anything
-sensitive (`FINEXITO_SECRET_KEY`, `POSTGRES_PASSWORD`, `FINEXITO_MESSAGING_RESEND_API_KEY`), variables
+sensitive (`FINEXITO_SECRET_KEY`, `POSTGRES_PASSWORD`, `FINEXITO_EMAIL_HOST_PASSWORD`), variables
 for the rest. On every run the Deploy Action writes `/opt/finexito/.env` from
 them, taking each key listed in `.env.example`, so never edit the server's copy:
 the next deploy overwrites it.
 
 ```bash
-gh secret   set FINEXITO_MESSAGING_RESEND_API_KEY --env production
+gh secret   set FINEXITO_EMAIL_HOST_PASSWORD --env production
 gh variable set FINEXITO_MESSAGING_FROM_ADDRESS --env production --body no-reply@example.com
 gh workflow run deploy.yml          # apply without a new commit
 ```
