@@ -14,6 +14,7 @@ backend/    Django + DRF. Owns data, auth and the OpenAPI schema.
 frontend/   Next.js App Router. Owns the domain and every non-/api route.
 openapi.yml Generated from the backend; the contract between the two.
 deploy/     Production: Docker Compose stack, Caddy, provisioning and deploy scripts.
+brand/      Logo, palette, type and voice; what a fork replaces to become a new product.
 ```
 
 `make install` sets both up; `make run` starts both.

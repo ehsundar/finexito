@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120" width="600" height="240">
+  <path d="M40 94 V26 H80 V94" fill="none" stroke="#0B1B33" stroke-width="7" stroke-linejoin="round"/>
+  <polygon points="40,26 62,34 62,100 40,94" fill="#2F7BEA"/>
+  <circle cx="57" cy="66" r="2.6" fill="#fff"/>
+  <text x="108" y="78" font-family="Inter, 'Helvetica Neue', Arial, sans-serif" font-size="48" font-weight="500" letter-spacing="1" fill="#0B1B33">finexito</text>
+</svg>
