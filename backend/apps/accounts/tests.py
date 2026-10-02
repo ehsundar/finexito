@@ -136,7 +136,7 @@ class AdminLoginTests(PlatformTestCase):
         response = self.client.get("/api/admin/login/?next=/api/admin/")
 
         self.assertRedirects(response, "/api/admin/", fetch_redirect_response=False)
-        self.assertEqual(self.client.get("/api/admin/").status_code, 200)
+        self.assertEqual(self.client.session["_auth_user_id"], str(self.user.pk))
 
     def test_anyone_else_is_sent_to_sign_in(self):
         self.client.cookies["access_token"] = str(RefreshToken.for_user(self.user).access_token)
