@@ -19,5 +19,5 @@ export async function logout() {
   }
 
   await clearSession();
-  redirect("/login");
+  redirect("/login?signed_out");
 }

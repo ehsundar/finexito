@@ -15,10 +15,16 @@ const ERRORS: Record<string, string> = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; error?: string; signed_out?: string }>;
 }) {
-  const { next, error } = await searchParams;
+  const { next, error, signed_out } = await searchParams;
   if (await currentUser()) redirect(safeNext(next));
+  // Google is the only way in, so go straight there. The page still shows after
+  // a failed attempt (or it would loop) and after signing out (or Google would
+  // sign the visitor straight back in), and is here for when there are options.
+  if (!error && signed_out === undefined) {
+    redirect(`/auth/google?next=${encodeURIComponent(safeNext(next))}`);
+  }
   const { name } = await getSite();
 
   return (
@@ -35,7 +41,9 @@ export default async function LoginPage({
             <Alert variant="destructive">
               <AlertDescription>{ERRORS[error] ?? ERRORS.google}</AlertDescription>
             </Alert>
-          ) : null}
+          ) : (
+            <p className="text-muted-foreground text-sm">You have signed out.</p>
+          )}
           {/* A plain link: /auth/google is a route handler that redirects to Google. */}
           <a
             href={`/auth/google?next=${encodeURIComponent(safeNext(next))}`}
