@@ -196,7 +196,7 @@ DEFAULT_FROM_EMAIL = formataddr(
     (SITE_NAME, env_str("MESSAGING_FROM_ADDRESS", "no-reply@localhost"))
 )
 
-# Where the frontend is served, for links in outgoing email.
+# Where the frontend is served, for links in outgoing email and OAuth redirects.
 PUBLIC_ORIGIN = env_str("PUBLIC_ORIGIN", "http://localhost:3000").rstrip("/")
 
 # --- Background tasks -----------------------------------------------------

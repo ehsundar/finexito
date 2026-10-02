@@ -143,13 +143,15 @@ ssh hetzner 'cd /opt/finexito && docker compose logs caddy | grep -i certificate
 
 ## 6. First admin
 
+Sign in on the site with Google, which creates your account, then:
+
 ```bash
 ssh hetzner
 cd /opt/finexito
-docker compose exec backend python manage.py createsuperuser
+docker compose exec backend python manage.py make_superuser you@example.com
 ```
 
-Admin: `https://example.com/api/admin/`.
+Admin: `https://example.com/api/admin/`. It signs you in from your site session; there are no passwords.
 
 ## From here on
 

@@ -66,7 +66,7 @@ class UploadTests(StorageTestCase):
 
     def test_anyone_else_gets_a_404(self):
         obj = self.ticket()
-        self.authenticate(User.objects.create_user(email="other@example.com", password="x"))
+        self.authenticate(User.objects.create_user(email="other@example.com"))
 
         self.assertEqual(self.put(obj).status_code, 404)
 

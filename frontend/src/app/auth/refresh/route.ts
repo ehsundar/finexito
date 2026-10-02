@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { api } from "@/lib/api/client";
-import { clearSession, getRefreshToken, setSession } from "@/lib/auth/session";
+import { clearSession, getRefreshToken, safeNext, setSession } from "@/lib/auth/session";
 
 /**
  * Rotates an expired access token, then returns the visitor to where they were.
@@ -39,13 +39,3 @@ function redirectTo(request: NextRequest, path: string) {
   return NextResponse.redirect(new URL(path, request.nextUrl.origin));
 }
 
-/**
- * Only ever redirect to a path on this origin. A protocol-relative value such
- * as `//evil.example` would otherwise send the visitor off-site.
- */
-function safeNext(value: string | null): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/dashboard";
-  }
-  return value;
-}

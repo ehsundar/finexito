@@ -54,4 +54,4 @@ make deploy DEPLOY_HOST="$HOST"
 
 step "Done: https://$DOMAIN"
 echo "Needs A/AAAA records for $DOMAIN and www.$DOMAIN pointing here (DNS only) for HTTPS."
-echo "First admin: ssh $HOST 'cd $APP_DIR && docker compose exec backend python manage.py createsuperuser'"
+echo "First admin: sign in with Google, then ssh $HOST 'cd $APP_DIR && docker compose exec backend python manage.py make_superuser <email>'"

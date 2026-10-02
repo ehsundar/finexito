@@ -13,3 +13,8 @@ SIMPLE_JWT = {
     "USER_ID_FIELD": "id",
     "USER_ID_CLAIM": "user_id",
 }
+
+# Sign in with Google: the OAuth client from the Google Cloud console. Its
+# authorised redirect URI is {PUBLIC_ORIGIN}/auth/google/callback.
+ACCOUNTS_GOOGLE_CLIENT_ID = env_str("ACCOUNTS_GOOGLE_CLIENT_ID")
+ACCOUNTS_GOOGLE_CLIENT_SECRET = env_str("ACCOUNTS_GOOGLE_CLIENT_SECRET")

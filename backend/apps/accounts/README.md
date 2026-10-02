@@ -5,65 +5,68 @@ Identity: who someone is and how they sign in. Nothing else.
 ## Model
 
 `User` is email-based (`USERNAME_FIELD = "email"`, no username) and uses a UUID
-primary key from `common.models.UUIDModel`.
+primary key from `common.models.UUIDModel`. Nobody has a password.
 
-| Field               | Meaning                                              |
-| ------------------- | ---------------------------------------------------- |
-| `email`             | Unique, stored lower-cased. The login.               |
-| `is_active`         | `False` until the email is verified.                 |
-| `is_email_verified` | Set when the verification link is followed.          |
-| `is_staff`          | Can use the Django admin.                            |
-| `date_joined`       | When the account was created.                        |
+| Field         | Meaning                                                   |
+| ------------- | --------------------------------------------------------- |
+| `email`       | Unique, stored lower-cased. Kept in step with Google.     |
+| `google_sub`  | Google's stable account id; what sign-in matches on.      |
+| `is_active`   | `False` blocks sign-in.                                   |
+| `is_staff`    | Can use the Django admin.                                 |
+| `date_joined` | When the account was created.                             |
 
 Keep `User` thin. A display name, avatar, preference or any app-specific fact
 belongs on the [profile](../profiles/README.md), never here.
 
-## Registration and verification
+**The system user** has the fixed id `User.SYSTEM_ID`
+(`00000000-0000-0000-0000-000000000001`) and the address `system@invalid`. A
+migration creates it, so it exists in every database, tests included. It owns
+whatever the site does on its own behalf and can never sign in.
 
-1. `register/` creates an **inactive** user and their profile, then emails a
-   link to `{PUBLIC_ORIGIN}/verify-email?uid=…&token=…`. Creating the account and
-   sending the mail happen in one transaction: if sending fails, the account is
-   rolled back and the API answers `503 email_unavailable`, so the address can
-   register again.
-2. The frontend posts `uid` and `token` to `verify-email/`. That activates the
-   account and returns a JWT pair, which signs the user in.
-3. The token comes from Django's `default_token_generator`, which hashes
-   `is_active`. It therefore stops working once the account is active, so each
-   link works only once.
+## Signing in
 
-Signing in before verifying returns `403 email_not_verified`, but only if the
-password is correct. With a wrong password the caller gets the generic
-failure, so nobody can use login to find out which accounts are waiting on
-verification. For the same reason, `verify-email/resend/` gives the same answer
-whether or not the address has an account.
+Google is the only way in, and the first sign-in creates the account and its
+profile (display name from Google).
 
-The email's subject and body use `SITE_NAME`, so the app never hard-codes a
-product name.
+1. The frontend's `/auth/google` calls `google/start/`, which returns Google's
+   authorisation URL with a fresh `state` and PKCE `code_verifier`. The
+   frontend keeps both in a short-lived cookie and redirects there.
+2. Google sends the visitor to `{PUBLIC_ORIGIN}/auth/google/callback`, the
+   redirect URI registered on the OAuth client. The frontend checks `state`
+   and posts `code` and `code_verifier` to `google/`.
+3. Django exchanges the code for an ID token and checks its audience, issuer,
+   expiry and `email_verified`. It finds the account by `google_sub`, else by
+   email (linking it), else creates it, and returns a JWT pair.
+
+Settings: `ACCOUNTS_GOOGLE_CLIENT_ID` and `ACCOUNTS_GOOGLE_CLIENT_SECRET`.
+
+## The admin
+
+There are no passwords, so the admin's login page signs in whoever the frontend
+has signed in: it reads the `access_token` cookie (same host, so Django gets
+it), and a staff member gets a Django session. Anyone else is sent to the
+frontend to sign in. Locally that round trip ends on `:3000`; open
+`localhost:8000/api/admin/` again afterwards.
+
+## Commands
+
+| Command                              | What                                                  |
+| ------------------------------------ | ----------------------------------------------------- |
+| `make_superuser <email> [--revoke]`  | Give an existing account staff and superuser rights.  |
+| `login_as <email>`                   | Development only (`DEBUG`): create the account if needed and print a sign-in link for the frontend's `/auth/dev-login`. |
+
+`createsuperuser` is refused: sign in with Google, then `make_superuser`.
 
 ## API — `/api/v1/auth/`
 
-| Method | Path                   | Auth | Purpose                                         |
-| ------ | ---------------------- | ---- | ----------------------------------------------- |
-| POST   | `register/`            | —    | Create an inactive account and its profile      |
-| POST   | `verify-email/`        | —    | Activate from the emailed link → JWT pair + user |
-| POST   | `verify-email/resend/` | —    | Send a fresh link to an unverified account      |
-| POST   | `login/`               | —    | Email + password → JWT pair + user              |
-| POST   | `refresh/`             | —    | Rotate the refresh token → new pair             |
-| POST   | `verify/`              | —    | Check a token                                   |
-| POST   | `logout/`              | JWT  | Blacklist a refresh token                       |
-| GET    | `me/`                  | JWT  | The authenticated account                       |
-| POST   | `password/change/`     | JWT  | Change password                                 |
+| Method | Path            | Auth | Purpose                                            |
+| ------ | --------------- | ---- | -------------------------------------------------- |
+| POST   | `google/start/` | —    | Authorisation URL + `state` + `code_verifier`      |
+| POST   | `google/`       | —    | `code` + `code_verifier` → JWT pair + user          |
+| POST   | `refresh/`      | —    | Rotate the refresh token → new pair                |
+| POST   | `verify/`       | —    | Check a token                                      |
+| POST   | `logout/`       | JWT  | Blacklist a refresh token                          |
+| GET    | `me/`           | JWT  | The authenticated account                          |
 
 Refresh tokens rotate (`ROTATE_REFRESH_TOKENS`), so `refresh/` returns both
-tokens. Some serializers in `serializers.py` exist only so that the OpenAPI
-schema describes the real request and response bodies (`AuthResponseSerializer`,
-`TokenRefresh*Serializer`, `RegisterResponseSerializer`).
-
-## Where things live
-
-| File             | What                                               |
-| ---------------- | -------------------------------------------------- |
-| `models.py`      | `User` and `UserManager`                           |
-| `services.py`    | `send_verification_email`, `verify_email`          |
-| `serializers.py` | Request validation, login, schema-only serializers |
-| `views.py`       | The endpoints above                                |
+tokens.

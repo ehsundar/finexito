@@ -74,7 +74,7 @@ Changing the secret does not change the database's password.
 
 ```bash
 docker compose ps
-docker compose exec backend python manage.py createsuperuser
+docker compose exec backend python manage.py make_superuser you@example.com
 docker compose exec db psql -U finexito finexito
 ```
 

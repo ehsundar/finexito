@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-    "/api/v1/auth/login/": {
+    "/api/v1/auth/google/": {
         parameters: {
             query?: never;
             header?: never;
@@ -13,8 +13,30 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Exchange email and password for a JWT pair. */
-        post: operations["auth_login_create"];
+        /** @description Finish Google sign-in: exchange the code, find or create the account, sign it in. */
+        post: operations["auth_google_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/google/start/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Begin Google sign-in: the authorisation URL, with its state and PKCE verifier.
+         *
+         *     The frontend keeps `state` and `code_verifier` in a short-lived cookie, sends
+         *     the browser to `url`, and hands both back to `auth/google/` on return.
+         */
+        post: operations["auth_google_start_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -55,22 +77,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/password/change/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["auth_password_change_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/auth/refresh/": {
         parameters: {
             query?: never;
@@ -93,23 +99,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/auth/register/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Create an inactive account and its profile, and email a verification link. */
-        post: operations["auth_register_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/auth/verify/": {
         parameters: {
             query?: never;
@@ -124,45 +113,6 @@ export interface paths {
          *     information about a token's fitness for a particular use.
          */
         post: operations["auth_verify_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/verify-email/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Activate an account from its emailed link and sign it in. */
-        post: operations["auth_verify_email_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/v1/auth/verify-email/resend/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * @description Send a fresh link to an unverified account.
-         *
-         *     Answers the same whether or not the address has an account, so it cannot be
-         *     used to discover who is registered.
-         */
-        post: operations["auth_verify_email_resend_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -293,12 +243,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /**
-         * @description Documents the login response body, which ``LoginSerializer`` cannot describe.
-         *
-         *     ``LoginSerializer`` only declares the write-only credentials it accepts, so
-         *     without this the generated schema claims login returns nothing usable.
-         */
         AuthResponse: {
             readonly access: string;
             readonly refresh: string;
@@ -314,9 +258,6 @@ export interface components {
          * @enum {string}
          */
         ContentTypeEnum: "image/jpeg" | "image/png" | "image/gif" | "image/webp" | "image/avif" | "application/pdf";
-        Detail: {
-            readonly detail: string;
-        };
         /** @description Documents the single error envelope every failing response uses. */
         Error: {
             readonly error: components["schemas"]["ErrorDetail"];
@@ -329,10 +270,15 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /** @description Email/password login returning a JWT pair plus the user payload. */
-        Login: {
-            email: string;
-            password: string;
+        GoogleLogin: {
+            code: string;
+            code_verifier: string;
+        };
+        /** @description Where to send the browser, and what the frontend keeps until it returns. */
+        GoogleStart: {
+            readonly url: string;
+            readonly state: string;
+            readonly code_verifier: string;
         };
         Logout: {
             refresh: string;
@@ -405,10 +351,6 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["PublicProfile"][];
         };
-        PasswordChange: {
-            current_password: string;
-            new_password: string;
-        };
         PatchedProfile: {
             /** Format: uuid */
             readonly id?: string;
@@ -454,22 +396,6 @@ export interface components {
             readonly avatar_url: string;
             readonly bio: string;
             readonly role: components["schemas"]["RoleEnum"];
-        };
-        Register: {
-            /** Format: email */
-            email: string;
-            password: string;
-            display_name?: string;
-        };
-        /** @description No tokens: the account stays inactive until its email is verified. */
-        RegisterResponse: {
-            readonly detail: string;
-            readonly user: components["schemas"]["User"];
-            readonly profile: components["schemas"]["Profile"];
-        };
-        ResendVerification: {
-            /** Format: email */
-            email: string;
         };
         /**
          * @description * `member` - Member
@@ -530,15 +456,10 @@ export interface components {
              * Format: email
              */
             readonly email: string;
-            readonly is_email_verified: boolean;
             /** Format: date-time */
             readonly date_joined: string;
             /** Format: date-time */
             readonly last_login: string | null;
-        };
-        VerifyEmail: {
-            uid: string;
-            token: string;
         };
         /**
          * @description * `public` - Public
@@ -555,7 +476,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    auth_login_create: {
+    auth_google_create: {
         parameters: {
             query?: never;
             header?: never;
@@ -564,9 +485,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Login"];
-                "application/x-www-form-urlencoded": components["schemas"]["Login"];
-                "multipart/form-data": components["schemas"]["Login"];
+                "application/json": components["schemas"]["GoogleLogin"];
+                "application/x-www-form-urlencoded": components["schemas"]["GoogleLogin"];
+                "multipart/form-data": components["schemas"]["GoogleLogin"];
             };
         };
         responses: {
@@ -578,12 +499,39 @@ export interface operations {
                     "application/json": components["schemas"]["AuthResponse"];
                 };
             };
-            401: {
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    auth_google_start_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleStart"];
                 };
             };
         };
@@ -639,38 +587,6 @@ export interface operations {
             };
         };
     };
-    auth_password_change_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PasswordChange"];
-                "application/x-www-form-urlencoded": components["schemas"]["PasswordChange"];
-                "multipart/form-data": components["schemas"]["PasswordChange"];
-            };
-        };
-        responses: {
-            /** @description Password updated. */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
     auth_refresh_create: {
         parameters: {
             query?: never;
@@ -704,47 +620,6 @@ export interface operations {
             };
         };
     };
-    auth_register_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["Register"];
-                "application/x-www-form-urlencoded": components["schemas"]["Register"];
-                "multipart/form-data": components["schemas"]["Register"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RegisterResponse"];
-                };
-            };
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
     auth_verify_create: {
         parameters: {
             query?: never;
@@ -766,80 +641,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TokenVerify"];
-                };
-            };
-        };
-    };
-    auth_verify_email_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerifyEmail"];
-                "application/x-www-form-urlencoded": components["schemas"]["VerifyEmail"];
-                "multipart/form-data": components["schemas"]["VerifyEmail"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuthResponse"];
-                };
-            };
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-        };
-    };
-    auth_verify_email_resend_create: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ResendVerification"];
-                "application/x-www-form-urlencoded": components["schemas"]["ResendVerification"];
-                "multipart/form-data": components["schemas"]["ResendVerification"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Detail"];
-                };
-            };
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
-                };
-            };
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

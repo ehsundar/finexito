@@ -8,6 +8,8 @@ export type User = components["schemas"]["User"];
 
 export const ACCESS_COOKIE = "access_token";
 export const REFRESH_COOKIE = "refresh_token";
+/** Holds the state and PKCE verifier while the visitor is away at Google. */
+export const GOOGLE_COOKIE = "google_oauth";
 
 /**
  * Tokens live in httpOnly cookies, never in localStorage, so a script injected
@@ -15,7 +17,7 @@ export const REFRESH_COOKIE = "refresh_token";
  * credential: every authenticated call goes through the server, which attaches
  * the bearer header itself.
  */
-const shared = {
+export const sharedCookie = {
   httpOnly: true,
   sameSite: "lax",
   // SECURE_COOKIES=false only while the site is served over plain HTTP (a bare
@@ -31,13 +33,13 @@ const REFRESH_MAX_AGE = 14 * 24 * 60 * 60;
 
 export async function setSession(tokens: { access: string; refresh: string }) {
   const jar = await cookies();
-  jar.set(ACCESS_COOKIE, tokens.access, { ...shared, maxAge: ACCESS_MAX_AGE });
-  jar.set(REFRESH_COOKIE, tokens.refresh, { ...shared, maxAge: REFRESH_MAX_AGE });
+  jar.set(ACCESS_COOKIE, tokens.access, { ...sharedCookie, maxAge: ACCESS_MAX_AGE });
+  jar.set(REFRESH_COOKIE, tokens.refresh, { ...sharedCookie, maxAge: REFRESH_MAX_AGE });
 }
 
 export async function setAccessToken(access: string) {
   const jar = await cookies();
-  jar.set(ACCESS_COOKIE, access, { ...shared, maxAge: ACCESS_MAX_AGE });
+  jar.set(ACCESS_COOKIE, access, { ...sharedCookie, maxAge: ACCESS_MAX_AGE });
 }
 
 export async function clearSession() {
@@ -52,4 +54,15 @@ export async function getAccessToken() {
 
 export async function getRefreshToken() {
   return (await cookies()).get(REFRESH_COOKIE)?.value;
+}
+
+/**
+ * Only ever redirect to a path on this origin. A protocol-relative value such
+ * as `//evil.example` would otherwise send the visitor off-site.
+ */
+export function safeNext(value: string | null | undefined): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/dashboard";
+  }
+  return value;
 }

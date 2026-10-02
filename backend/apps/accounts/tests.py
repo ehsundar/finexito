@@ -1,185 +1,112 @@
-import re
+import base64
+import io
+import json
+import time
+import urllib.parse
 from unittest import mock
 
 from django.contrib.auth import get_user_model
-from django.core import mail
+from django.core.management import CommandError, call_command
+from django.test import override_settings
 from django.urls import reverse
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.common.testing import PASSWORD, PlatformTestCase
+from apps.common.testing import PlatformTestCase
 from apps.profiles.models import Profile
 
 User = get_user_model()
 
+CLIENT_ID = "client-id.apps.googleusercontent.com"
 
-class RegisterTests(PlatformTestCase):
-    def test_register_creates_an_inactive_account_and_its_profile(self):
-        response = self.client.post(
-            reverse("accounts:register"),
-            {"email": "New@Example.com", "password": PASSWORD, "display_name": "New"},
-            format="json",
-        )
 
-        self.assertEqual(response.status_code, 201, response.data)
-        self.assertNotIn("access", response.data)
-        self.assertEqual(response.data["user"]["email"], "new@example.com")
-        self.assertEqual(response.data["profile"]["display_name"], "New")
-        self.assertTrue(Profile.objects.filter(user__email="new@example.com").exists())
-        self.assertFalse(User.objects.get(email="new@example.com").is_active)
-        self.assertEqual(mail.outbox[0].to, ["new@example.com"])
+def google_response(**overrides):
+    """What Google's token endpoint answers, with an ID token carrying these claims."""
+    claims = {
+        "iss": "https://accounts.google.com",
+        "aud": CLIENT_ID,
+        "exp": time.time() + 3600,
+        "sub": "google-123",
+        "email": "New.Person@example.com",
+        "email_verified": True,
+        "name": "New Person",
+        **overrides,
+    }
+    payload = base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
+    return io.BytesIO(json.dumps({"id_token": f"header.{payload}.signature"}).encode())
 
-    def test_a_failed_send_leaves_no_account_behind(self):
-        with mock.patch("apps.accounts.services.send_mail", side_effect=TimeoutError("timed out")):
+
+@override_settings(ACCOUNTS_GOOGLE_CLIENT_ID=CLIENT_ID, ACCOUNTS_GOOGLE_CLIENT_SECRET="secret")
+class GoogleSignInTests(PlatformTestCase):
+    def sign_in(self, **claims):
+        with mock.patch("urllib.request.urlopen", return_value=google_response(**claims)) as post:
             response = self.client.post(
-                reverse("accounts:register"),
-                {"email": "new@example.com", "password": PASSWORD},
-                format="json",
+                reverse("accounts:google"), {"code": "c", "code_verifier": "v"}, format="json"
             )
+        self.token_request = urllib.parse.parse_qs(post.call_args.kwargs["data"].decode())
+        return response
 
-        self.assertEqual(response.status_code, 503)
-        self.assertEqual(response.data["error"]["code"], "email_unavailable")
-        self.assertFalse(User.objects.filter(email="new@example.com").exists())
+    def test_start_builds_the_authorisation_url(self):
+        data = self.client.post(reverse("accounts:google-start")).data
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(data["url"]).query)
 
-    def test_register_rejects_a_duplicate_email(self):
-        response = self.client.post(
-            reverse("accounts:register"),
-            {"email": self.user.email, "password": PASSWORD},
-            format="json",
-        )
+        self.assertEqual(query["client_id"], [CLIENT_ID])
+        self.assertEqual(query["redirect_uri"], ["http://localhost:3000/auth/google/callback"])
+        self.assertEqual(query["state"], [data["state"]])
+        self.assertEqual(query["code_challenge_method"], ["S256"])
+        self.assertTrue(data["code_verifier"])
 
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("email", response.data["error"]["fields"])
-
-    def test_register_rejects_a_weak_password(self):
-        response = self.client.post(
-            reverse("accounts:register"),
-            {"email": "weak@example.com", "password": "123"},
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("password", response.data["error"]["fields"])
-
-
-class EmailVerificationTests(PlatformTestCase):
-    email = "new@example.com"
-
-    def register(self):
-        self.client.post(
-            reverse("accounts:register"),
-            {"email": self.email, "password": PASSWORD},
-            format="json",
-        )
-
-    def link_params(self, message=None):
-        body = (message or mail.outbox[-1]).body
-        return dict(re.findall(r"[?&](uid|token)=([^&\s]+)", body))
-
-    def verify(self, params):
-        return self.client.post(reverse("accounts:verify-email"), params, format="json")
-
-    def login(self):
-        return self.client.post(
-            reverse("accounts:login"),
-            {"email": self.email, "password": PASSWORD},
-            format="json",
-        )
-
-    def test_email_carries_the_site_name(self):
-        with self.settings(SITE_NAME="Acme"):
-            self.register()
-
-        self.assertIn("Acme", mail.outbox[0].subject)
-
-    def test_unverified_account_cannot_log_in(self):
-        self.register()
-
-        response = self.login()
-
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.data["error"]["code"], "email_not_verified")
-
-    def test_unverified_account_with_a_wrong_password_gets_the_generic_error(self):
-        self.register()
-
-        response = self.client.post(
-            reverse("accounts:login"),
-            {"email": self.email, "password": "wrong-password"},
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, 401)
-
-    def test_link_activates_the_account_and_signs_it_in(self):
-        self.register()
-
-        response = self.verify(self.link_params())
-
-        self.assertEqual(response.status_code, 200, response.data)
-        self.assertTrue(response.data["access"])
-        self.assertTrue(response.data["user"]["is_email_verified"])
-        user = User.objects.get(email=self.email)
-        self.assertTrue(user.is_active)
-        self.assertEqual(self.login().status_code, 200)
-
-    def test_link_works_only_once(self):
-        self.register()
-        params = self.link_params()
-        self.verify(params)
-
-        response = self.verify(params)
-
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.data["error"]["code"], "invalid_link")
-
-    def test_a_tampered_link_is_rejected(self):
-        self.register()
-        params = self.link_params()
-
-        self.assertEqual(self.verify({**params, "token": "nope"}).status_code, 400)
-        self.assertEqual(self.verify({**params, "uid": "garbage"}).status_code, 400)
-
-    def test_resend_sends_a_new_link_to_an_unverified_account(self):
-        self.register()
-
-        response = self.client.post(
-            reverse("accounts:verify-email-resend"), {"email": self.email}, format="json"
-        )
+    def test_first_sign_in_creates_the_account_and_its_profile(self):
+        response = self.sign_in()
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(mail.outbox), 2)
-        self.assertEqual(self.verify(self.link_params()).status_code, 200)
+        user = User.objects.get(email="new.person@example.com")
+        self.assertEqual(user.google_sub, "google-123")
+        self.assertFalse(user.has_usable_password())
+        self.assertEqual(Profile.objects.get(user=user).display_name, "New Person")
+        self.assertEqual(response.data["user"]["email"], "new.person@example.com")
+        self.assertIn("access", response.data)
+        self.assertEqual(self.token_request["code_verifier"], ["v"])
 
-    def test_resend_answers_the_same_for_unknown_and_active_accounts(self):
-        for email in ("nobody@example.com", self.user.email):
-            response = self.client.post(
-                reverse("accounts:verify-email-resend"), {"email": email}, format="json"
-            )
-            self.assertEqual(response.status_code, 200)
+    def test_a_returning_account_is_found_by_google_id_even_with_a_new_email(self):
+        self.sign_in()
+        self.sign_in(email="renamed@example.com")
 
-        self.assertEqual(len(mail.outbox), 0)
+        self.assertEqual(User.objects.get(google_sub="google-123").email, "renamed@example.com")
+
+    def test_an_account_made_without_google_is_linked_by_email(self):
+        self.sign_in(email=self.user.email, sub="google-999")
+
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.google_sub, "google-999")
+
+    def test_an_unverified_google_email_is_refused(self):
+        response = self.sign_in(email_verified=False)
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.data["error"]["code"], "google_sign_in_failed")
+        self.assertFalse(User.objects.filter(email="new.person@example.com").exists())
+
+    def test_a_token_for_another_client_is_refused(self):
+        self.assertEqual(self.sign_in(aud="someone-else").status_code, 400)
+
+    def test_a_disabled_account_cannot_sign_in(self):
+        self.user.is_active = False
+        self.user.save()
+
+        response = self.sign_in(email=self.user.email)
+
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.data["error"]["code"], "account_disabled")
 
 
-class LoginTests(PlatformTestCase):
-    def login(self, password=PASSWORD):
-        return self.client.post(
-            reverse("accounts:login"),
-            {"email": self.user.email, "password": password},
-            format="json",
-        )
-
-    def test_login_returns_a_token_pair(self):
-        response = self.login()
-
-        self.assertEqual(response.status_code, 200, response.data)
-        self.assertEqual(response.data["user"]["email"], self.user.email)
-        self.assertLessEqual({"access", "refresh", "user"}, set(response.data))
-
-    def test_login_rejects_a_bad_password(self):
-        self.assertEqual(self.login(password="wrong-password").status_code, 401)
+class SessionTests(PlatformTestCase):
+    def tokens(self):
+        refresh = RefreshToken.for_user(self.user)
+        return str(refresh.access_token), str(refresh)
 
     def test_access_token_authenticates_me(self):
-        tokens = self.login().data
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
+        access, _ = self.tokens()
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
 
         response = self.client.get(reverse("accounts:me"))
 
@@ -190,55 +117,76 @@ class LoginTests(PlatformTestCase):
         self.assertEqual(self.client.get(reverse("accounts:me")).status_code, 401)
 
     def test_logout_blacklists_the_refresh_token(self):
-        tokens = self.login().data
-        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {tokens['access']}")
+        access, refresh = self.tokens()
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access}")
 
-        logout = self.client.post(
-            reverse("accounts:logout"), {"refresh": tokens["refresh"]}, format="json"
-        )
-        refresh = self.client.post(
-            reverse("accounts:refresh"), {"refresh": tokens["refresh"]}, format="json"
-        )
+        logout = self.client.post(reverse("accounts:logout"), {"refresh": refresh}, format="json")
+        rotate = self.client.post(reverse("accounts:refresh"), {"refresh": refresh}, format="json")
 
         self.assertEqual(logout.status_code, 205)
-        self.assertEqual(refresh.status_code, 401)
+        self.assertEqual(rotate.status_code, 401)
 
 
-class PasswordChangeTests(PlatformTestCase):
-    def setUp(self):
-        super().setUp()
-        self.authenticate()
+class AdminLoginTests(PlatformTestCase):
+    def test_a_staff_session_cookie_signs_into_the_admin(self):
+        self.user.is_staff = True
+        self.user.save()
+        self.client.cookies["access_token"] = str(RefreshToken.for_user(self.user).access_token)
 
-    def test_password_change_takes_effect(self):
-        response = self.client.post(
-            reverse("accounts:password-change"),
-            {"current_password": PASSWORD, "new_password": "an0ther-secret-pw"},
-            format="json",
-        )
+        response = self.client.get("/api/admin/login/?next=/api/admin/")
 
-        self.assertEqual(response.status_code, 204)
-        self.user.refresh_from_db()
-        self.assertTrue(self.user.check_password("an0ther-secret-pw"))
+        self.assertRedirects(response, "/api/admin/", fetch_redirect_response=False)
+        self.assertEqual(self.client.get("/api/admin/").status_code, 200)
 
-    def test_password_change_rejects_a_wrong_current_password(self):
-        response = self.client.post(
-            reverse("accounts:password-change"),
-            {"current_password": "not-it", "new_password": "an0ther-secret-pw"},
-            format="json",
-        )
+    def test_anyone_else_is_sent_to_sign_in(self):
+        self.client.cookies["access_token"] = str(RefreshToken.for_user(self.user).access_token)
 
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("current_password", response.data["error"]["fields"])
+        response = self.client.get("/api/admin/login/")
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response["Location"].startswith("http://localhost:3000/auth/refresh"))
 
 
 class UserModelTests(PlatformTestCase):
+    def test_the_system_user_always_exists_with_a_fixed_id(self):
+        system = User.objects.get(pk=User.SYSTEM_ID)
+
+        self.assertEqual(str(system.pk), "00000000-0000-0000-0000-000000000001")
+        self.assertFalse(system.is_active)
+        self.assertFalse(system.has_usable_password())
+
     def test_email_is_normalised_to_lowercase(self):
-        user = User.objects.create_user(email="MiXeD@Example.COM", password=PASSWORD)
+        self.assertEqual(
+            User.objects.create_user(email="Mixed@Example.COM").email, "mixed@example.com"
+        )
 
-        self.assertEqual(user.email, "mixed@example.com")
+    def test_createsuperuser_is_refused(self):
+        with self.assertRaises(NotImplementedError):
+            User.objects.create_superuser(email="admin@example.com", password="x")
 
-    def test_superuser_flags(self):
-        admin = User.objects.create_superuser(email="admin@example.com", password=PASSWORD)
 
-        self.assertTrue(admin.is_staff)
-        self.assertTrue(admin.is_superuser)
+class CommandTests(PlatformTestCase):
+    def test_make_superuser_promotes_and_revokes(self):
+        call_command("make_superuser", self.user.email, stdout=io.StringIO())
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_superuser and self.user.is_staff)
+
+        call_command("make_superuser", self.user.email, "--revoke", stdout=io.StringIO())
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_superuser or self.user.is_staff)
+
+    def test_make_superuser_needs_an_existing_account(self):
+        with self.assertRaises(CommandError):
+            call_command("make_superuser", "nobody@example.com")
+
+    @override_settings(DEBUG=True)
+    def test_login_as_creates_the_account_and_prints_a_sign_in_link(self):
+        out = io.StringIO()
+        call_command("login_as", "dev@example.com", stdout=out)
+
+        self.assertTrue(User.objects.filter(email="dev@example.com").exists())
+        self.assertIn("http://localhost:3000/auth/dev-login?access=", out.getvalue())
+
+    def test_login_as_refuses_outside_debug(self):
+        with self.assertRaises(CommandError):
+            call_command("login_as", "dev@example.com")

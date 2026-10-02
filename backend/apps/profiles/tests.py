@@ -1,6 +1,6 @@
 from django.urls import reverse
 
-from apps.common.testing import PASSWORD, PlatformTestCase, User
+from apps.common.testing import PlatformTestCase, User
 from apps.profiles import services
 from apps.profiles.models import Profile, ProfileStatus
 
@@ -19,7 +19,7 @@ class ProfileEndpointTests(PlatformTestCase):
         self.assertEqual(response.data["email"], self.user.email)
 
     def test_me_creates_a_missing_profile(self):
-        stranger = User.objects.create_user(email="stranger@example.com", password=PASSWORD)
+        stranger = User.objects.create_user(email="stranger@example.com")
         self.client.force_authenticate(user=stranger)
 
         response = self.client.get(reverse("profile-me"))
@@ -74,9 +74,9 @@ class MemberListTests(PlatformTestCase):
         self.authenticate()
 
     def test_members_list_shows_active_profiles_only(self):
-        other = User.objects.create_user(email="other@example.com", password=PASSWORD)
+        other = User.objects.create_user(email="other@example.com")
         services.create_profile(other, display_name="Other")
-        gone = User.objects.create_user(email="gone@example.com", password=PASSWORD)
+        gone = User.objects.create_user(email="gone@example.com")
         services.create_profile(gone, display_name="Gone", status=ProfileStatus.SUSPENDED)
 
         response = self.client.get(reverse("member-list"))

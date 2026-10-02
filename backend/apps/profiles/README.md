@@ -22,7 +22,7 @@ timestamps and `extra`.
 ## Creating profiles
 
 Always go through `services.create_profile(user, display_name=…)`.
-Registration calls it. Accounts made another way (`createsuperuser`, the admin)
+Google sign-in calls it for a new account. Accounts made another way (`login_as`)
 have no profile until they first hit `profiles/me/`, which creates one for them.
 
 A `suspended` profile gets `403` from `profiles/me/` and is left out of

@@ -23,7 +23,7 @@ brand/      Logo, palette, type and voice; what a fork replaces to become a new 
 
 | App                                             | What it owns                                          |
 | ----------------------------------------------- | ----------------------------------------------------- |
-| [`accounts`](backend/apps/accounts/README.md)   | **User**: identity, sign-in, email verification.      |
+| [`accounts`](backend/apps/accounts/README.md)   | **User**: identity, Google sign-in, the system user.  |
 | [`profiles`](backend/apps/profiles/README.md)   | **Profile**: everything else about a person. One per user. |
 | [`content`](backend/apps/content/README.md)   | **Page**: public or private Markdown pages (a small CMS). |
 | [`common`](backend/apps/common/README.md)       | Base models, `extra` accessors, the error envelope.   |
@@ -48,8 +48,18 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env.local
 make db-up
 make migrate
-cd backend && uv run python manage.py createsuperuser
 make run          # Django on :8000 and Next on :3000
+```
+
+Sign-in is Google only, locally too: the OAuth client needs
+`http://localhost:3000/auth/google/callback` as an authorised redirect URI, and
+`FINEXITO_ACCOUNTS_GOOGLE_CLIENT_ID` / `_SECRET` in `backend/.env`. To skip
+Google, or to be someone else, `login_as` creates the account if needed and
+prints a sign-in link (development only):
+
+```bash
+cd backend && uv run python manage.py login_as you@example.com
+uv run python manage.py make_superuser you@example.com   # admin rights
 ```
 
 To run one side at a time instead, use `make run-back` and `make run-front`.

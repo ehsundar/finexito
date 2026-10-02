@@ -4,23 +4,24 @@ info:
   version: 0.1.0
   description: Shared backend facilities (auth, profiles, settings).
 paths:
-  /api/v1/auth/login/:
+  /api/v1/auth/google/:
     post:
-      operationId: auth_login_create
-      description: Exchange email and password for a JWT pair.
+      operationId: auth_google_create
+      description: 'Finish Google sign-in: exchange the code, find or create the account,
+        sign it in.'
       tags:
       - auth
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Login'
+              $ref: '#/components/schemas/GoogleLogin'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Login'
+              $ref: '#/components/schemas/GoogleLogin'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Login'
+              $ref: '#/components/schemas/GoogleLogin'
         required: true
       security:
       - {}
@@ -31,11 +32,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/AuthResponse'
           description: ''
-        '401':
+        '400':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/auth/google/start/:
+    post:
+      operationId: auth_google_start_create
+      description: |-
+        Begin Google sign-in: the authorisation URL, with its state and PKCE verifier.
+
+        The frontend keeps `state` and `code_verifier` in a short-lived cookie, sends
+        the browser to `url`, and hands both back to `auth/google/` on return.
+      tags:
+      - auth
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleStart'
           description: ''
   /api/v1/auth/logout/:
     post:
@@ -83,35 +109,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
-  /api/v1/auth/password/change/:
-    post:
-      operationId: auth_password_change_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PasswordChange'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PasswordChange'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PasswordChange'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '204':
-          description: Password updated.
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: ''
   /api/v1/auth/refresh/:
     post:
       operationId: auth_refresh_create
@@ -147,48 +144,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
-  /api/v1/auth/register/:
-    post:
-      operationId: auth_register_create
-      description: Create an inactive account and its profile, and email a verification
-        link.
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Register'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Register'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Register'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      - {}
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RegisterResponse'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: ''
-        '503':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: ''
   /api/v1/auth/verify/:
     post:
       operationId: auth_verify_create
@@ -215,86 +170,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TokenVerify'
-          description: ''
-  /api/v1/auth/verify-email/:
-    post:
-      operationId: auth_verify_email_create
-      description: Activate an account from its emailed link and sign it in.
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/VerifyEmail'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/VerifyEmail'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/VerifyEmail'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuthResponse'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: ''
-  /api/v1/auth/verify-email/resend/:
-    post:
-      operationId: auth_verify_email_resend_create
-      description: |-
-        Send a fresh link to an unverified account.
-
-        Answers the same whether or not the address has an account, so it cannot be
-        used to discover who is registered.
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/ResendVerification'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/ResendVerification'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/ResendVerification'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Detail'
-          description: ''
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-          description: ''
-        '503':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
           description: ''
   /api/v1/members/:
     get:
@@ -562,11 +437,6 @@ components:
   schemas:
     AuthResponse:
       type: object
-      description: |-
-        Documents the login response body, which ``LoginSerializer`` cannot describe.
-
-        ``LoginSerializer`` only declares the write-only credentials it accepts, so
-        without this the generated schema claims login returns nothing usable.
       properties:
         access:
           type: string
@@ -598,14 +468,6 @@ components:
         * `image/webp` - image/webp
         * `image/avif` - image/avif
         * `application/pdf` - application/pdf
-    Detail:
-      type: object
-      properties:
-        detail:
-          type: string
-          readOnly: true
-      required:
-      - detail
     Error:
       type: object
       description: Documents the single error envelope every failing response uses.
@@ -634,19 +496,34 @@ components:
       - code
       - fields
       - message
-    Login:
+    GoogleLogin:
       type: object
-      description: Email/password login returning a JWT pair plus the user payload.
       properties:
-        email:
+        code:
           type: string
-          writeOnly: true
-        password:
+        code_verifier:
           type: string
-          writeOnly: true
       required:
-      - email
-      - password
+      - code
+      - code_verifier
+    GoogleStart:
+      type: object
+      description: Where to send the browser, and what the frontend keeps until it
+        returns.
+      properties:
+        url:
+          type: string
+          readOnly: true
+        state:
+          type: string
+          readOnly: true
+        code_verifier:
+          type: string
+          readOnly: true
+      required:
+      - code_verifier
+      - state
+      - url
     Logout:
       type: object
       properties:
@@ -789,18 +666,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PublicProfile'
-    PasswordChange:
-      type: object
-      properties:
-        current_password:
-          type: string
-          writeOnly: true
-        new_password:
-          type: string
-          writeOnly: true
-      required:
-      - current_password
-      - new_password
     PatchedProfile:
       type: object
       properties:
@@ -925,48 +790,6 @@ components:
       - display_name
       - id
       - role
-    Register:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-        password:
-          type: string
-          writeOnly: true
-        display_name:
-          type: string
-          maxLength: 150
-      required:
-      - email
-      - password
-    RegisterResponse:
-      type: object
-      description: 'No tokens: the account stays inactive until its email is verified.'
-      properties:
-        detail:
-          type: string
-          readOnly: true
-        user:
-          allOf:
-          - $ref: '#/components/schemas/User'
-          readOnly: true
-        profile:
-          allOf:
-          - $ref: '#/components/schemas/Profile'
-          readOnly: true
-      required:
-      - detail
-      - profile
-      - user
-    ResendVerification:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-      required:
-      - email
     RoleEnum:
       enum:
       - member
@@ -1087,9 +910,6 @@ components:
           format: email
           readOnly: true
           title: Email address
-        is_email_verified:
-          type: boolean
-          readOnly: true
         date_joined:
           type: string
           format: date-time
@@ -1103,18 +923,7 @@ components:
       - date_joined
       - email
       - id
-      - is_email_verified
       - last_login
-    VerifyEmail:
-      type: object
-      properties:
-        uid:
-          type: string
-        token:
-          type: string
-      required:
-      - token
-      - uid
     Visibility6ddEnum:
       enum:
       - public

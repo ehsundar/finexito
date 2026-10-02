@@ -17,7 +17,7 @@ class ProfileViewSet(viewsets.GenericViewSet):
 
     def _current_profile(self) -> Profile:
         profile = Profile.objects.select_related("user").filter(user=self.request.user).first()
-        # Accounts made outside the API (createsuperuser, the admin) have none yet.
+        # Accounts made without Google sign-in (`login_as`) have none yet.
         if profile is None:
             profile = services.create_profile(self.request.user)
         if profile.status == ProfileStatus.SUSPENDED:
