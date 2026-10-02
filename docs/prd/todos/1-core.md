@@ -45,20 +45,19 @@ client is online and refetches on focus.
 | ----------- | --------- | ----- |
 | Inbox       | `Project` with `is_inbox` | One per member, created with the account. Can't be renamed, deleted, archived or nested. Where tasks go when no project is named. |
 | Project     | `Project` | A named collection of tasks; projects nest. |
-| Item        | `Item`    | A node in a project's tree: a task, or a section heading. |
+| Section     | `Section` | A heading inside one project. |
+| Task        | `Task`    | A to-do in a project, optionally in a section, optionally under another task. |
 | Label       | `Label`   | A member's own tag, usable across all their projects. |
 | Filter      | code      | A predefined, read-only view over tasks (see [Filters](#filters)). |
 | Favourite filter | `FavouriteFilter` | A member's pin of a filter slug, so it shows in the sidebar. |
 
-### One tree, not separate tables
+### One model per level
 
-There is no `Section` model. A project's contents are one tree of `Item`s: a
-section is an item of kind `section`, and tasks and sub-tasks are items of kind
-`task` under it, or under each other. Moving, ordering, archiving and deleting
-work the same way at every level, and new kinds of node can be added later
-without new tables or new endpoints.
+Projects, sections and tasks are separate models, each with its own rules,
+rather than one generic tree: each level is expected to grow behaviour of its
+own.
 
-Each item also has an `extra` JSON field for data the app doesn't model yet.
+Each task also has an `extra` JSON field for data the app doesn't model yet.
 The app stores and returns it but never reads it.
 
 ## User stories
@@ -88,38 +87,42 @@ The app stores and returns it but never reads it.
 | `colour`      | One of the theme's named colours, not a hex value, so it follows the brand. Default: the neutral one. |
 | `parent`      | Optional; nesting up to 3 levels. |
 | `is_favourite`| Favourites also appear in a Favourites group at the top of the sidebar. |
-| `is_archived` | Hidden from the sidebar and from every view, filter and search, with its items. |
+| `is_archived` | Hidden from the sidebar and from every view, filter and search, with its sections and tasks. |
 | `view`        | `list` / `board`, remembered per project. |
 | `sort`        | `manual` / `priority` / `name` / `added`. Default `manual`. |
 | `order`       | Position among its siblings in the sidebar. |
 
 - Archiving a project archives its sub-projects; unarchiving restores them.
   Archived projects are listed under "Archived" in the projects page.
-- Deleting asks for confirmation and deletes sub-projects and items.
+- Deleting asks for confirmation and deletes sub-projects, sections and tasks.
 - Moving a project under another moves its sub-projects with it; a move that
   would exceed 3 levels is refused.
 
-### Items
+### Sections
 
 | Field         | Notes |
 | ------------- | ----- |
-| `kind`        | `task` / `section`. Default `task`. |
 | `project`     | Required. |
-| `parent`      | Optional item in the same project. |
-| `order`       | Position among siblings (same project and parent). |
-| `content`     | Required, up to 500 characters. Inline Markdown (bold, italic, code, links). A section's name. |
+| `name`        | Required, up to 500 characters. |
+| `order`       | Position in the project. |
+| `is_archived` | Hidden, with its tasks. |
+
+### Tasks
+
+| Field         | Notes |
+| ------------- | ----- |
+| `project`     | Required. |
+| `section`     | Optional section in the same project. |
+| `parent`      | Optional task; a sub-task shares its parent's project and section. |
+| `order`       | Position among siblings (same project, section and parent). |
+| `content`     | Required, up to 500 characters. Inline Markdown (bold, italic, code, links). |
 | `description` | Optional Markdown, up to 16,000 characters. |
 | `priority`    | `1` (most urgent, red) to `4` (none, default). Written `p1`–`p4`. Colours come from the theme. |
 | `labels`      | Any of the member's labels. |
 | `completed_at`| Set on completion, cleared on undo. |
-| `is_archived` | Collapsed and hidden. |
 | `extra`       | JSON object, up to 16 KB. Stored and returned as is. |
 
-The tree rules are on the model, in one place:
-
-- A section sits at the top of its project (no parent) and can't be completed.
-- A task sits under a section, under another task, or at the top.
-- Tasks nest up to 4 levels below the section or top level.
+Tasks nest up to 4 levels.
 
 **Sections**
 
@@ -148,7 +151,7 @@ The tree rules are on the model, in one place:
 ### Quick add
 
 One line in, one task out. Parsing happens on the server (`POST
-todos/items/quick/`) so every client agrees; the client also highlights tokens
+todos/tasks/quick/`) so every client agrees; the client also highlights tokens
 as you type using the same rules.
 
 | Token            | Meaning |
@@ -237,7 +240,7 @@ enough that real use never meets them; hitting one returns a clear error.
 | `TODOS_MAX_SECTIONS_PER_PROJECT` | 50 |
 | `TODOS_MAX_TASKS_PER_PROJECT` | 5,000 open tasks |
 | `TODOS_MAX_LABELS`            | 500 per member |
-| `TODOS_MAX_EXTRA_BYTES`       | 16 KB per item |
+| `TODOS_MAX_EXTRA_BYTES`       | 16 KB per task |
 | `TODOS_WRITE_RATE`            | `1000/hour` per member |
 
 Writes use DRF's `ScopedRateThrottle` with scope `todos`, rated by
@@ -249,24 +252,27 @@ Writes use DRF's `ScopedRateThrottle` with scope `todos`, rated by
 | --------------- | -------------------------- | ------- |
 | GET, POST       | `todos/projects/`          | My projects, Inbox included. `?archived=` |
 | GET, PATCH, DEL | `todos/projects/{id}/`     | Includes archive / unarchive and moving |
-| GET, POST       | `todos/items/`             | `?project=&kind=&parent=&label=&filter=&q=&completed=` |
-| GET, PATCH, DEL | `todos/items/{id}/`        | Edit, move, nest |
-| POST            | `todos/items/{id}/close/`  | Complete (with sub-tasks) |
-| POST            | `todos/items/{id}/reopen/` | Undo |
-| POST            | `todos/items/quick/`       | Parse one line and create the task |
+| GET, POST       | `todos/sections/`          | `?project=&q=` |
+| GET, PATCH, DEL | `todos/sections/{id}/`     | Rename, move, archive |
+| GET, POST       | `todos/tasks/`             | `?project=&section=&parent=&label=&filter=&q=&completed=` |
+| GET, PATCH, DEL | `todos/tasks/{id}/`        | Edit, move, nest |
+| POST            | `todos/tasks/{id}/close/`  | Complete (with sub-tasks) |
+| POST            | `todos/tasks/{id}/reopen/` | Undo |
+| POST            | `todos/tasks/quick/`       | Parse one line and create the task |
 | GET, POST       | `todos/labels/`            | |
 | PATCH, DEL      | `todos/labels/{id}/`       | |
 | GET             | `todos/filters/`           | The built-in filters, with `is_favourite` |
 | POST, DEL       | `todos/filters/{slug}/favourite/` | Pin or unpin a filter |
-| POST            | `todos/{kind}/reorder/`    | `kind` is `projects`, `items` or `labels`; body is the ordered list of sibling ids |
+| POST            | `todos/{kind}/reorder/`    | `kind` is `projects`, `sections`, `tasks` or `labels`; body is the ordered list of sibling ids |
 
 Every endpoint requires sign-in. Anything the caller can't see is `404`.
 
 ## Admin
 
-Projects (owner, item count, archived; filters on archived and inbox; search by
-name and owner email), items (project, kind, priority, completed; filters on
-kind; search by content; `extra` shown as formatted JSON), labels (owner, task
+Projects (owner, task count, archived; filters on archived and inbox; search by
+name and owner email), sections (project, archived), tasks (project, section,
+priority, completed; filters on priority and completion; search by content;
+`extra` shown as formatted JSON), labels (owner, task
 count). Read-only where code owns the data: completion times, the Inbox flag.
 
 ## Dependencies

@@ -170,11 +170,11 @@ default 60); beyond that they're deferred, not dropped.
 
 | Method          | Path                          | Purpose |
 | --------------- | ----------------------------- | ------- |
-| GET             | `todos/items/?view=today`     | Overdue and today |
-| GET             | `todos/items/?view=upcoming&from=&to=` | By day |
-| POST            | `todos/items/reschedule/`     | Move many tasks to a date (e.g. all overdue) |
+| GET             | `todos/tasks/?view=today`     | Overdue and today |
+| GET             | `todos/tasks/?view=upcoming&from=&to=` | By day |
+| POST            | `todos/tasks/reschedule/`     | Move many tasks to a date (e.g. all overdue) |
 | POST            | `todos/dates/parse/`          | Parse a phrase, for the date field's preview |
-| GET, POST       | `todos/items/{id}/reminders/` | A task's reminders |
+| GET, POST       | `todos/tasks/{id}/reminders/` | A task's reminders |
 | DEL             | `todos/reminders/{id}/`       | |
 
 Task payloads gain the due fields; `close/` advances recurring tasks.

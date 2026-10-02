@@ -239,6 +239,308 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/todos/filters/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The built-in filters, and the caller's pins of them. */
+        get: operations["todos_filters_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/filters/{slug}/favourite/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The built-in filters, and the caller's pins of them. */
+        post: operations["todos_filters_favourite_create"];
+        /** @description The built-in filters, and the caller's pins of them. */
+        delete: operations["todos_filters_favourite_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/labels/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller's own rows; anyone else's are 404. */
+        get: operations["todos_labels_list"];
+        put?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        post: operations["todos_labels_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/labels/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller's own rows; anyone else's are 404. */
+        get: operations["todos_labels_retrieve"];
+        put?: never;
+        post?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        delete: operations["todos_labels_destroy"];
+        options?: never;
+        head?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        patch: operations["todos_labels_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/todos/labels/reorder/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Put sibling rows in the order given. */
+        post: operations["todos_labels_reorder_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/projects/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller's own rows; anyone else's are 404. */
+        get: operations["todos_projects_list"];
+        put?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        post: operations["todos_projects_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/projects/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller's own rows; anyone else's are 404. */
+        get: operations["todos_projects_retrieve"];
+        put?: never;
+        post?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        delete: operations["todos_projects_destroy"];
+        options?: never;
+        head?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        patch: operations["todos_projects_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/todos/projects/reorder/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Put sibling rows in the order given. */
+        post: operations["todos_projects_reorder_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/sections/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller's own rows; anyone else's are 404. */
+        get: operations["todos_sections_list"];
+        put?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        post: operations["todos_sections_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/sections/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller's own rows; anyone else's are 404. */
+        get: operations["todos_sections_retrieve"];
+        put?: never;
+        post?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        delete: operations["todos_sections_destroy"];
+        options?: never;
+        head?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        patch: operations["todos_sections_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/todos/sections/reorder/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Put sibling rows in the order given. */
+        post: operations["todos_sections_reorder_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/tasks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller's own rows; anyone else's are 404. */
+        get: operations["todos_tasks_list"];
+        put?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        post: operations["todos_tasks_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/tasks/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller's own rows; anyone else's are 404. */
+        get: operations["todos_tasks_retrieve"];
+        put?: never;
+        post?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        delete: operations["todos_tasks_destroy"];
+        options?: never;
+        head?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        patch: operations["todos_tasks_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/todos/tasks/{id}/close/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        post: operations["todos_tasks_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/tasks/{id}/reopen/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        post: operations["todos_tasks_reopen_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/tasks/quick/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Parse one line of quick add and create the task. */
+        post: operations["todos_tasks_quick_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/tasks/reorder/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Put sibling rows in the order given. */
+        post: operations["todos_tasks_reorder_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -248,6 +550,19 @@ export interface components {
             readonly refresh: string;
             readonly user: components["schemas"]["User"];
         };
+        /**
+         * @description * `neutral` - Neutral
+         *     * `red` - Red
+         *     * `orange` - Orange
+         *     * `yellow` - Yellow
+         *     * `green` - Green
+         *     * `teal` - Teal
+         *     * `blue` - Blue
+         *     * `purple` - Purple
+         *     * `pink` - Pink
+         * @enum {string}
+         */
+        ColourEnum: "neutral" | "red" | "orange" | "yellow" | "green" | "teal" | "blue" | "purple" | "pink";
         /**
          * @description * `image/jpeg` - image/jpeg
          *     * `image/png` - image/png
@@ -270,6 +585,12 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        Filter: {
+            readonly slug: string;
+            readonly name: string;
+            readonly is_favourite: boolean;
+            readonly order: number | null;
+        };
         GoogleLogin: {
             code: string;
             code_verifier: string;
@@ -279,6 +600,21 @@ export interface components {
             readonly url: string;
             readonly state: string;
             readonly code_verifier: string;
+        };
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        Label: {
+            /** Format: uuid */
+            readonly id: string;
+            name: string;
+            colour?: components["schemas"]["ColourEnum"];
+            is_favourite?: boolean;
+            readonly order: number;
+            /** @default 0 */
+            readonly open_task_count: number;
         };
         Logout: {
             refresh: string;
@@ -351,6 +687,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["PublicProfile"][];
         };
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        PatchedLabel: {
+            /** Format: uuid */
+            readonly id?: string;
+            name?: string;
+            colour?: components["schemas"]["ColourEnum"];
+            is_favourite?: boolean;
+            readonly order?: number;
+            /** @default 0 */
+            readonly open_task_count: number;
+        };
         PatchedProfile: {
             /** Format: uuid */
             readonly id?: string;
@@ -369,6 +720,86 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        PatchedProject: {
+            /** Format: uuid */
+            readonly id?: string;
+            name?: string;
+            colour?: components["schemas"]["ColourEnum"];
+            /** Format: uuid */
+            parent?: string | null;
+            readonly is_inbox?: boolean;
+            is_favourite?: boolean;
+            is_archived?: boolean;
+            view?: components["schemas"]["ViewEnum"];
+            sort?: components["schemas"]["SortEnum"];
+            readonly order?: number;
+            /** @default 0 */
+            readonly open_task_count: number;
+            /** Format: date-time */
+            readonly created_at?: string;
+        };
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        PatchedSection: {
+            /** Format: uuid */
+            readonly id?: string;
+            /** Format: uuid */
+            project?: string;
+            name?: string;
+            readonly order?: number;
+            is_archived?: boolean;
+            /** Format: date-time */
+            readonly created_at?: string;
+        };
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        PatchedTask: {
+            /** Format: uuid */
+            readonly id?: string;
+            /** Format: uuid */
+            project?: string;
+            /** Format: uuid */
+            section?: string | null;
+            /** Format: uuid */
+            parent?: string | null;
+            readonly order?: number;
+            /** @description Inline Markdown. */
+            content?: string;
+            /** @description Markdown. */
+            description?: string;
+            priority?: components["schemas"]["PriorityEnum"];
+            labels?: string[];
+            /** Format: date-time */
+            readonly completed_at?: string | null;
+            extra?: unknown;
+            /** @default 0 */
+            readonly subtask_count: number;
+            /** @default 0 */
+            readonly completed_subtask_count: number;
+            /** Format: date-time */
+            readonly created_at?: string;
+            /** Format: date-time */
+            readonly updated_at?: string;
+        };
+        /**
+         * @description * `1` - Priority 1
+         *     * `2` - Priority 2
+         *     * `3` - Priority 3
+         *     * `4` - No priority
+         * @enum {integer}
+         */
+        PriorityEnum: 1 | 2 | 3 | 4;
         Profile: {
             /** Format: uuid */
             readonly id: string;
@@ -387,6 +818,29 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        Project: {
+            /** Format: uuid */
+            readonly id: string;
+            name: string;
+            colour?: components["schemas"]["ColourEnum"];
+            /** Format: uuid */
+            parent?: string | null;
+            readonly is_inbox: boolean;
+            is_favourite?: boolean;
+            is_archived?: boolean;
+            view?: components["schemas"]["ViewEnum"];
+            sort?: components["schemas"]["SortEnum"];
+            readonly order: number;
+            /** @default 0 */
+            readonly open_task_count: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         /** @description What other members may see. */
         PublicProfile: {
             /** Format: uuid */
@@ -397,6 +851,16 @@ export interface components {
             readonly bio: string;
             readonly role: components["schemas"]["RoleEnum"];
         };
+        QuickAdd: {
+            text: string;
+            /** Format: uuid */
+            project?: string | null;
+            /** Format: uuid */
+            section?: string | null;
+            /** Format: uuid */
+            parent?: string | null;
+            labels?: string[];
+        };
         /**
          * @description * `member` - Member
          *     * `moderator` - Moderator
@@ -404,9 +868,33 @@ export interface components {
          * @enum {string}
          */
         RoleEnum: "member" | "moderator" | "admin";
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        Section: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            project: string;
+            name: string;
+            readonly order: number;
+            is_archived?: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         Site: {
             readonly name: string;
         };
+        /**
+         * @description * `manual` - Manual
+         *     * `priority` - Priority
+         *     * `name` - Name
+         *     * `added` - Date added
+         * @enum {string}
+         */
+        SortEnum: "manual" | "priority" | "name" | "added";
         /**
          * @description * `active` - Active
          *     * `pending` - Pending
@@ -431,6 +919,39 @@ export interface components {
          * @enum {string}
          */
         StoredObjectVisibilityEnum: "public" | "private";
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        Task: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            project: string;
+            /** Format: uuid */
+            section?: string | null;
+            /** Format: uuid */
+            parent?: string | null;
+            readonly order: number;
+            /** @description Inline Markdown. */
+            content: string;
+            /** @description Markdown. */
+            description?: string;
+            priority?: components["schemas"]["PriorityEnum"];
+            labels?: string[];
+            /** Format: date-time */
+            readonly completed_at: string | null;
+            extra?: unknown;
+            /** @default 0 */
+            readonly subtask_count: number;
+            /** @default 0 */
+            readonly completed_subtask_count: number;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
         /**
          * @description The refresh request really only accepts the refresh token.
          *
@@ -461,6 +982,12 @@ export interface components {
             /** Format: date-time */
             readonly last_login: string | null;
         };
+        /**
+         * @description * `list` - List
+         *     * `board` - Board
+         * @enum {string}
+         */
+        ViewEnum: "list" | "board";
         /**
          * @description * `public` - Public
          *     * `private` - Signed-in members only
@@ -888,6 +1415,849 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Error"];
                 };
+            };
+        };
+    };
+    todos_filters_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Filter"][];
+                };
+            };
+        };
+    };
+    todos_filters_favourite_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_filters_favourite_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_labels_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Label"][];
+                };
+            };
+        };
+    };
+    todos_labels_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Label"];
+                "application/x-www-form-urlencoded": components["schemas"]["Label"];
+                "multipart/form-data": components["schemas"]["Label"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Label"];
+                };
+            };
+        };
+    };
+    todos_labels_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this label. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Label"];
+                };
+            };
+        };
+    };
+    todos_labels_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this label. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_labels_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this label. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedLabel"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedLabel"];
+                "multipart/form-data": components["schemas"]["PatchedLabel"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Label"];
+                };
+            };
+        };
+    };
+    todos_labels_reorder_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": string[];
+                "application/x-www-form-urlencoded": string[];
+                "multipart/form-data": string[];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_projects_list: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"][];
+                };
+            };
+        };
+    };
+    todos_projects_create: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Project"];
+                "application/x-www-form-urlencoded": components["schemas"]["Project"];
+                "multipart/form-data": components["schemas"]["Project"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+        };
+    };
+    todos_projects_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this project. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+        };
+    };
+    todos_projects_destroy: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this project. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_projects_partial_update: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this project. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedProject"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedProject"];
+                "multipart/form-data": components["schemas"]["PatchedProject"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+        };
+    };
+    todos_projects_reorder_create: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": string[];
+                "application/x-www-form-urlencoded": string[];
+                "multipart/form-data": string[];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_sections_list: {
+        parameters: {
+            query?: {
+                project?: string;
+                /** @description Text in the name. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section"][];
+                };
+            };
+        };
+    };
+    todos_sections_create: {
+        parameters: {
+            query?: {
+                project?: string;
+                /** @description Text in the name. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Section"];
+                "application/x-www-form-urlencoded": components["schemas"]["Section"];
+                "multipart/form-data": components["schemas"]["Section"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section"];
+                };
+            };
+        };
+    };
+    todos_sections_retrieve: {
+        parameters: {
+            query?: {
+                project?: string;
+                /** @description Text in the name. */
+                q?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this section. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section"];
+                };
+            };
+        };
+    };
+    todos_sections_destroy: {
+        parameters: {
+            query?: {
+                project?: string;
+                /** @description Text in the name. */
+                q?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this section. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_sections_partial_update: {
+        parameters: {
+            query?: {
+                project?: string;
+                /** @description Text in the name. */
+                q?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this section. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSection"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSection"];
+                "multipart/form-data": components["schemas"]["PatchedSection"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Section"];
+                };
+            };
+        };
+    };
+    todos_sections_reorder_create: {
+        parameters: {
+            query?: {
+                project?: string;
+                /** @description Text in the name. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": string[];
+                "application/x-www-form-urlencoded": string[];
+                "multipart/form-data": string[];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_tasks_list: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"][];
+                };
+            };
+        };
+    };
+    todos_tasks_create: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Task"];
+                "application/x-www-form-urlencoded": components["schemas"]["Task"];
+                "multipart/form-data": components["schemas"]["Task"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    todos_tasks_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this task. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    todos_tasks_destroy: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this task. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_tasks_partial_update: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this task. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTask"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTask"];
+                "multipart/form-data": components["schemas"]["PatchedTask"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    todos_tasks_close_create: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this task. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    todos_tasks_reopen_create: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this task. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    todos_tasks_quick_create: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuickAdd"];
+                "application/x-www-form-urlencoded": components["schemas"]["QuickAdd"];
+                "multipart/form-data": components["schemas"]["QuickAdd"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Task"];
+                };
+            };
+        };
+    };
+    todos_tasks_reorder_create: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": string[];
+                "application/x-www-form-urlencoded": string[];
+                "multipart/form-data": string[];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

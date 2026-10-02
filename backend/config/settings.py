@@ -57,6 +57,7 @@ LOCAL_APPS = [
     "apps.content",
     "apps.storage",
     "apps.messaging",
+    "apps.todos",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -69,6 +70,7 @@ from apps.content.settings import *  # noqa: E402, F403
 from apps.messaging.settings import *  # noqa: E402, F403
 from apps.profiles.settings import *  # noqa: E402, F403
 from apps.storage.settings import *  # noqa: E402, F403
+from apps.todos.settings import *  # noqa: E402, F403
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

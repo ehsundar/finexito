@@ -433,6 +433,1146 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/todos/filters/:
+    get:
+      operationId: todos_filters_list
+      description: The built-in filters, and the caller's pins of them.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Filter'
+          description: ''
+  /api/v1/todos/filters/{slug}/favourite/:
+    post:
+      operationId: todos_filters_favourite_create
+      description: The built-in filters, and the caller's pins of them.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+    delete:
+      operationId: todos_filters_favourite_destroy
+      description: The built-in filters, and the caller's pins of them.
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/labels/:
+    get:
+      operationId: todos_labels_list
+      description: The caller's own rows; anyone else's are 404.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Label'
+          description: ''
+    post:
+      operationId: todos_labels_create
+      description: The caller's own rows; anyone else's are 404.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Label'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Label'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Label'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Label'
+          description: ''
+  /api/v1/todos/labels/{id}/:
+    get:
+      operationId: todos_labels_retrieve
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this label.
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Label'
+          description: ''
+    patch:
+      operationId: todos_labels_partial_update
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this label.
+        required: true
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLabel'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLabel'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLabel'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Label'
+          description: ''
+    delete:
+      operationId: todos_labels_destroy
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this label.
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/labels/reorder/:
+    post:
+      operationId: todos_labels_reorder_create
+      description: Put sibling rows in the order given.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+          application/x-www-form-urlencoded:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/projects/:
+    get:
+      operationId: todos_projects_list
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+          description: ''
+    post:
+      operationId: todos_projects_create
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Project'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Project'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Project'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+  /api/v1/todos/projects/{id}/:
+    get:
+      operationId: todos_projects_retrieve
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project.
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+    patch:
+      operationId: todos_projects_partial_update
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project.
+        required: true
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProject'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProject'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProject'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+    delete:
+      operationId: todos_projects_destroy
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project.
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/projects/reorder/:
+    post:
+      operationId: todos_projects_reorder_create
+      description: Put sibling rows in the order given.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+          application/x-www-form-urlencoded:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/sections/:
+    get:
+      operationId: todos_sections_list
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the name.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Section'
+          description: ''
+    post:
+      operationId: todos_sections_create
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the name.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Section'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Section'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Section'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+          description: ''
+  /api/v1/todos/sections/{id}/:
+    get:
+      operationId: todos_sections_retrieve
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this section.
+        required: true
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the name.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+          description: ''
+    patch:
+      operationId: todos_sections_partial_update
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this section.
+        required: true
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the name.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSection'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSection'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSection'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Section'
+          description: ''
+    delete:
+      operationId: todos_sections_destroy
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this section.
+        required: true
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the name.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/sections/reorder/:
+    post:
+      operationId: todos_sections_reorder_create
+      description: Put sibling rows in the order given.
+      parameters:
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the name.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+          application/x-www-form-urlencoded:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/tasks/:
+    get:
+      operationId: todos_tasks_list
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+          description: ''
+    post:
+      operationId: todos_tasks_create
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Task'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Task'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Task'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+  /api/v1/todos/tasks/{id}/:
+    get:
+      operationId: todos_tasks_retrieve
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+    patch:
+      operationId: todos_tasks_partial_update
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTask'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTask'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTask'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+    delete:
+      operationId: todos_tasks_destroy
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/tasks/{id}/close/:
+    post:
+      operationId: todos_tasks_close_create
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+  /api/v1/todos/tasks/{id}/reopen/:
+    post:
+      operationId: todos_tasks_reopen_create
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+  /api/v1/todos/tasks/quick/:
+    post:
+      operationId: todos_tasks_quick_create
+      description: Parse one line of quick add and create the task.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuickAdd'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QuickAdd'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QuickAdd'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+          description: ''
+  /api/v1/todos/tasks/reorder/:
+    post:
+      operationId: todos_tasks_reorder_create
+      description: Put sibling rows in the order given.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+          application/x-www-form-urlencoded:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+          multipart/form-data:
+            schema:
+              type: array
+              items:
+                type: string
+                format: uuid
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
 components:
   schemas:
     AuthResponse:
@@ -452,6 +1592,28 @@ components:
       - access
       - refresh
       - user
+    ColourEnum:
+      enum:
+      - neutral
+      - red
+      - orange
+      - yellow
+      - green
+      - teal
+      - blue
+      - purple
+      - pink
+      type: string
+      description: |-
+        * `neutral` - Neutral
+        * `red` - Red
+        * `orange` - Orange
+        * `yellow` - Yellow
+        * `green` - Green
+        * `teal` - Teal
+        * `blue` - Blue
+        * `purple` - Purple
+        * `pink` - Pink
     ContentTypeEnum:
       enum:
       - image/jpeg
@@ -496,6 +1658,27 @@ components:
       - code
       - fields
       - message
+    Filter:
+      type: object
+      properties:
+        slug:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        is_favourite:
+          type: boolean
+          readOnly: true
+        order:
+          type: integer
+          readOnly: true
+          nullable: true
+      required:
+      - is_favourite
+      - name
+      - order
+      - slug
     GoogleLogin:
       type: object
       properties:
@@ -524,6 +1707,37 @@ components:
       - code_verifier
       - state
       - url
+    Label:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          pattern: ^[\w-]+$
+          maxLength: 60
+        colour:
+          $ref: '#/components/schemas/ColourEnum'
+        is_favourite:
+          type: boolean
+        order:
+          type: integer
+          readOnly: true
+        open_task_count:
+          type: integer
+          readOnly: true
+          default: 0
+      required:
+      - id
+      - name
+      - open_task_count
+      - order
     Logout:
       type: object
       properties:
@@ -666,6 +1880,32 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PublicProfile'
+    PatchedLabel:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          pattern: ^[\w-]+$
+          maxLength: 60
+        colour:
+          $ref: '#/components/schemas/ColourEnum'
+        is_favourite:
+          type: boolean
+        order:
+          type: integer
+          readOnly: true
+        open_task_count:
+          type: integer
+          readOnly: true
+          default: 0
     PatchedProfile:
       type: object
       properties:
@@ -711,6 +1951,151 @@ components:
           type: object
           additionalProperties:
             type: string
+    PatchedProject:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+        colour:
+          $ref: '#/components/schemas/ColourEnum'
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        is_inbox:
+          type: boolean
+          readOnly: true
+        is_favourite:
+          type: boolean
+        is_archived:
+          type: boolean
+        view:
+          $ref: '#/components/schemas/ViewEnum'
+        sort:
+          $ref: '#/components/schemas/SortEnum'
+        order:
+          type: integer
+          readOnly: true
+        open_task_count:
+          type: integer
+          readOnly: true
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedSection:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 500
+        order:
+          type: integer
+          readOnly: true
+        is_archived:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedTask:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        section:
+          type: string
+          format: uuid
+          nullable: true
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        order:
+          type: integer
+          readOnly: true
+        content:
+          type: string
+          description: Inline Markdown.
+          maxLength: 500
+        description:
+          type: string
+          description: Markdown.
+          maxLength: 16000
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          minimum: 0
+          maximum: 32767
+        labels:
+          type: array
+          items:
+            type: string
+            format: uuid
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        extra: {}
+        subtask_count:
+          type: integer
+          readOnly: true
+          default: 0
+        completed_subtask_count:
+          type: integer
+          readOnly: true
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PriorityEnum:
+      enum:
+      - 1
+      - 2
+      - 3
+      - 4
+      type: integer
+      description: |-
+        * `1` - Priority 1
+        * `2` - Priority 2
+        * `3` - Priority 3
+        * `4` - No priority
     Profile:
       type: object
       properties:
@@ -762,6 +2147,55 @@ components:
       - id
       - role
       - status
+    Project:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+        colour:
+          $ref: '#/components/schemas/ColourEnum'
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        is_inbox:
+          type: boolean
+          readOnly: true
+        is_favourite:
+          type: boolean
+        is_archived:
+          type: boolean
+        view:
+          $ref: '#/components/schemas/ViewEnum'
+        sort:
+          $ref: '#/components/schemas/SortEnum'
+        order:
+          type: integer
+          readOnly: true
+        open_task_count:
+          type: integer
+          readOnly: true
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_inbox
+      - name
+      - open_task_count
+      - order
     PublicProfile:
       type: object
       description: What other members may see.
@@ -790,6 +2224,31 @@ components:
       - display_name
       - id
       - role
+    QuickAdd:
+      type: object
+      properties:
+        text:
+          type: string
+          maxLength: 1000
+        project:
+          type: string
+          format: uuid
+          nullable: true
+        section:
+          type: string
+          format: uuid
+          nullable: true
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        labels:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+      - text
     RoleEnum:
       enum:
       - member
@@ -800,6 +2259,38 @@ components:
         * `member` - Member
         * `moderator` - Moderator
         * `admin` - Admin
+    Section:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        name:
+          type: string
+          maxLength: 500
+        order:
+          type: integer
+          readOnly: true
+        is_archived:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - name
+      - order
+      - project
     Site:
       type: object
       properties:
@@ -808,6 +2299,18 @@ components:
           readOnly: true
       required:
       - name
+    SortEnum:
+      enum:
+      - manual
+      - priority
+      - name
+      - added
+      type: string
+      description: |-
+        * `manual` - Manual
+        * `priority` - Priority
+        * `name` - Name
+        * `added` - Date added
     StatusEnum:
       enum:
       - active
@@ -865,6 +2368,81 @@ components:
       description: |-
         * `public` - Public, served and cached by anyone
         * `private` - Private, only through signed links
+    Task:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        project:
+          type: string
+          format: uuid
+        section:
+          type: string
+          format: uuid
+          nullable: true
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        order:
+          type: integer
+          readOnly: true
+        content:
+          type: string
+          description: Inline Markdown.
+          maxLength: 500
+        description:
+          type: string
+          description: Markdown.
+          maxLength: 16000
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          minimum: 0
+          maximum: 32767
+        labels:
+          type: array
+          items:
+            type: string
+            format: uuid
+        completed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        extra: {}
+        subtask_count:
+          type: integer
+          readOnly: true
+          default: 0
+        completed_subtask_count:
+          type: integer
+          readOnly: true
+          default: 0
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - completed_at
+      - completed_subtask_count
+      - content
+      - created_at
+      - id
+      - order
+      - project
+      - subtask_count
+      - updated_at
     TokenRefreshRequest:
       type: object
       description: |-
@@ -924,6 +2502,14 @@ components:
       - email
       - id
       - last_login
+    ViewEnum:
+      enum:
+      - list
+      - board
+      type: string
+      description: |-
+        * `list` - List
+        * `board` - Board
     Visibility6ddEnum:
       enum:
       - public
