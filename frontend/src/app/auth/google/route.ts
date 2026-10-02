@@ -1,4 +1,6 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import type { NextRequest } from "next/server";
 
 import { api } from "@/lib/api/client";
 import { GOOGLE_COOKIE, safeNext, sharedCookie } from "@/lib/auth/session";
@@ -13,14 +15,13 @@ export async function GET(request: NextRequest) {
   const { data } = await api.POST("/api/v1/auth/google/start/");
 
   if (!data) {
-    return NextResponse.redirect(new URL("/login?error=google", request.nextUrl.origin));
+    redirect("/login?error=google");
   }
 
-  const response = NextResponse.redirect(data.url);
-  response.cookies.set(
+  (await cookies()).set(
     GOOGLE_COOKIE,
     JSON.stringify({ state: data.state, verifier: data.code_verifier, next }),
     { ...sharedCookie, maxAge: 10 * 60 },
   );
-  return response;
+  redirect(data.url);
 }

@@ -1,5 +1,5 @@
-import { notFound } from "next/navigation";
-import { NextResponse, type NextRequest } from "next/server";
+import { notFound, redirect } from "next/navigation";
+import type { NextRequest } from "next/server";
 
 import { setSession } from "@/lib/auth/session";
 
@@ -19,5 +19,5 @@ export async function GET(request: NextRequest) {
   }
 
   await setSession({ access, refresh });
-  return NextResponse.redirect(new URL("/dashboard", request.nextUrl.origin));
+  redirect("/dashboard");
 }

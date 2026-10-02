@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
-import { NextResponse, type NextRequest } from "next/server";
+import { redirect } from "next/navigation";
+import type { NextRequest } from "next/server";
 
 import { api } from "@/lib/api/client";
 import { GOOGLE_COOKIE, safeNext, setSession } from "@/lib/auth/session";
@@ -17,7 +18,7 @@ export async function GET(request: NextRequest) {
   // A state that does not match the cookie means this browser never started the
   // sign-in: someone else's code, replayed here.
   if (!code || !state || params.get("state") !== state) {
-    return redirectTo(request, "/login?error=google");
+    redirect("/login?error=google");
   }
 
   const { data, error } = await api.POST("/api/v1/auth/google/", {
@@ -26,13 +27,9 @@ export async function GET(request: NextRequest) {
 
   if (error || !data) {
     const reason = error?.error?.code === "account_disabled" ? "disabled" : "google";
-    return redirectTo(request, `/login?error=${reason}`);
+    redirect(`/login?error=${reason}`);
   }
 
   await setSession(data);
-  return redirectTo(request, safeNext(next));
-}
-
-function redirectTo(request: NextRequest, path: string) {
-  return NextResponse.redirect(new URL(path, request.nextUrl.origin));
+  redirect(safeNext(next));
 }
