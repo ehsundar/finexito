@@ -1,5 +1,6 @@
 import type { Viewport } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
+import { RotateCcw } from "lucide-react";
 import { Suspense } from "react";
 
 import { Toaster } from "@/components/ui/sonner";
@@ -29,6 +30,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             only knows in the browser. */}
         <Suspense>{children}</Suspense>
         <Toaster position="top-center" />
+        <div className="fixed inset-0 z-[100] hidden flex-col items-center justify-center gap-3 bg-background p-6 text-center phone-landscape:flex">
+          <RotateCcw className="size-8 text-muted-foreground" />
+          <p className="font-medium">Turn your phone upright to carry on.</p>
+        </div>
       </body>
     </html>
   );
