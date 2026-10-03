@@ -102,15 +102,6 @@ class TaskSerializer(CleanedSerializer):
         read_only_fields = ("id", "order", "completed_at", "created_at", "updated_at")
 
 
-class QuickAddSerializer(serializers.Serializer):
-    text = serializers.CharField(max_length=1000)
-    # What the view quick add was opened from; tokens in the text win.
-    project = serializers.UUIDField(required=False, allow_null=True)
-    section = serializers.UUIDField(required=False, allow_null=True)
-    parent = serializers.UUIDField(required=False, allow_null=True)
-    labels = serializers.ListField(child=serializers.UUIDField(), required=False)
-
-
 class FilterSerializer(serializers.Serializer):
     slug = serializers.CharField(read_only=True)
     name = serializers.CharField(read_only=True)

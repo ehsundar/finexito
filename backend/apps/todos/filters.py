@@ -21,7 +21,7 @@ class Filter:
         Filter.registry[cls.slug] = cls()
 
     def tasks(self, user):
-        return Task.objects.visible_to(user)
+        return Task.objects.visible_to(user).order_by("order", "created_at")
 
     def queryset(self, user):
         raise NotImplementedError

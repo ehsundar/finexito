@@ -1,4 +1,3 @@
-import re
 
 from django.conf import settings
 from django.db import transaction
@@ -17,7 +16,6 @@ from apps.todos.serializers import (
     FilterSerializer,
     LabelSerializer,
     ProjectSerializer,
-    QuickAddSerializer,
     SectionSerializer,
     TaskSerializer,
 )
@@ -88,8 +86,11 @@ class ProjectViewSet(TodosViewSet):
 
     def rows(self):
         open_tasks = Q(tasks__completed_at__isnull=True) & ~Q(tasks__section__is_archived=True)
-        projects = Project.objects.visible_to(self.request.user).annotate(
-            open_task_count=Count("tasks", filter=open_tasks)
+        # Counting groups the query, which drops Meta.ordering; hence order_by.
+        projects = (
+            Project.objects.visible_to(self.request.user)
+            .annotate(open_task_count=Count("tasks", filter=open_tasks))
+            .order_by("order", "created_at")
         )
         if self.action == "list":
             Project.objects.inbox(self.request.user)
@@ -145,8 +146,10 @@ class LabelViewSet(TodosViewSet):
         open_tasks = Q(tasks__completed_at__isnull=True, tasks__project__is_archived=False) & ~Q(
             tasks__section__is_archived=True
         )
-        return Label.objects.visible_to(self.request.user).annotate(
-            open_task_count=Count("tasks", filter=open_tasks)
+        return (
+            Label.objects.visible_to(self.request.user)
+            .annotate(open_task_count=Count("tasks", filter=open_tasks))
+            .order_by("order", "name")
         )
 
     def sibling_key(self, row):
@@ -174,7 +177,8 @@ class TaskViewSet(TodosViewSet):
 
     def rows(self):
         user, params = self.request.user, self.request.query_params
-        tasks = Task.objects.visible_to(user)
+        # Counting sub-tasks below groups the query, which drops Meta.ordering.
+        tasks = Task.objects.visible_to(user).order_by("order", "created_at")
         if self.action == "list":
             if slug := params.get("filter"):
                 if slug not in Filter.registry:
@@ -228,115 +232,6 @@ class TaskViewSet(TodosViewSet):
         task = self.get_object()
         task.reopen()
         return self.respond(task)
-
-    @extend_schema(request=QuickAddSerializer, responses={201: TaskSerializer})
-    @action(detail=False, methods=["post"])
-    @transaction.atomic
-    def quick(self, request):
-        """Parse one line of quick add and create the task."""
-        form = QuickAddSerializer(data=request.data)
-        form.is_valid(raise_exception=True)
-        user, given = request.user, form.validated_data
-
-        def find(queryset, pk):
-            row = queryset.filter(pk=pk).first() if pk else None
-            if pk and row is None:
-                raise NotFound()
-            return row
-
-        projects = Project.objects.visible_to(user).filter(is_archived=False)
-        parent = find(Task.objects.visible_to(user), given.get("parent"))
-        section = find(Section.objects.visible_to(user), given.get("section"))
-        project = find(projects, given.get("project"))
-
-        by_name = {p.name: p for p in projects}
-        parsed = parse_quick_add(given["text"], by_name)
-        if parsed["project"]:
-            project, section, parent = parsed["project"], None, None
-        if project is None:
-            project = (parent or section).project if parent or section else None
-        project = project or Project.objects.inbox(user)
-        if parsed["section"]:
-            names = {s.name: s for s in project.sections.filter(is_archived=False)}
-            parsed = parse_quick_add(given["text"], by_name, names)
-            if parsed["section"]:
-                section, parent = parsed["section"], None
-
-        labels = list(Label.objects.visible_to(user).filter(pk__in=given.get("labels", [])))
-        for name in parsed["labels"]:
-            label = Label.objects.visible_to(user).filter(name__iexact=name).first()
-            if label is None:
-                label = Label(owner=user, name=name)
-                label.full_clean()
-                label.save()
-            labels.append(label)
-
-        task = Task(project=project, section=section, parent=parent, content=parsed["content"])
-        task.priority = parsed["priority"] or task.priority
-        task.full_clean()
-        task.save()
-        task.labels.set(labels)
-        return self.respond(task, status.HTTP_201_CREATED)
-
-
-LABEL = re.compile(r"@([\w-]{1,60})(?=\s|$)")
-PRIORITY = re.compile(r"p([1-4])(?=\s|$)")
-
-
-def parse_quick_add(text: str, projects: dict, sections: dict | None = None) -> dict:
-    """Split one line into content and tokens: ``#Project``, ``/Section``, ``@label``, ``p1``.
-
-    A token starts a word. ``#`` and ``/`` take the longest name that matches,
-    case-insensitively; no match leaves the token in the text. A backslash
-    before a token keeps it as text. ``section`` is ``True`` when a ``/`` was
-    seen but ``sections`` weren't given yet, so the caller can parse again
-    with the chosen project's sections. The frontend highlights with the same rules.
-    """
-    found = {"project": None, "section": None, "labels": [], "priority": None}
-    out, i = [], 0
-    while i < len(text):
-        starts_word = i == 0 or text[i - 1].isspace()
-        char, rest = text[i], text[i + 1 :]
-        if starts_word and char == "\\" and rest[:1] in ("#", "/", "@", "p"):
-            out.append(rest[0])
-            i += 2
-            continue
-        if starts_word and char in "#/":
-            names = projects if char == "#" else (sections or {})
-            name = longest_match(rest, names)
-            if name is not None:
-                if char == "#":
-                    found["project"] = found["project"] or names[name]
-                else:
-                    found["section"] = found["section"] or names[name]
-                i += 1 + len(name)
-                continue
-            if char == "/" and sections is None:
-                found["section"] = True
-        if starts_word and char == "@" and (match := LABEL.match(text, i)):
-            if match[1].lower() not in (n.lower() for n in found["labels"]):
-                found["labels"].append(match[1])
-            i = match.end()
-            continue
-        if starts_word and char == "p" and (match := PRIORITY.match(text, i)):
-            found["priority"] = found["priority"] or int(match[1])
-            i = match.end()
-            continue
-        out.append(char)
-        i += 1
-    found["content"] = " ".join("".join(out).split())
-    return found
-
-
-def longest_match(text: str, names) -> str | None:
-    lowered = text.lower()
-    best = None
-    for name in names:
-        n = len(name)
-        if lowered.startswith(name.lower()) and (n == len(text) or text[n].isspace()):
-            if best is None or n > len(best):
-                best = name
-    return best
 
 
 class FilterViewSet(viewsets.GenericViewSet):

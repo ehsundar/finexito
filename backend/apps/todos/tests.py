@@ -6,7 +6,6 @@ from django.urls import reverse
 
 from apps.common.testing import PlatformTestCase
 from apps.todos.models import Label, Project, Section, Task
-from apps.todos.views import parse_quick_add
 
 User = get_user_model()
 
@@ -109,6 +108,13 @@ class ProjectTests(TodosTestCase):
         response = self.client.post(reverse("todo-project-list"), {"name": "Two"})
 
         self.assertEqual(response.status_code, 400)
+
+    def test_list_keeps_the_order(self):
+        self.project("A"), self.project("B")
+
+        names = [p["name"] for p in self.client.get(reverse("todo-project-list")).data]
+
+        self.assertEqual(names, ["Inbox", "A", "B"])
 
     def test_reorder(self):
         a, b, c = self.project("A"), self.project("B"), self.project("C")
@@ -366,53 +372,6 @@ class LabelTests(TodosTestCase):
         self.client.delete(reverse("todo-label-detail", args=[label.pk]))
 
         self.assertTrue(Task.objects.filter(pk=task.pk).exists())
-
-
-class QuickAddTests(TodosTestCase):
-    def quick(self, text, **extra):
-        return self.client.post(reverse("todo-task-quick"), {"text": text, **extra}, format="json")
-
-    def test_plain_text_lands_in_the_inbox(self):
-        response = self.quick("Buy milk")
-
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.data["project"], self.inbox.pk)
-        self.assertEqual(response.data["content"], "Buy milk")
-
-    def test_tokens(self):
-        work = self.project("Client work")
-        section = self.section("Next week", project=work)
-
-        response = self.quick("Send invoice #client work /next week @money p1")
-
-        self.assertEqual(response.data["content"], "Send invoice")
-        self.assertEqual(response.data["project"], work.pk)
-        self.assertEqual(response.data["section"], section.pk)
-        self.assertEqual(response.data["priority"], 1)
-        self.assertEqual(Label.objects.get(pk=response.data["labels"][0]).name, "money")
-
-    def test_unmatched_and_escaped_tokens_stay_in_the_text(self):
-        response = self.quick(r"Read #nowhere and \p1 \@home")
-
-        self.assertEqual(response.data["content"], "Read #nowhere and p1 @home")
-        self.assertEqual(response.data["priority"], 4)
-        self.assertEqual(response.data["labels"], [])
-
-    def test_prefill_from_a_task(self):
-        work = self.project("Work")
-        parent = self.task("Parent", project=work)
-
-        response = self.quick("Child", parent=str(parent.pk))
-
-        self.assertEqual((response.data["project"], response.data["parent"]), (work.pk, parent.pk))
-
-    def test_longest_project_name_wins(self):
-        short, long = Project(name="Home"), Project(name="Home repairs")
-
-        parsed = parse_quick_add("Fix #home repairs now", {"Home": short, "Home repairs": long})
-
-        self.assertIs(parsed["project"], long)
-        self.assertEqual(parsed["content"], "Fix now")
 
 
 class ThrottleTests(TodosTestCase):

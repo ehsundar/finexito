@@ -118,8 +118,8 @@ Three independent pieces, each shippable on its own:
   filter classes need a client-side equivalent. To keep one source of truth,
   each filter also declares its rule as simple data the client can evaluate
   (see open questions).
-- Quick add offline uses a client-side parser for `#`, `/`, `@` and `p1`–`p4`;
-  date phrases are kept as typed and parsed by the server on sync.
+- Quick add already parses `#`, `/` and `p1`–`p4` on the client, so those work
+  offline; date phrases are kept as typed and parsed by the server on sync.
 
 ### Sync
 

@@ -84,6 +84,20 @@
   --sidebar-accent-foreground: #0b1b33;
   --sidebar-border: #e6e9ee;
   --sidebar-ring: #2f7bea;
+  /* Named colours members pick for projects and labels, and task priorities. */
+  --tag-neutral: #5f6b7d;
+  --tag-red: #c8413a;
+  --tag-orange: #c76a1e;
+  --tag-yellow: #9c6500;
+  --tag-green: #12805c;
+  --tag-teal: #127a80;
+  --tag-blue: #2f7bea;
+  --tag-purple: #7a4fc4;
+  --tag-pink: #c43f86;
+  --priority-1: #c8413a;
+  --priority-2: #c76a1e;
+  --priority-3: #2f7bea;
+  --priority-4: #c7cdd6;
 }
 
 .dark {
@@ -118,6 +132,19 @@
   --sidebar-accent-foreground: #f3efe6;
   --sidebar-border: rgb(243 239 230 / 10%);
   --sidebar-ring: #5aa9ff;
+  --tag-neutral: #c7cdd6;
+  --tag-red: #e5675f;
+  --tag-orange: #ec9450;
+  --tag-yellow: #e0b24a;
+  --tag-green: #4cc196;
+  --tag-teal: #4cbcc1;
+  --tag-blue: #5aa9ff;
+  --tag-purple: #a98bf0;
+  --tag-pink: #ec7bb7;
+  --priority-1: #e5675f;
+  --priority-2: #ec9450;
+  --priority-3: #5aa9ff;
+  --priority-4: #5f6b7d;
 }
 
 @layer base {
@@ -129,6 +156,14 @@
   }
   html {
     @apply font-sans;
+  }
+  /* Tailwind resets buttons to the arrow; anything tappable shows the hand. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="menuitem"],
+  [role="option"],
+  summary {
+    cursor: pointer;
   }
 }
 /* Code highlighted by Shiki (components/markdown/highlight.ts). Each token

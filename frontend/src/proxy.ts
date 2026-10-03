@@ -38,5 +38,5 @@ export const config = {
    * Guard the signed-in area only. Everything else -- the login page, the
    * refresh handler, static assets -- must stay reachable without a session.
    */
-  matcher: ["/dashboard/:path*", "/account/:path*"],
+  matcher: ["/dashboard/:path*", "/account/:path*", "/todos/:path*", "/todos"],
 };

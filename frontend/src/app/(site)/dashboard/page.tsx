@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,11 +23,16 @@ export default async function DashboardPage() {
             Signed in as <span className="font-mono">{user.email}</span>
           </p>
         </div>
-        <form action={logout}>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/todos" />}>
+            Todos
+          </Button>
+          <form action={logout}>
           <Button type="submit" variant="outline" size="sm">
             Sign out
           </Button>
-        </form>
+          </form>
+        </div>
       </header>
 
       <Separator />

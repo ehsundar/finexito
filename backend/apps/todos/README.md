@@ -39,17 +39,16 @@ theme variable.
 
 ## Quick add
 
-`POST todos/tasks/quick/` with `{"text": …}`, plus optionally the `project`,
-`section`, `parent` or `labels` of the view it was opened from. `parse_quick_add` in
-`views.py` reads `#Project`, `/Section`, `@label` and `p1`–`p4` at the start of
-a word; `#` and `/` take the longest matching name, and an unmatched one stays
-in the text. A backslash keeps a token as text. Unknown labels are created.
+The client parses the line (`#name`, `/Section`, `p1`–`p4`), so it can show
+what it understood, and what it will create, before anything is saved. Then it
+uses the plain endpoints: new labels and section first, then `POST tasks/`.
+The rules live in `frontend/src/app/todos/quick-add.tsx`.
 
 ## API — `/api/v1/todos/`
 
 `projects/`, `sections/`, `tasks/`, `labels/` (list, create, read, `PATCH`, `DELETE`, and
 `POST …/reorder/` with the ordered list of sibling ids), `tasks/{id}/close/`,
-`tasks/{id}/reopen/`, `tasks/quick/`, `filters/` and
+`tasks/{id}/reopen/`, `filters/` and
 `filters/{slug}/favourite/` (`POST` pins, `DELETE` unpins).
 
 `tasks/` lists open tasks by default; it takes `?project=&section=&parent=`
@@ -72,3 +71,8 @@ Everything is the caller's own; anyone else's rows are `404`.
 | `TODOS_WRITE_RATE` | `1000/hour` per member, writes only |
 
 Each reads `FINEXITO_<name>` from the environment.
+
+## Frontend
+
+`frontend/src/app/todos/`: the screens, server actions in `actions.ts`, and the
+keyboard shortcuts (press `?` in the app for the list).

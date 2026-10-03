@@ -1,7 +1,8 @@
-import { MarkdownAsync, type UrlTransform } from "react-markdown";
+import { MarkdownAsync } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import { markdownComponents } from "@/components/markdown/elements";
+import { safeUrl } from "@/components/markdown/inline";
 import { rehypeHighlight } from "@/components/markdown/highlight";
 import { cn } from "@/lib/utils";
 
@@ -44,18 +45,6 @@ function RawText({ source, className }: { source: string; className?: string }) 
     </pre>
   );
 }
-
-const SAFE_PROTOCOL = /^(https?|mailto):/i;
-
-const safeUrl: UrlTransform = (url) => {
-  const value = url.trim();
-  // A colon before any `/`, `?` or `#` means a scheme; anything else is relative.
-  const colon = value.indexOf(":");
-  const firstPathChar = value.search(/[/?#]/);
-  const hasScheme = colon !== -1 && (firstPathChar === -1 || colon < firstPathChar);
-  if (!hasScheme || SAFE_PROTOCOL.test(value)) return value;
-  return "";
-};
 
 type MdastNode = { type: string; value?: string; children?: MdastNode[] };
 

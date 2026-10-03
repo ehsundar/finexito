@@ -15,13 +15,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/GoogleLogin'
+              $ref: '#/components/schemas/GoogleLoginRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/GoogleLogin'
+              $ref: '#/components/schemas/GoogleLoginRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/GoogleLogin'
+              $ref: '#/components/schemas/GoogleLoginRequest'
         required: true
       security:
       - {}
@@ -73,13 +73,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Logout'
+              $ref: '#/components/schemas/LogoutRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Logout'
+              $ref: '#/components/schemas/LogoutRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Logout'
+              $ref: '#/components/schemas/LogoutRequest'
         required: true
       security:
       - jwtAuth: []
@@ -123,13 +123,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenRefreshRequest'
+              $ref: '#/components/schemas/TokenRefreshRequestRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenRefreshRequest'
+              $ref: '#/components/schemas/TokenRefreshRequestRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenRefreshRequest'
+              $ref: '#/components/schemas/TokenRefreshRequestRequest'
         required: true
       responses:
         '200':
@@ -156,21 +156,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenVerify'
+              $ref: '#/components/schemas/TokenVerifyRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenVerify'
+              $ref: '#/components/schemas/TokenVerifyRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenVerify'
+              $ref: '#/components/schemas/TokenVerifyRequest'
         required: true
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenVerify'
-          description: ''
+          description: No response body
   /api/v1/members/:
     get:
       operationId: members_list
@@ -327,13 +323,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedProfile'
+              $ref: '#/components/schemas/PatchedProfileRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedProfile'
+              $ref: '#/components/schemas/PatchedProfileRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedProfile'
+              $ref: '#/components/schemas/PatchedProfileRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -513,13 +509,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Label'
+              $ref: '#/components/schemas/LabelRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Label'
+              $ref: '#/components/schemas/LabelRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Label'
+              $ref: '#/components/schemas/LabelRequest'
         required: true
       security:
       - jwtAuth: []
@@ -572,13 +568,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedLabel'
+              $ref: '#/components/schemas/PatchedLabelRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedLabel'
+              $ref: '#/components/schemas/PatchedLabelRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedLabel'
+              $ref: '#/components/schemas/PatchedLabelRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -680,13 +676,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Project'
+              $ref: '#/components/schemas/ProjectRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Project'
+              $ref: '#/components/schemas/ProjectRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Project'
+              $ref: '#/components/schemas/ProjectRequest'
         required: true
       security:
       - jwtAuth: []
@@ -749,13 +745,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedProject'
+              $ref: '#/components/schemas/PatchedProjectRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedProject'
+              $ref: '#/components/schemas/PatchedProjectRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedProject'
+              $ref: '#/components/schemas/PatchedProjectRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -876,13 +872,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Section'
+              $ref: '#/components/schemas/SectionRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Section'
+              $ref: '#/components/schemas/SectionRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Section'
+              $ref: '#/components/schemas/SectionRequest'
         required: true
       security:
       - jwtAuth: []
@@ -953,13 +949,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedSection'
+              $ref: '#/components/schemas/PatchedSectionRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedSection'
+              $ref: '#/components/schemas/PatchedSectionRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedSection'
+              $ref: '#/components/schemas/PatchedSectionRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1136,13 +1132,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Task'
+              $ref: '#/components/schemas/TaskRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Task'
+              $ref: '#/components/schemas/TaskRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Task'
+              $ref: '#/components/schemas/TaskRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1261,13 +1257,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PatchedTask'
+              $ref: '#/components/schemas/PatchedTaskRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/PatchedTask'
+              $ref: '#/components/schemas/PatchedTaskRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/PatchedTask'
+              $ref: '#/components/schemas/PatchedTaskRequest'
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1439,68 +1435,6 @@ paths:
       - cookieAuth: []
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Task'
-          description: ''
-  /api/v1/todos/tasks/quick/:
-    post:
-      operationId: todos_tasks_quick_create
-      description: Parse one line of quick add and create the task.
-      parameters:
-      - in: query
-        name: completed
-        schema:
-          type: boolean
-        description: 'Completed tasks only, newest first. Default: open.'
-      - in: query
-        name: filter
-        schema:
-          type: string
-        description: A built-in filter's slug.
-      - in: query
-        name: label
-        schema:
-          type: string
-      - in: query
-        name: parent
-        schema:
-          type: string
-        description: A task id, or `none` for the top level.
-      - in: query
-        name: project
-        schema:
-          type: string
-      - in: query
-        name: q
-        schema:
-          type: string
-        description: Text in the content or description.
-      - in: query
-        name: section
-        schema:
-          type: string
-        description: A section id, or `none` for no section.
-      tags:
-      - todos
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/QuickAdd'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/QuickAdd'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/QuickAdd'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '201':
           content:
             application/json:
               schema:
@@ -1679,13 +1613,15 @@ components:
       - name
       - order
       - slug
-    GoogleLogin:
+    GoogleLoginRequest:
       type: object
       properties:
         code:
           type: string
+          minLength: 1
         code_verifier:
           type: string
+          minLength: 1
       required:
       - code
       - code_verifier
@@ -1738,11 +1674,30 @@ components:
       - name
       - open_task_count
       - order
-    Logout:
+    LabelRequest:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          pattern: ^[\w-]+$
+          maxLength: 60
+        colour:
+          $ref: '#/components/schemas/ColourEnum'
+        is_favourite:
+          type: boolean
+      required:
+      - name
+    LogoutRequest:
       type: object
       properties:
         refresh:
           type: string
+          minLength: 1
       required:
       - refresh
     Page:
@@ -1880,43 +1835,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PublicProfile'
-    PatchedLabel:
+    PatchedLabelRequest:
       type: object
       description: |-
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer the caller's own rows; anything else reads as missing.
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
         name:
           type: string
+          minLength: 1
           pattern: ^[\w-]+$
           maxLength: 60
         colour:
           $ref: '#/components/schemas/ColourEnum'
         is_favourite:
           type: boolean
-        order:
-          type: integer
-          readOnly: true
-        open_task_count:
-          type: integer
-          readOnly: true
-          default: 0
-    PatchedProfile:
+    PatchedProfileRequest:
       type: object
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
-        email:
-          type: string
-          format: email
-          readOnly: true
         display_name:
           type: string
           maxLength: 150
@@ -1931,39 +1868,26 @@ components:
           type: string
         locale:
           type: string
+          minLength: 1
           maxLength: 16
         timezone:
           type: string
+          minLength: 1
           maxLength: 64
-        role:
-          allOf:
-          - $ref: '#/components/schemas/RoleEnum'
-          readOnly: true
-        status:
-          allOf:
-          - $ref: '#/components/schemas/StatusEnum'
-          readOnly: true
-        enrolled_at:
-          type: string
-          format: date-time
-          readOnly: true
         extra:
           type: object
           additionalProperties:
             type: string
-    PatchedProject:
+    PatchedProjectRequest:
       type: object
       description: |-
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer the caller's own rows; anything else reads as missing.
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
         name:
           type: string
+          minLength: 1
           maxLength: 120
         colour:
           $ref: '#/components/schemas/ColourEnum'
@@ -1971,9 +1895,6 @@ components:
           type: string
           format: uuid
           nullable: true
-        is_inbox:
-          type: boolean
-          readOnly: true
         is_favourite:
           type: boolean
         is_archived:
@@ -1982,54 +1903,29 @@ components:
           $ref: '#/components/schemas/ViewEnum'
         sort:
           $ref: '#/components/schemas/SortEnum'
-        order:
-          type: integer
-          readOnly: true
-        open_task_count:
-          type: integer
-          readOnly: true
-          default: 0
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-    PatchedSection:
+    PatchedSectionRequest:
       type: object
       description: |-
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer the caller's own rows; anything else reads as missing.
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
         project:
           type: string
           format: uuid
         name:
           type: string
+          minLength: 1
           maxLength: 500
-        order:
-          type: integer
-          readOnly: true
         is_archived:
           type: boolean
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-    PatchedTask:
+    PatchedTaskRequest:
       type: object
       description: |-
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer the caller's own rows; anything else reads as missing.
       properties:
-        id:
-          type: string
-          format: uuid
-          readOnly: true
         project:
           type: string
           format: uuid
@@ -2041,11 +1937,9 @@ components:
           type: string
           format: uuid
           nullable: true
-        order:
-          type: integer
-          readOnly: true
         content:
           type: string
+          minLength: 1
           description: Inline Markdown.
           maxLength: 500
         description:
@@ -2062,28 +1956,7 @@ components:
           items:
             type: string
             format: uuid
-        completed_at:
-          type: string
-          format: date-time
-          readOnly: true
-          nullable: true
         extra: {}
-        subtask_count:
-          type: integer
-          readOnly: true
-          default: 0
-        completed_subtask_count:
-          type: integer
-          readOnly: true
-          default: 0
-        created_at:
-          type: string
-          format: date-time
-          readOnly: true
-        updated_at:
-          type: string
-          format: date-time
-          readOnly: true
     PriorityEnum:
       enum:
       - 1
@@ -2196,6 +2069,33 @@ components:
       - name
       - open_task_count
       - order
+    ProjectRequest:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        colour:
+          $ref: '#/components/schemas/ColourEnum'
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        is_favourite:
+          type: boolean
+        is_archived:
+          type: boolean
+        view:
+          $ref: '#/components/schemas/ViewEnum'
+        sort:
+          $ref: '#/components/schemas/SortEnum'
+      required:
+      - name
     PublicProfile:
       type: object
       description: What other members may see.
@@ -2224,31 +2124,6 @@ components:
       - display_name
       - id
       - role
-    QuickAdd:
-      type: object
-      properties:
-        text:
-          type: string
-          maxLength: 1000
-        project:
-          type: string
-          format: uuid
-          nullable: true
-        section:
-          type: string
-          format: uuid
-          nullable: true
-        parent:
-          type: string
-          format: uuid
-          nullable: true
-        labels:
-          type: array
-          items:
-            type: string
-            format: uuid
-      required:
-      - text
     RoleEnum:
       enum:
       - member
@@ -2290,6 +2165,25 @@ components:
       - id
       - name
       - order
+      - project
+    SectionRequest:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        project:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 500
+        is_archived:
+          type: boolean
+      required:
+      - name
       - project
     Site:
       type: object
@@ -2443,7 +2337,48 @@ components:
       - project
       - subtask_count
       - updated_at
-    TokenRefreshRequest:
+    TaskRequest:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer the caller's own rows; anything else reads as missing.
+      properties:
+        project:
+          type: string
+          format: uuid
+        section:
+          type: string
+          format: uuid
+          nullable: true
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        content:
+          type: string
+          minLength: 1
+          description: Inline Markdown.
+          maxLength: 500
+        description:
+          type: string
+          description: Markdown.
+          maxLength: 16000
+        priority:
+          allOf:
+          - $ref: '#/components/schemas/PriorityEnum'
+          minimum: 0
+          maximum: 32767
+        labels:
+          type: array
+          items:
+            type: string
+            format: uuid
+        extra: {}
+      required:
+      - content
+      - project
+    TokenRefreshRequestRequest:
       type: object
       description: |-
         The refresh request really only accepts the refresh token.
@@ -2453,6 +2388,7 @@ components:
       properties:
         refresh:
           type: string
+          minLength: 1
       required:
       - refresh
     TokenRefreshResponse:
@@ -2468,12 +2404,13 @@ components:
       required:
       - access
       - refresh
-    TokenVerify:
+    TokenVerifyRequest:
       type: object
       properties:
         token:
           type: string
           writeOnly: true
+          minLength: 1
       required:
       - token
     User:

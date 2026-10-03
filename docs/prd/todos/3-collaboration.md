@@ -28,7 +28,7 @@ tasks and projects, with file attachments; and email notifications about them.
 1. I copy a project's invite link and send it to someone however I like.
 2. Opening the link, they sign in (or sign up) and land in the project.
 3. I see who's in a project, remove someone, or leave a project I joined.
-4. I assign a task to someone in the project, and they're told.
+4. I assign a task to someone in the project, and they're told. Typing `@name` in quick add or a comment mentions them; `@` is reserved for this from phase 1.
 5. I comment on a task or a project, with Markdown and an attached file.
 6. I'm emailed about tasks assigned to me and comments on tasks I'm involved in.
 

@@ -176,6 +176,8 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "0.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SCHEMA_PATH_PREFIX": "/api/v1",
+    # Separate request types, so read-only fields aren't required when writing.
+    "COMPONENT_SPLIT_REQUEST": True,
 }
 
 # --- Email ----------------------------------------------------------------

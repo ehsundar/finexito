@@ -507,23 +507,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/todos/tasks/quick/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** @description Parse one line of quick add and create the task. */
-        post: operations["todos_tasks_quick_create"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/todos/tasks/reorder/": {
         parameters: {
             query?: never;
@@ -591,7 +574,7 @@ export interface components {
             readonly is_favourite: boolean;
             readonly order: number | null;
         };
-        GoogleLogin: {
+        GoogleLoginRequest: {
             code: string;
             code_verifier: string;
         };
@@ -616,7 +599,17 @@ export interface components {
             /** @default 0 */
             readonly open_task_count: number;
         };
-        Logout: {
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        LabelRequest: {
+            name: string;
+            colour?: components["schemas"]["ColourEnum"];
+            is_favourite?: boolean;
+        };
+        LogoutRequest: {
             refresh: string;
         };
         /** @description What a listing needs: everything but the body. */
@@ -692,30 +685,17 @@ export interface components {
          *
          *     Related fields only offer the caller's own rows; anything else reads as missing.
          */
-        PatchedLabel: {
-            /** Format: uuid */
-            readonly id?: string;
+        PatchedLabelRequest: {
             name?: string;
             colour?: components["schemas"]["ColourEnum"];
             is_favourite?: boolean;
-            readonly order?: number;
-            /** @default 0 */
-            readonly open_task_count: number;
         };
-        PatchedProfile: {
-            /** Format: uuid */
-            readonly id?: string;
-            /** Format: email */
-            readonly email?: string;
+        PatchedProfileRequest: {
             display_name?: string;
             avatar_url?: string;
             bio?: string;
             locale?: string;
             timezone?: string;
-            readonly role?: components["schemas"]["RoleEnum"];
-            readonly status?: components["schemas"]["StatusEnum"];
-            /** Format: date-time */
-            readonly enrolled_at?: string;
             extra?: {
                 [key: string]: string;
             };
@@ -725,72 +705,46 @@ export interface components {
          *
          *     Related fields only offer the caller's own rows; anything else reads as missing.
          */
-        PatchedProject: {
-            /** Format: uuid */
-            readonly id?: string;
+        PatchedProjectRequest: {
             name?: string;
             colour?: components["schemas"]["ColourEnum"];
             /** Format: uuid */
             parent?: string | null;
-            readonly is_inbox?: boolean;
             is_favourite?: boolean;
             is_archived?: boolean;
             view?: components["schemas"]["ViewEnum"];
             sort?: components["schemas"]["SortEnum"];
-            readonly order?: number;
-            /** @default 0 */
-            readonly open_task_count: number;
-            /** Format: date-time */
-            readonly created_at?: string;
         };
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer the caller's own rows; anything else reads as missing.
          */
-        PatchedSection: {
-            /** Format: uuid */
-            readonly id?: string;
+        PatchedSectionRequest: {
             /** Format: uuid */
             project?: string;
             name?: string;
-            readonly order?: number;
             is_archived?: boolean;
-            /** Format: date-time */
-            readonly created_at?: string;
         };
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer the caller's own rows; anything else reads as missing.
          */
-        PatchedTask: {
-            /** Format: uuid */
-            readonly id?: string;
+        PatchedTaskRequest: {
             /** Format: uuid */
             project?: string;
             /** Format: uuid */
             section?: string | null;
             /** Format: uuid */
             parent?: string | null;
-            readonly order?: number;
             /** @description Inline Markdown. */
             content?: string;
             /** @description Markdown. */
             description?: string;
             priority?: components["schemas"]["PriorityEnum"];
             labels?: string[];
-            /** Format: date-time */
-            readonly completed_at?: string | null;
             extra?: unknown;
-            /** @default 0 */
-            readonly subtask_count: number;
-            /** @default 0 */
-            readonly completed_subtask_count: number;
-            /** Format: date-time */
-            readonly created_at?: string;
-            /** Format: date-time */
-            readonly updated_at?: string;
         };
         /**
          * @description * `1` - Priority 1
@@ -841,6 +795,21 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        ProjectRequest: {
+            name: string;
+            colour?: components["schemas"]["ColourEnum"];
+            /** Format: uuid */
+            parent?: string | null;
+            is_favourite?: boolean;
+            is_archived?: boolean;
+            view?: components["schemas"]["ViewEnum"];
+            sort?: components["schemas"]["SortEnum"];
+        };
         /** @description What other members may see. */
         PublicProfile: {
             /** Format: uuid */
@@ -850,16 +819,6 @@ export interface components {
             readonly avatar_url: string;
             readonly bio: string;
             readonly role: components["schemas"]["RoleEnum"];
-        };
-        QuickAdd: {
-            text: string;
-            /** Format: uuid */
-            project?: string | null;
-            /** Format: uuid */
-            section?: string | null;
-            /** Format: uuid */
-            parent?: string | null;
-            labels?: string[];
         };
         /**
          * @description * `member` - Member
@@ -883,6 +842,17 @@ export interface components {
             is_archived?: boolean;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        SectionRequest: {
+            /** Format: uuid */
+            project: string;
+            name: string;
+            is_archived?: boolean;
         };
         Site: {
             readonly name: string;
@@ -953,12 +923,32 @@ export interface components {
             readonly updated_at: string;
         };
         /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         */
+        TaskRequest: {
+            /** Format: uuid */
+            project: string;
+            /** Format: uuid */
+            section?: string | null;
+            /** Format: uuid */
+            parent?: string | null;
+            /** @description Inline Markdown. */
+            content: string;
+            /** @description Markdown. */
+            description?: string;
+            priority?: components["schemas"]["PriorityEnum"];
+            labels?: string[];
+            extra?: unknown;
+        };
+        /**
          * @description The refresh request really only accepts the refresh token.
          *
          *     SimpleJWT's own serializer also carries the outgoing ``access`` field, which
          *     leaks into the generated request schema as a required property.
          */
-        TokenRefreshRequest: {
+        TokenRefreshRequestRequest: {
             refresh: string;
         };
         /** @description Both tokens come back, because ``ROTATE_REFRESH_TOKENS`` is enabled. */
@@ -966,7 +956,7 @@ export interface components {
             readonly access: string;
             readonly refresh: string;
         };
-        TokenVerify: {
+        TokenVerifyRequest: {
             token: string;
         };
         User: {
@@ -1012,9 +1002,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GoogleLogin"];
-                "application/x-www-form-urlencoded": components["schemas"]["GoogleLogin"];
-                "multipart/form-data": components["schemas"]["GoogleLogin"];
+                "application/json": components["schemas"]["GoogleLoginRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GoogleLoginRequest"];
+                "multipart/form-data": components["schemas"]["GoogleLoginRequest"];
             };
         };
         responses: {
@@ -1072,9 +1062,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Logout"];
-                "application/x-www-form-urlencoded": components["schemas"]["Logout"];
-                "multipart/form-data": components["schemas"]["Logout"];
+                "application/json": components["schemas"]["LogoutRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LogoutRequest"];
+                "multipart/form-data": components["schemas"]["LogoutRequest"];
             };
         };
         responses: {
@@ -1123,9 +1113,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TokenRefreshRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["TokenRefreshRequest"];
-                "multipart/form-data": components["schemas"]["TokenRefreshRequest"];
+                "application/json": components["schemas"]["TokenRefreshRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TokenRefreshRequestRequest"];
+                "multipart/form-data": components["schemas"]["TokenRefreshRequestRequest"];
             };
         };
         responses: {
@@ -1156,19 +1146,18 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TokenVerify"];
-                "application/x-www-form-urlencoded": components["schemas"]["TokenVerify"];
-                "multipart/form-data": components["schemas"]["TokenVerify"];
+                "application/json": components["schemas"]["TokenVerifyRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TokenVerifyRequest"];
+                "multipart/form-data": components["schemas"]["TokenVerifyRequest"];
             };
         };
         responses: {
+            /** @description No response body */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["TokenVerify"];
-                };
+                content?: never;
             };
         };
     };
@@ -1302,9 +1291,9 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["PatchedProfile"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedProfile"];
-                "multipart/form-data": components["schemas"]["PatchedProfile"];
+                "application/json": components["schemas"]["PatchedProfileRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedProfileRequest"];
+                "multipart/form-data": components["schemas"]["PatchedProfileRequest"];
             };
         };
         responses: {
@@ -1505,9 +1494,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Label"];
-                "application/x-www-form-urlencoded": components["schemas"]["Label"];
-                "multipart/form-data": components["schemas"]["Label"];
+                "application/json": components["schemas"]["LabelRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LabelRequest"];
+                "multipart/form-data": components["schemas"]["LabelRequest"];
             };
         };
         responses: {
@@ -1576,9 +1565,9 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["PatchedLabel"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedLabel"];
-                "multipart/form-data": components["schemas"]["PatchedLabel"];
+                "application/json": components["schemas"]["PatchedLabelRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedLabelRequest"];
+                "multipart/form-data": components["schemas"]["PatchedLabelRequest"];
             };
         };
         responses: {
@@ -1650,9 +1639,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Project"];
-                "application/x-www-form-urlencoded": components["schemas"]["Project"];
-                "multipart/form-data": components["schemas"]["Project"];
+                "application/json": components["schemas"]["ProjectRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProjectRequest"];
+                "multipart/form-data": components["schemas"]["ProjectRequest"];
             };
         };
         responses: {
@@ -1730,9 +1719,9 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["PatchedProject"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedProject"];
-                "multipart/form-data": components["schemas"]["PatchedProject"];
+                "application/json": components["schemas"]["PatchedProjectRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedProjectRequest"];
+                "multipart/form-data": components["schemas"]["PatchedProjectRequest"];
             };
         };
         responses: {
@@ -1809,9 +1798,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Section"];
-                "application/x-www-form-urlencoded": components["schemas"]["Section"];
-                "multipart/form-data": components["schemas"]["Section"];
+                "application/json": components["schemas"]["SectionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SectionRequest"];
+                "multipart/form-data": components["schemas"]["SectionRequest"];
             };
         };
         responses: {
@@ -1892,9 +1881,9 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["PatchedSection"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedSection"];
-                "multipart/form-data": components["schemas"]["PatchedSection"];
+                "application/json": components["schemas"]["PatchedSectionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSectionRequest"];
+                "multipart/form-data": components["schemas"]["PatchedSectionRequest"];
             };
         };
         responses: {
@@ -1990,9 +1979,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Task"];
-                "application/x-www-form-urlencoded": components["schemas"]["Task"];
-                "multipart/form-data": components["schemas"]["Task"];
+                "application/json": components["schemas"]["TaskRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TaskRequest"];
+                "multipart/form-data": components["schemas"]["TaskRequest"];
             };
         };
         responses: {
@@ -2100,9 +2089,9 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["PatchedTask"];
-                "application/x-www-form-urlencoded": components["schemas"]["PatchedTask"];
-                "multipart/form-data": components["schemas"]["PatchedTask"];
+                "application/json": components["schemas"]["PatchedTaskRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTaskRequest"];
+                "multipart/form-data": components["schemas"]["PatchedTaskRequest"];
             };
         };
         responses: {
@@ -2177,44 +2166,6 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Task"];
-                };
-            };
-        };
-    };
-    todos_tasks_quick_create: {
-        parameters: {
-            query?: {
-                /** @description Completed tasks only, newest first. Default: open. */
-                completed?: boolean;
-                /** @description A built-in filter's slug. */
-                filter?: string;
-                label?: string;
-                /** @description A task id, or `none` for the top level. */
-                parent?: string;
-                project?: string;
-                /** @description Text in the content or description. */
-                q?: string;
-                /** @description A section id, or `none` for no section. */
-                section?: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["QuickAdd"];
-                "application/x-www-form-urlencoded": components["schemas"]["QuickAdd"];
-                "multipart/form-data": components["schemas"]["QuickAdd"];
-            };
-        };
-        responses: {
-            201: {
                 headers: {
                     [name: string]: unknown;
                 };

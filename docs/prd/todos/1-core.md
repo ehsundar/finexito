@@ -64,8 +64,9 @@ The app stores and returns it but never reads it.
 
 1. I press `q` anywhere (or the + button) and type one line to add a task; it
    lands in my Inbox unless I name a project.
-2. Quick add understands `#Project`, `/Section`, `@label` and `p1`–`p4`, and
-   shows them highlighted as I type so I can see what it understood.
+2. Quick add understands `#Project` or `#label`, `/Section` and `p1`–`p4`, and
+   shows them highlighted as I type so I can see what it understood. Typing `#`
+   suggests matching projects first, then labels.
 3. I create projects, give them a colour, nest them, favourite them and
    archive them when done.
 4. I split a project into sections and move tasks between them.
@@ -150,18 +151,19 @@ Tasks nest up to 4 levels.
 
 ### Quick add
 
-One line in, one task out. Parsing happens on the server (`POST
-todos/tasks/quick/`) so every client agrees; the client also highlights tokens
-as you type using the same rules.
+One line in, one task out. Parsing happens in the client, so it can highlight
+what it understood and say what it will create (new labels, a new section)
+before anything is saved. Saving uses the ordinary endpoints: the new labels and
+section first, then the task. The API has no quick-add endpoint.
 
 | Token            | Meaning |
 | ---------------- | ------- |
-| `#Project name`  | Project, matched case-insensitively on name; multi-word names match the longest existing project. No match: the token stays in the text. |
-| `/Section`       | Section within the chosen project (or Inbox). No match: the token stays in the text. |
-| `@label`         | Label; an unknown label is created. |
+| `#name`          | Project or label, matched case-insensitively on name; multi-word names match the longest existing one. A project wins over a label, and only the first project counts. No match: a label named after the next word is created. |
+| `/Section`       | Section within the chosen project (or Inbox), matched the same way. No match: a section named after the next word is created. |
 | `p1`–`p4`        | Priority. |
 
 - Everything else is the task's content, with the tokens removed.
+- `@` is reserved for mentioning people (collaboration) and stays plain text.
 - A token can be escaped with a backslash to keep it as text.
 - Opened from a project, section, task or label view, quick add pre-fills that
   project, parent or label.
@@ -258,7 +260,6 @@ Writes use DRF's `ScopedRateThrottle` with scope `todos`, rated by
 | GET, PATCH, DEL | `todos/tasks/{id}/`        | Edit, move, nest |
 | POST            | `todos/tasks/{id}/close/`  | Complete (with sub-tasks) |
 | POST            | `todos/tasks/{id}/reopen/` | Undo |
-| POST            | `todos/tasks/quick/`       | Parse one line and create the task |
 | GET, POST       | `todos/labels/`            | |
 | PATCH, DEL      | `todos/labels/{id}/`       | |
 | GET             | `todos/filters/`           | The built-in filters, with `is_favourite` |
