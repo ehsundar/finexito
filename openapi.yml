@@ -2425,6 +2425,9 @@ components:
           format: email
           readOnly: true
           title: Email address
+        is_staff:
+          type: boolean
+          readOnly: true
         date_joined:
           type: string
           format: date-time
@@ -2438,6 +2441,7 @@ components:
       - date_joined
       - email
       - id
+      - is_staff
       - last_login
     ViewEnum:
       enum:

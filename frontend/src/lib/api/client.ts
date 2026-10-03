@@ -57,6 +57,13 @@ async function authedFetch(request: Request) {
 
 export const api = createClient<paths>({ baseUrl, fetch: authedFetch });
 
+/** Starts a session from a fresh sign-in, noting whether it belongs to staff. */
+export async function signIn(tokens: { access: string; refresh: string }) {
+  setSession({ ...tokens, staff: false });
+  const { data: me } = await api.GET("/api/v1/auth/me/");
+  setSession({ ...tokens, staff: !!me?.is_staff });
+}
+
 /** `useQuery(path, init)`: a GET through `api`, cached and revalidated by SWR. */
 export const useQuery = createQueryHook(api, "api");
 

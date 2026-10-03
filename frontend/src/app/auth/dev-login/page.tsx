@@ -3,7 +3,7 @@
 import { notFound, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
-import { setSession } from "@/lib/auth/session";
+import { signIn } from "@/lib/api/client";
 
 /**
  * Development only: signs in with the tokens `manage.py login_as <email>` prints,
@@ -17,8 +17,7 @@ export default function DevLoginPage() {
 
   useEffect(() => {
     if (process.env.NODE_ENV === "production" || !access || !refresh) return;
-    setSession({ access, refresh });
-    router.replace("/dashboard");
+    signIn({ access, refresh }).then(() => router.replace("/dashboard"));
   }, [access, refresh, router]);
 
   if (process.env.NODE_ENV === "production") notFound();

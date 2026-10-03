@@ -967,6 +967,7 @@ export interface components {
              * Format: email
              */
             readonly email: string;
+            readonly is_staff: boolean;
             /** Format: date-time */
             readonly date_joined: string;
             /** Format: date-time */

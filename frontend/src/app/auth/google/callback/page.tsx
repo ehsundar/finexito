@@ -3,8 +3,8 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
-import { api } from "@/lib/api/client";
-import { GOOGLE_KEY, safeNext, setSession } from "@/lib/auth/session";
+import { api, signIn } from "@/lib/api/client";
+import { GOOGLE_KEY, safeNext } from "@/lib/auth/session";
 
 /** Where Google sends the visitor back: the redirect URI registered with Google. */
 export default function GoogleCallbackPage() {
@@ -29,7 +29,7 @@ export default function GoogleCallbackPage() {
         const reason = error?.error?.code === "account_disabled" ? "disabled" : "google";
         return location.replace(`/login?error=${reason}`);
       }
-      setSession(data);
+      await signIn(data);
       location.replace(safeNext(next));
     })();
   }, [params]);

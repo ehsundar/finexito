@@ -10,7 +10,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from apps.accounts.models import User
 
-# The frontend mirrors its access token into this cookie for /api/admin
+# The frontend mirrors a staff member's access token into this cookie for /api/admin
 # (frontend/src/lib/auth/session.ts). Same host, so Django receives it, in
 # production and on localhost.
 ACCESS_COOKIE = "access_token"

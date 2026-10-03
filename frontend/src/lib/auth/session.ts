@@ -4,6 +4,8 @@
  * header (see lib/api/client.ts).
  */
 type Tokens = { access: string; refresh: string };
+/** `staff` comes from /auth/me/ at sign-in (signIn in lib/api/client.ts). */
+type Session = Tokens & { staff?: boolean };
 
 const KEY = "session";
 
@@ -12,11 +14,12 @@ export const GOOGLE_KEY = "google_oauth";
 
 /**
  * The admin's login page (backend/apps/accounts/admin.py) signs in whoever holds
- * this cookie, so the access token is mirrored here for /api/admin only.
+ * this cookie, so a staff member's access token is mirrored here, for /api/admin
+ * only. Nobody else gets it: the admin would refuse them anyway.
  */
 const ADMIN_COOKIE = "access_token";
 
-export function getSession(): Tokens | null {
+export function getSession(): Session | null {
   try {
     return JSON.parse(localStorage.getItem(KEY) ?? "null");
   } catch {
@@ -24,10 +27,12 @@ export function getSession(): Tokens | null {
   }
 }
 
-export function setSession(tokens: Tokens) {
-  localStorage.setItem(KEY, JSON.stringify({ access: tokens.access, refresh: tokens.refresh }));
+/** Stores the tokens. A refresh doesn't say who is staff, so the flag carries over. */
+export function setSession({ access, refresh, staff = getSession()?.staff ?? false }: Session) {
+  localStorage.setItem(KEY, JSON.stringify({ access, refresh, staff }));
   // Kept in step with ACCOUNTS_JWT_ACCESS_MINUTES on the backend.
-  adminCookie(tokens.access, 30 * 60);
+  if (staff) adminCookie(access, 30 * 60);
+  else adminCookie("", 0);
 }
 
 export function clearSession() {
