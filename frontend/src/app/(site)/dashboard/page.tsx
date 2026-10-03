@@ -23,7 +23,7 @@ export default function DashboardPage() {
     const refresh = getSession()?.refresh;
     if (refresh) await api.POST("/api/v1/auth/logout/", { body: { refresh } }).catch(() => undefined);
     clearSession();
-    router.replace("/login?signed_out");
+    router.replace("/");
   }
 
   if (!user) return null;

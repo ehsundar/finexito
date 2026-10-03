@@ -33,16 +33,14 @@ export default function LoginPage() {
   const params = useSearchParams();
   const next = safeNext(params.get("next"));
   const error = params.get("error");
-  const signedOut = params.has("signed_out");
   const name = useSiteName();
 
   // Google is the only way in, so go straight there. The page still shows after
-  // a failed attempt (or it would loop) and after signing out (or Google would
-  // sign the visitor straight back in), and is here for when there are options.
+  // a failed attempt (or it would loop), and is here for when there are options.
   // A live session goes on, with fresh tokens: the admin sends visitors here for
   // its cookie. A full load, since `next` may be outside this app (/api/admin).
   useEffect(() => {
-    if (error || signedOut) return;
+    if (error) return;
     (async () => {
       const session = getSession();
       if (!session) return startGoogle(next);
@@ -57,9 +55,9 @@ export default function LoginPage() {
       if (next.startsWith("/api/admin") && !staff) location.replace("/login?error=staff");
       else location.replace(next);
     })();
-  }, [error, signedOut, next]);
+  }, [error, next]);
 
-  if (!error && !signedOut) return null;
+  if (!error) return null;
   return (
     <main className="flex flex-1 items-center justify-center p-6">
       <Card className="w-full max-w-sm">
@@ -70,13 +68,9 @@ export default function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {error ? (
-            <Alert variant="destructive">
-              <AlertDescription>{ERRORS[error] ?? ERRORS.google}</AlertDescription>
-            </Alert>
-          ) : (
-            <p className="text-muted-foreground text-sm">You have signed out.</p>
-          )}
+          <Alert variant="destructive">
+            <AlertDescription>{ERRORS[error] ?? ERRORS.google}</AlertDescription>
+          </Alert>
           <Button size="lg" onClick={() => startGoogle(next)}>
             Continue with Google
           </Button>
