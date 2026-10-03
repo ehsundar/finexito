@@ -18,6 +18,7 @@ Write the simplest thing that works: the least code, the fewest files, the fewes
 - Behaviour lives with the data: on the model, or at the one place it is used. No modules that exist only to hold helper functions.
 - Don't keep code paths for things that are not in use.
 - Do include the small things almost always needed: a new model gets a useful admin (list columns, filters, search, read-only where code owns the data, and an action for the obvious operation, like retrying a failure), and a migration. Stop there; don't grow features nobody asked for.
+- A model's `Meta` subclasses its parent's (`class Meta(BaseModel.Meta):`), as Django advises for abstract bases; it also keeps the type checker quiet.
 - Stay within what was asked; ask before widening scope, and keep commits to one topic.
 
 ## Apps
