@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { api, signIn } from "@/lib/api/client";
 import { GOOGLE_KEY, safeNext } from "@/lib/auth/session";
@@ -9,8 +9,13 @@ import { GOOGLE_KEY, safeNext } from "@/lib/auth/session";
 /** Where Google sends the visitor back: the redirect URI registered with Google. */
 export default function GoogleCallbackPage() {
   const params = useSearchParams();
+  // A code is good for one exchange, and the pending state is taken as it's
+  // read, so finish once even when React runs the effect twice (development).
+  const started = useRef(false);
 
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     const pending = sessionStorage.getItem(GOOGLE_KEY);
     sessionStorage.removeItem(GOOGLE_KEY);
     const { state, verifier, next } = pending ? JSON.parse(pending) : ({} as Record<string, string>);
