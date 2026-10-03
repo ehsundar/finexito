@@ -158,10 +158,6 @@ export function QuickAdd({ prefill, onClose }: { prefill: Prefill | null; onClos
     sections.filter((s) => s.project === (project ?? prefilled)?.id),
   );
   const project = parsed.project ?? prefilled;
-  const fresh = [
-    ...parsed.labels.filter((l) => typeof l === "string").map((l) => `#${l}`),
-    ...(typeof parsed.section === "string" ? [`/${parsed.section}`] : []),
-  ];
 
   // While a `#` is being typed: matching projects first, then labels.
   const tag = typingTag(text, caret);
@@ -226,22 +222,8 @@ export function QuickAdd({ prefill, onClose }: { prefill: Prefill | null; onClos
 
   return (
     <Sheet open={!!prefill} onOpenChange={(open) => !open && onClose()} title={`Add to ${project?.name ?? "Inbox"}`}>
+      {/* What changes while typing sits above the input, so the input stays put. */}
       <form onSubmit={submit} className="flex flex-col gap-3">
-        <Input
-          value={text}
-          ref={input}
-          onChange={(event) => {
-            setText(event.target.value);
-            setCaret(event.target.selectionStart ?? event.target.value.length);
-          }}
-          onSelect={(event) => setCaret(event.currentTarget.selectionStart ?? 0)}
-          placeholder="Task name"
-          maxLength={1000}
-          autoFocus
-          enterKeyHint="send"
-          aria-describedby="quick-add-preview"
-          className="h-11 text-base"
-        />
         {suggestions.length > 0 && (
           // Tapping a suggestion keeps the keyboard up: the input never loses focus.
           <div onPointerDown={(event) => event.preventDefault()}>
@@ -279,9 +261,21 @@ export function QuickAdd({ prefill, onClose }: { prefill: Prefill | null; onClos
             <>Type # for a project or label, / for a section, p1 for priority.</>
           )}
         </p>
-        {fresh.length > 0 && (
-          <p className="text-muted-foreground text-sm">Will create {fresh.join(", ")}</p>
-        )}
+        <Input
+          value={text}
+          ref={input}
+          onChange={(event) => {
+            setText(event.target.value);
+            setCaret(event.target.selectionStart ?? event.target.value.length);
+          }}
+          onSelect={(event) => setCaret(event.currentTarget.selectionStart ?? 0)}
+          placeholder="Task name"
+          maxLength={1000}
+          autoFocus
+          enterKeyHint="send"
+          aria-describedby="quick-add-preview"
+          className="h-11 text-base"
+        />
         <Button type="submit" size="lg" className="h-11" disabled={busy || !parsed.content}>
           Add task
         </Button>
