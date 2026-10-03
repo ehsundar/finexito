@@ -10,7 +10,7 @@ from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
 
-from config.env import env_bool, env_list, env_str
+from config.env import env_bool, env_int, env_list, env_str
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -234,7 +234,7 @@ if not DEBUG:
     # Behind Caddy this stays off: Caddy does the http->https redirect itself, and
     # its proxied calls and the healthcheck reach http://backend:8000 directly.
     SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
-    SECURE_HSTS_SECONDS = int(env_str("SECURE_HSTS_SECONDS", "31536000"))
+    SECURE_HSTS_SECONDS = env_int("SECURE_HSTS_SECONDS", 31536000)
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
     # Off only while the site is served over plain HTTP (a bare IP, no domain

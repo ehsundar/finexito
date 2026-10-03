@@ -14,6 +14,11 @@ def env_str(name: str, default: str = "") -> str:
     return os.environ.get(PREFIX + name, default)
 
 
+def env_int(name: str, default: int = 0) -> int:
+    raw = os.environ.get(PREFIX + name)
+    return int(raw) if raw else default
+
+
 def env_bool(name: str, default: bool = False) -> bool:
     raw = os.environ.get(PREFIX + name)
     if raw is None:
