@@ -68,8 +68,9 @@ export async function moveTask(task: string, body: Schemas["PatchedTaskRequest"]
   return done(api.POST("/api/v1/todos/tasks/reorder/", { body: siblings }));
 }
 
-export async function reorder(kind: "projects" | "sections" | "labels", ids: string[]) {
+export async function reorder(kind: "projects" | "sections" | "tasks" | "labels", ids: string[]) {
   const body = { body: ids };
+  if (kind === "tasks") return done(api.POST("/api/v1/todos/tasks/reorder/", body));
   if (kind === "projects") return done(api.POST("/api/v1/todos/projects/reorder/", body));
   if (kind === "sections") return done(api.POST("/api/v1/todos/sections/reorder/", body));
   return done(api.POST("/api/v1/todos/labels/reorder/", body));

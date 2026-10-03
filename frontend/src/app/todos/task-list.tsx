@@ -1,13 +1,26 @@
 "use client";
 
+import {
+  closestCenter,
+  DndContext,
+  MouseSensor,
+  TouchSensor,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { closeTask, reopenTask } from "@/app/todos/actions";
+import { closeTask, moveTask, reopenTask, reorder } from "@/app/todos/actions";
 import { colourVar, useTodos, type Project, type Task } from "@/app/todos/shell";
 import { InlineMarkdown } from "@/components/markdown/inline";
+import { cn } from "@/lib/utils";
 
 type Sort = NonNullable<Project["sort"]>;
 
@@ -24,27 +37,10 @@ export function sortTasks(tasks: Task[], sort: Sort = "manual") {
 
 export const priorityVar = (priority: Task["priority"]) => `var(--priority-${priority ?? 4})`;
 
-/** Tasks in the order they appear, with how deep each sits. */
-function flatten(tasks: Task[], sort: Sort, collapsed: Set<string>) {
-  const under = new Map<string | null, Task[]>();
-  const ids = new Set(tasks.map((t) => t.id));
-  for (const task of tasks) {
-    // A sub-task whose parent isn't listed (a filter, a search) shows at the top.
-    const parent = task.parent && ids.has(task.parent) ? task.parent : null;
-    under.set(parent, [...(under.get(parent) ?? []), task]);
-  }
-  const rows: { task: Task; depth: number }[] = [];
-  const walk = (parent: string | null, depth: number) => {
-    for (const task of sortTasks(under.get(parent) ?? [], sort)) {
-      rows.push({ task, depth });
-      if (!collapsed.has(task.id)) walk(task.id, depth + 1);
-    }
-  };
-  walk(null, 0);
-  return rows;
-}
-
 export type Group = { key: string; title?: React.ReactNode; tasks: Task[]; section?: string | null };
+
+/** Where a task sits: a dragged task changes place only among these. */
+type Place = Pick<Task, "project" | "section" | "parent">;
 
 /** Tasks in groups (a project's sections, or a filter's projects), each a tree. */
 export function TaskList({
@@ -62,6 +58,36 @@ export function TaskList({
   const { quickAdd } = useTodos();
   const [collapsed, setCollapsed] = useState(new Set<string>());
   const [hidden, setHidden] = useState(new Set<string>());
+  // Lifting a row: a long press on a phone, a short drag with a mouse.
+  const sensors = useSensors(
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
+  );
+  const [dragging, setDragging] = useState<Task | null>(null);
+  // Where dropped tasks now sit, shown until the refetched tasks agree or move on.
+  const [pending, setPending] = useState(new Map<string, { was: Task; now: Partial<Task> }>());
+
+  const shown = (tasks: Task[]) =>
+    tasks
+      .filter((t) => !hidden.has(t.id))
+      .map((t) => {
+        const move = pending.get(t.id);
+        const unchanged = move && t.order === move.was.order && t.section === move.was.section;
+        return unchanged ? { ...t, ...move.now } : t;
+      });
+  const all = shown(groups.flatMap((g) => g.tasks));
+  // Only a project's list has sections to drag between.
+  const sectioned = groups.some((g) => g.section !== undefined);
+  const byId = new Map(all.map((t) => [t.id, t]));
+  /** A task's section is its top task's, which a drop may just have changed. */
+  const home = (task: Task) => {
+    while (task.parent && byId.has(task.parent)) task = byId.get(task.parent)!;
+    return task.section ?? null;
+  };
+  const fits = (task: Place, onto: Place) =>
+    task.project === onto.project &&
+    task.parent === onto.parent &&
+    (task.section === onto.section || (sectioned && !task.parent));
 
   async function complete(task: Task) {
     setHidden((h) => new Set(h).add(task.id));
@@ -83,44 +109,108 @@ export function TaskList({
     });
   }
 
-  return groups.map((group) => (
-    <section key={group.key}>
-      {group.title && <div className="flex min-h-10 items-center border-b">{group.title}</div>}
-      <ul>
-        {flatten(
-          group.tasks.filter((t) => !hidden.has(t.id)),
-          sort,
-          collapsed,
-        ).map(({ task, depth }) => (
+  /** Puts the task before or after the row it was dropped on, or at the end of an empty section. */
+  async function drop({ active, over }: DragEndEvent) {
+    setDragging(null);
+    const moved = all.find((t) => t.id === active.id);
+    if (!moved || !over || over.id === active.id) return;
+    const target = all.find((t) => t.id === over.id);
+    const section = target ? target.section : (groups.find((g) => g.key === over.id)?.section ?? null);
+    const siblings = all.filter(
+      (t) => t.id !== moved.id && t.project === moved.project && t.parent === moved.parent && t.section === section,
+    );
+    const ids = sortTasks(siblings).map((t) => t.id);
+    const below = (active.rect.current.translated?.top ?? 0) > over.rect.top;
+    const index = target ? ids.indexOf(target.id) + (below ? 1 : 0) : ids.length;
+    ids.splice(index, 0, moved.id);
+
+    const now = new Map(ids.map((id, i) => [id, { order: i + 1 } as Partial<Task>]));
+    now.set(moved.id, { order: index + 1, section });
+    setPending(new Map(ids.map((id) => [id, { was: all.find((t) => t.id === id)!, now: now.get(id)! }])));
+    const { error } =
+      section === moved.section ? await reorder("tasks", ids) : await moveTask(moved.id, { section }, ids);
+    if (error) {
+      setPending(new Map());
+      toast.error(error);
+    }
+  }
+
+  const branch = (tasks: Task[], parent: string | null, depth: number): React.ReactNode => {
+    const ids = new Set(tasks.map((t) => t.id));
+    // A sub-task whose parent isn't listed (a filter, a search) shows at the top.
+    const level = sortTasks(
+      tasks.filter((t) => (t.parent && ids.has(t.parent) ? t.parent : null) === parent),
+      sort,
+    );
+    return (
+      <SortableContext items={level.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+        {level.map((task) => (
           <TaskRow
             key={task.id}
             task={task}
             depth={depth}
+            draggable={sort === "manual"}
+            droppable={!!dragging && fits(task, dragging)}
             collapsed={collapsed.has(task.id)}
             onToggle={() =>
               setCollapsed((c) => (c.has(task.id) ? withoutId(c, task.id) : new Set(c).add(task.id)))
             }
             onComplete={() => complete(task)}
-          />
+          >
+            {task.subtask_count > 0 && !collapsed.has(task.id) && (
+              <ul>{branch(tasks, task.id, depth + 1)}</ul>
+            )}
+          </TaskRow>
         ))}
-      </ul>
-      {(project || parentTask) && (
-        <button
-          type="button"
-          className="text-muted-foreground active:bg-accent flex min-h-12 w-full items-center gap-3 text-sm"
-          onClick={() =>
-            quickAdd(
-              parentTask
-                ? { project: parentTask.project, section: parentTask.section ?? undefined, parent: parentTask.id }
-                : { project: project?.id, section: group.section ?? undefined },
-            )
-          }
-        >
-          <Plus className="text-primary size-5" /> {parentTask ? "Add sub-task" : "Add task"}
-        </button>
-      )}
-    </section>
-  ));
+      </SortableContext>
+    );
+  };
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      modifiers={[({ transform }) => ({ ...transform, x: 0 })]}
+      onDragStart={({ active }) => setDragging(all.find((t) => t.id === active.id) ?? null)}
+      onDragCancel={() => setDragging(null)}
+      onDragEnd={drop}
+    >
+      {groups.map((group) => {
+        const tasks = sectioned
+          ? all.filter((t) => home(t) === (group.section ?? null))
+          : all.filter((t) => group.tasks.some((g) => g.id === t.id));
+        return (
+          <section key={group.key}>
+            {group.title && <div className="flex min-h-10 items-center border-b">{group.title}</div>}
+            <GroupList
+              id={group.key}
+              // An empty section takes a dropped task; a full one has rows to drop on.
+              droppable={
+                !!dragging && !tasks.length && fits(dragging, { ...dragging, section: group.section ?? null })
+              }
+            >
+              {branch(tasks, null, 0)}
+            </GroupList>
+            {(project || parentTask) && (
+              <button
+                type="button"
+                className="text-muted-foreground active:bg-accent flex min-h-12 w-full items-center gap-3 text-sm"
+                onClick={() =>
+                  quickAdd(
+                    parentTask
+                      ? { project: parentTask.project, section: parentTask.section ?? undefined, parent: parentTask.id }
+                      : { project: project?.id, section: group.section ?? undefined },
+                  )
+                }
+              >
+                <Plus className="text-primary size-5" /> {parentTask ? "Add sub-task" : "Add task"}
+              </button>
+            )}
+          </section>
+        );
+      })}
+    </DndContext>
+  );
 }
 
 export function withoutId(ids: Set<string>, id: string) {
@@ -132,36 +222,64 @@ export function withoutId(ids: Set<string>, id: string) {
 function TaskRow({
   task,
   depth,
+  draggable,
+  droppable,
   collapsed,
   onToggle,
   onComplete,
+  children,
 }: {
   task: Task;
   depth: number;
+  draggable: boolean;
+  droppable: boolean;
   collapsed: boolean;
   onToggle: () => void;
   onComplete: () => void;
+  children: React.ReactNode;
 }) {
+  const { setNodeRef, listeners, isDragging, transform, transition } = useSortable({
+    id: task.id,
+    disabled: { draggable: !draggable, droppable: !droppable },
+  });
   return (
-    <li className="flex items-start gap-3 border-b py-3" style={{ paddingLeft: `${depth * 1.5}rem` }}>
-      <TaskCheck task={task} onComplete={onComplete} />
-      <Link href={`/todos/task?id=${task.id}`} className="min-w-0 flex-1">
-        <span className="block break-words">
-          <InlineMarkdown source={task.content} />
-        </span>
-        <TaskMeta task={task} />
-      </Link>
-      {task.subtask_count > 0 && (
-        <button
-          type="button"
-          onClick={onToggle}
-          aria-label={collapsed ? "Show sub-tasks" : "Hide sub-tasks"}
-          className="text-muted-foreground -my-1 p-1"
-        >
-          {collapsed ? <ChevronRight className="size-5" /> : <ChevronDown className="size-5" />}
-        </button>
-      )}
+    <li
+      ref={setNodeRef}
+      {...listeners}
+      // A long press lifts the row, rather than selecting text or opening the link's menu.
+      className={cn("relative select-none [-webkit-touch-callout:none]", isDragging && "bg-background z-10 shadow-lg")}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
+    >
+      <div className="flex items-start gap-3 border-b py-3" style={{ paddingLeft: `${depth * 1.5}rem` }}>
+        <TaskCheck task={task} onComplete={onComplete} />
+        <Link href={`/todos/task?id=${task.id}`} className="min-w-0 flex-1">
+          <span className="block break-words">
+            <InlineMarkdown source={task.content} />
+          </span>
+          <TaskMeta task={task} />
+        </Link>
+        {task.subtask_count > 0 && (
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-label={collapsed ? "Show sub-tasks" : "Hide sub-tasks"}
+            className="text-muted-foreground -my-1 p-1"
+          >
+            {collapsed ? <ChevronRight className="size-5" /> : <ChevronDown className="size-5" />}
+          </button>
+        )}
+      </div>
+      {children}
     </li>
+  );
+}
+
+function GroupList({ id, droppable, children }: { id: string; droppable: boolean; children: React.ReactNode }) {
+  const { setNodeRef, isOver } = useDroppable({ id, disabled: !droppable });
+  return (
+    <ul ref={setNodeRef} className={cn(droppable && "min-h-12", isOver && "bg-accent")}>
+      {children}
+    </ul>
   );
 }
 
