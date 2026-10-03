@@ -57,6 +57,7 @@ LOCAL_APPS = [
     "apps.content",
     "apps.storage",
     "apps.messaging",
+    "apps.reminders",
     "apps.todos",
 ]
 
@@ -69,6 +70,7 @@ from apps.common.settings import *  # noqa: E402, F403
 from apps.content.settings import *  # noqa: E402, F403
 from apps.messaging.settings import *  # noqa: E402, F403
 from apps.profiles.settings import *  # noqa: E402, F403
+from apps.reminders.settings import *  # noqa: E402, F403
 from apps.storage.settings import *  # noqa: E402, F403
 from apps.todos.settings import *  # noqa: E402, F403
 

@@ -7,7 +7,8 @@
 #   caddy runs the frontend image: the exported site plus Caddy. There is no
 #   Node server; the browser calls /api/ itself.
 #   db is reachable only from inside this network; backup dumps it nightly.
-#   worker runs the background tasks queued in db (django-tasks-db).
+#   worker runs the background tasks queued in db (django-tasks-db); cron
+#   fires due reminders every minute.
 #   Uploads live in the `storage` volume: the backend writes them, Caddy serves
 #   them read-only.
 #
@@ -87,6 +88,16 @@ services:
     command: ["python", "manage.py", "db_worker", "--no-reload"]
     restart: unless-stopped
     stop_grace_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  # Fires due reminders once a minute. Overlapping runs are safe: each locks
+  # the reminders it fires.
+  cron:
+    <<: *backend
+    command: ["sh", "-c", "while true; do python manage.py fire_reminders; sleep 60; done"]
+    restart: unless-stopped
     depends_on:
       migrate:
         condition: service_completed_successfully

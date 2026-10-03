@@ -3,6 +3,7 @@ name = "backend"
 version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
+    "dateparser>=1.4.3",
     "dj-database-url>=3.1.2",
     "django>=6.1.1",
     "django-cors-headers>=4.9.0",
@@ -13,6 +14,7 @@ dependencies = [
     "drf-spectacular>=0.30.0",
     "gunicorn>=26.2.0",
     "psycopg[binary]>=3.3.6",
+    "python-dateutil>=2.9.0.post0",
     "python-dotenv>=1.2.3",
     "whitenoise>=6.12.0",
 ]

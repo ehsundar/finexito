@@ -1,4 +1,4 @@
-.PHONY: install db-up db-down run run-back run-front run-worker test lint fmt migrate shell schema schema-check provision deploy logs
+.PHONY: install db-up db-down run run-back run-front run-worker run-cron test lint fmt migrate shell schema schema-check provision deploy logs
 
 # --- setup -----------------------------------------------------------------
 
@@ -27,6 +27,10 @@ run-front:
 # Background tasks (outgoing email and the like) wait in the database for these.
 run-worker:
 	cd backend && uv run python manage.py db_worker
+
+# Fires due reminders every minute, as the cron container does in production.
+run-cron:
+	cd backend && while true; do uv run python manage.py fire_reminders; sleep 60; done
 
 # --- the API contract ------------------------------------------------------
 
