@@ -138,13 +138,18 @@ class AdminLoginTests(PlatformTestCase):
         self.assertRedirects(response, "/api/admin/", fetch_redirect_response=False)
         self.assertEqual(self.client.session["_auth_user_id"], str(self.user.pk))
 
-    def test_anyone_else_is_sent_to_sign_in(self):
-        self.client.cookies["access_token"] = str(RefreshToken.for_user(self.user).access_token)
-
+    def test_without_a_session_you_sign_in_first(self):
         response = self.client.get("/api/admin/login/")
 
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response["Location"].startswith("http://localhost:3000/login?next="))
+
+    def test_a_member_who_isnt_staff_is_refused(self):
+        self.client.cookies["access_token"] = str(RefreshToken.for_user(self.user).access_token)
+
+        response = self.client.get("/api/admin/login/")
+
+        self.assertEqual(response.status_code, 403)
 
 
 class UserModelTests(PlatformTestCase):

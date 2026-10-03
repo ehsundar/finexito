@@ -6,13 +6,15 @@ import { useEffect } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { api, refresh } from "@/lib/api/client";
+import { api, refresh, signIn } from "@/lib/api/client";
 import { clearSession, getSession, GOOGLE_KEY, safeNext } from "@/lib/auth/session";
 import { useSiteName } from "@/lib/site";
 
 const ERRORS: Record<string, string> = {
   google: "Google sign-in did not complete. Please try again.",
   disabled: "This account has been disabled.",
+  staff: "This account can't use the admin.",
+  unreachable: "Couldn't reach the server. Please try again.",
 };
 
 /** Django builds Google's URL; the state and verifier wait here for the callback. */
@@ -42,8 +44,18 @@ export default function LoginPage() {
   useEffect(() => {
     if (error || signedOut) return;
     (async () => {
-      if (getSession() && (await refresh())) location.replace(next);
-      else await startGoogle(next);
+      const session = getSession();
+      if (!session) return startGoogle(next);
+      if (!(await refresh())) {
+        // Google only when Django has ended the session; a server error keeps it.
+        if (getSession()) return location.replace(`/login?error=unreachable&next=${encodeURIComponent(next)}`);
+        return startGoogle(next);
+      }
+      // Ask again who is staff: it decides the admin's cookie, and a session
+      // from before the flag existed doesn't know.
+      const staff = await signIn(getSession() ?? session);
+      if (next.startsWith("/api/admin") && !staff) location.replace("/login?error=staff");
+      else location.replace(next);
     })();
   }, [error, signedOut, next]);
 

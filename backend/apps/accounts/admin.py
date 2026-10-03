@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth import login
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext_lazy as _
@@ -20,7 +21,8 @@ def admin_login(request, extra_context=None):
     """Nobody has a password: the admin signs in whoever the frontend has signed in.
 
     A staff member with a live session gets a Django session and goes on to the
-    admin; anyone else is sent to sign in on the frontend first.
+    admin. Without one, the visitor signs in on the frontend first; a signed-in
+    account that isn't staff is refused, rather than sent round again.
     """
     auth = JWTAuthentication()
     try:
@@ -28,8 +30,10 @@ def admin_login(request, extra_context=None):
     except (InvalidToken, TokenError):
         user = None
 
-    if user is None or not user.is_active or not user.is_staff:
+    if user is None:
         return redirect(f"{settings.PUBLIC_ORIGIN}/login?next={request.path}")
+    if not user.is_active or not user.is_staff:
+        raise PermissionDenied
 
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     next_url = request.GET.get("next", "")

@@ -20,16 +20,24 @@ let refreshing: Promise<boolean> | null = null;
 /**
  * Swaps the refresh token for a new pair (ROTATE_REFRESH_TOKENS is on). Calls
  * that hit a 401 together share one rotation, since each token works only once.
+ *
+ * The session ends only when Django rejects the token, so signing in with Google
+ * again is needed once in ACCOUNTS_JWT_REFRESH_DAYS, not whenever a cookie or
+ * access token expires. Another tab rotating first (the old token is then
+ * blacklisted) or a server error leave it alone.
  */
 export function refresh() {
   refreshing ??= (async () => {
     const token = getSession()?.refresh;
-    const { data } = token
-      ? await bare.POST("/api/v1/auth/refresh/", { body: { refresh: token } })
-      : { data: undefined };
-    if (data) setSession(data);
-    else clearSession();
-    return !!data;
+    if (!token) return false;
+    const { data, response } = await bare.POST("/api/v1/auth/refresh/", { body: { refresh: token } });
+    if (data) {
+      setSession(data);
+      return true;
+    }
+    if (getSession()?.refresh !== token) return true;
+    if (response.status === 401) clearSession();
+    return false;
   })().finally(() => (refreshing = null));
   return refreshing;
 }
@@ -49,6 +57,8 @@ async function authedFetch(request: Request) {
   const response = await fetch(signed(request));
   if (response.status !== 401) return response;
   if (await refresh()) return fetch(signed(retry));
+  // Still a session: the server failed, not the sign-in. Let the caller show it.
+  if (getSession()) return response;
   if (!location.pathname.startsWith("/login")) {
     location.replace(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
   }
@@ -57,11 +67,18 @@ async function authedFetch(request: Request) {
 
 export const api = createClient<paths>({ baseUrl, fetch: authedFetch });
 
-/** Starts a session from a fresh sign-in, noting whether it belongs to staff. */
+/**
+ * Starts a session from fresh tokens, noting whether it belongs to staff (see
+ * session.ts), and says whether it does.
+ */
 export async function signIn(tokens: { access: string; refresh: string }) {
   setSession({ ...tokens, staff: false });
   const { data: me } = await api.GET("/api/v1/auth/me/");
-  setSession({ ...tokens, staff: !!me?.is_staff });
+  const staff = !!me?.is_staff;
+  // The call above may have rotated the tokens; keep the newest.
+  const current = getSession();
+  if (current) setSession({ ...current, staff });
+  return staff;
 }
 
 /** `useQuery(path, init)`: a GET through `api`, cached and revalidated by SWR. */
