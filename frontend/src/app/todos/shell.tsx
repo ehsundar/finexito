@@ -1,8 +1,8 @@
 "use client";
 
 import { Inbox, LayoutList, Plus, Search } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
-import { createContext, use, useCallback, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { createContext, use, useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { createProject } from "@/app/todos/actions";
@@ -10,6 +10,7 @@ import { QuickAdd, type Prefill } from "@/app/todos/quick-add";
 import { AppFrame, Fab, Tab, TabBar } from "@/components/app/frame";
 import { ActionSheet, PromptSheet } from "@/components/app/sheet";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 
 export type Project = components["schemas"]["Project"];
@@ -51,15 +52,13 @@ export function useTodos() {
   return todos;
 }
 
-export function Shell({
-  projects,
-  sections,
-  labels,
-  filters,
-  children,
-}: Omit<Todos, "quickAdd" | "confirm"> & { children: React.ReactNode }) {
-  const router = useRouter();
+export function Shell({ children }: { children: React.ReactNode }) {
+  const { data: projects } = useQuery("/api/v1/todos/projects/");
+  const { data: sections } = useQuery("/api/v1/todos/sections/");
+  const { data: labels } = useQuery("/api/v1/todos/labels/");
+  const { data: filters } = useQuery("/api/v1/todos/filters/");
   const pathname = usePathname();
+  const params = useSearchParams();
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [question, setQuestion] = useState<{
     message: string;
@@ -78,15 +77,12 @@ export function Shell({
     setQuestion(null);
   };
 
-  // The client is online-only: it catches up with other tabs and devices on focus.
-  useEffect(() => {
-    const onFocus = () => router.refresh();
-    window.addEventListener("focus", onFocus);
-    return () => window.removeEventListener("focus", onFocus);
-  }, [router]);
+  // Everything on screen needs these; SWR fetches them again when the window
+  // regains focus, so the client catches up with other tabs and devices.
+  if (!projects || !sections || !labels || !filters) return null;
 
   // On a project's screen, new tasks go to that project.
-  const project = /^\/todos\/projects\/([^/]+)/.exec(pathname)?.[1];
+  const project = (pathname === "/todos/project" && params.get("id")) || undefined;
 
   return (
     <TodosContext value={{ projects, sections, labels, filters, quickAdd, confirm }}>
@@ -105,7 +101,7 @@ export function Shell({
             href="/todos/browse"
             icon={<LayoutList />}
             label="Browse"
-            match={["/todos/projects", "/todos/filters", "/todos/labels"]}
+            match={["/todos/project", "/todos/filter", "/todos/label"]}
           />
         </TabBar>
       </AppFrame>
@@ -141,7 +137,7 @@ export function NewProject() {
         onSubmit={async (name) => {
           const { data, error } = await createProject({ name });
           if (error) toast.error(error);
-          if (data) router.push(`/todos/projects/${data.id}`);
+          if (data) router.push(`/todos/project?id=${data.id}`);
           return !error;
         }}
       />

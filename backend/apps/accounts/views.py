@@ -57,7 +57,7 @@ class AccountDisabled(exceptions.PermissionDenied):
 class GoogleStartView(GenericAPIView):
     """Begin Google sign-in: the authorisation URL, with its state and PKCE verifier.
 
-    The frontend keeps `state` and `code_verifier` in a short-lived cookie, sends
+    The frontend keeps `state` and `code_verifier` in sessionStorage, sends
     the browser to `url`, and hands both back to `auth/google/` on return.
     """
 

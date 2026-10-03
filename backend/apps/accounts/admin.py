@@ -10,8 +10,9 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 
 from apps.accounts.models import User
 
-# The frontend's session cookie (frontend/src/lib/auth/session.ts). It is set on
-# the same host, so Django receives it too, in production and on localhost.
+# The frontend mirrors its access token into this cookie for /api/admin
+# (frontend/src/lib/auth/session.ts). Same host, so Django receives it, in
+# production and on localhost.
 ACCESS_COOKIE = "access_token"
 
 
@@ -28,7 +29,7 @@ def admin_login(request, extra_context=None):
         user = None
 
     if user is None or not user.is_active or not user.is_staff:
-        return redirect(f"{settings.PUBLIC_ORIGIN}/auth/refresh?next={request.path}")
+        return redirect(f"{settings.PUBLIC_ORIGIN}/login?next={request.path}")
 
     login(request, user, backend="django.contrib.auth.backends.ModelBackend")
     next_url = request.GET.get("next", "")

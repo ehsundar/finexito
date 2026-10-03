@@ -283,7 +283,7 @@ paths:
         name: slug
         schema:
           type: string
-          description: The page lives at /pages/<slug>.
+          description: The page lives at /pages?slug=<slug>.
         required: true
       tags:
       - pages
@@ -1711,7 +1711,7 @@ components:
         slug:
           type: string
           readOnly: true
-          description: The page lives at /pages/<slug>.
+          description: The page lives at /pages?slug=<slug>.
           pattern: ^[-a-zA-Z0-9_]+$
         title:
           type: string
@@ -1758,7 +1758,7 @@ components:
         slug:
           type: string
           readOnly: true
-          description: The page lives at /pages/<slug>.
+          description: The page lives at /pages?slug=<slug>.
           pattern: ^[-a-zA-Z0-9_]+$
         title:
           type: string

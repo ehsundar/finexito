@@ -24,7 +24,7 @@ export function CompletedList({ tasks }: { tasks: Task[] }) {
                 if (error) toast.error(error);
               }}
             />
-            <Link href={`/todos/tasks/${task.id}`} className="text-muted-foreground min-w-0 flex-1 line-through">
+            <Link href={`/todos/task?id=${task.id}`} className="text-muted-foreground min-w-0 flex-1 line-through">
               <InlineMarkdown source={task.content} />
             </Link>
           </li>

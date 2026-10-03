@@ -3,7 +3,9 @@
 # copy these files over, then pull, migrate and `up --wait`.
 #
 #   Internet -> caddy :80/:443 -> /api/* -> backend (gunicorn :8000)
-#                              -> /*     -> frontend (next :3000) -> backend
+#                              -> /*     -> the frontend's static files
+#   caddy runs the frontend image: the exported site plus Caddy. There is no
+#   Node server; the browser calls /api/ itself.
 #   db is reachable only from inside this network; backup dumps it nightly.
 #   worker runs the background tasks queued in db (django-tasks-db).
 #   Uploads live in the `storage` volume: the backend writes them, Caddy serves
@@ -23,7 +25,7 @@ x-backend: &backend
   environment:
     FINEXITO_DEBUG: "false"
     FINEXITO_SECRET_KEY: ${FINEXITO_SECRET_KEY:?set FINEXITO_SECRET_KEY in .env}
-    # `backend` is the Host header on the frontend's internal calls.
+    # `backend` is the Host header on the healthcheck below.
     FINEXITO_ALLOWED_HOSTS: ${FINEXITO_ALLOWED_HOSTS:?set FINEXITO_ALLOWED_HOSTS in .env},backend
     FINEXITO_DATABASE_URL: postgres://finexito:${POSTGRES_PASSWORD}@db:5432/finexito
     FINEXITO_CSRF_TRUSTED_ORIGINS: ${FINEXITO_PUBLIC_ORIGIN:?set FINEXITO_PUBLIC_ORIGIN in .env}
@@ -40,7 +42,7 @@ x-backend: &backend
 
 services:
   caddy:
-    image: caddy:2-alpine
+    image: ghcr.io/ehsundar/finexito-frontend:${IMAGE_TAG:-latest}
     restart: unless-stopped
     ports:
       - "80:80"
@@ -54,23 +56,7 @@ services:
       - caddy_config:/config
       - storage:/srv/storage:ro
     depends_on:
-      - frontend
       - backend
-
-  frontend:
-    image: ghcr.io/ehsundar/finexito-frontend:${IMAGE_TAG:-latest}
-    restart: unless-stopped
-    environment:
-      BACKEND_INTERNAL_URL: http://backend:8000
-      SECURE_COOKIES: ${FINEXITO_SECURE_COOKIES:-true}
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r => process.exit(r.status < 500 ? 0 : 1), () => process.exit(1))"]
-      interval: 10s
-      start_period: 30s
-      retries: 3
-    depends_on:
-      backend:
-        condition: service_healthy
 
   # Runs once per deploy; the backend only starts when it has succeeded. Also
   # clears out abandoned uploads, which is all the housekeeping storage needs.

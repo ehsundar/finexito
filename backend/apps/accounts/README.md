@@ -28,9 +28,9 @@ whatever the site does on its own behalf and can never sign in.
 Google is the only way in, and the first sign-in creates the account and its
 profile (display name from Google).
 
-1. The frontend's `/auth/google` calls `google/start/`, which returns Google's
+1. The frontend's `/login` calls `google/start/`, which returns Google's
    authorisation URL with a fresh `state` and PKCE `code_verifier`. The
-   frontend keeps both in a short-lived cookie and redirects there.
+   frontend keeps both in sessionStorage and redirects there.
 2. Google sends the visitor to `{PUBLIC_ORIGIN}/auth/google/callback`, the
    redirect URI registered on the OAuth client. The frontend checks `state`
    and posts `code` and `code_verifier` to `google/`.
@@ -43,8 +43,9 @@ Settings: `ACCOUNTS_GOOGLE_CLIENT_ID` and `ACCOUNTS_GOOGLE_CLIENT_SECRET`.
 ## The admin
 
 There are no passwords, so the admin's login page signs in whoever the frontend
-has signed in: it reads the `access_token` cookie (same host, so Django gets
-it), and a staff member gets a Django session. Anyone else is sent to the
+has signed in: it reads the `access_token` cookie, which the frontend mirrors
+from localStorage onto `/api/admin` (same host, so Django gets it), and a staff
+member gets a Django session. Anyone else is sent to the
 frontend to sign in. Locally that round trip ends on `:3000`; open
 `localhost:8000/api/admin/` again afterwards.
 

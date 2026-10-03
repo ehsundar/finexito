@@ -28,7 +28,7 @@
 		}
 	}
 
-	# Django owns /api/, Next the rest.
+	# Django owns /api/; the site's files are the rest.
 	handle /api/* {
 		reverse_proxy backend:8000 {
 			# A private upload: Django has checked the signed link and names the
@@ -45,8 +45,20 @@
 		}
 	}
 
+	# The frontend, exported as plain files (frontend/Dockerfile). /todos is
+	# todos.html. Next's hashed bundles never change, so they are cached for good.
 	handle {
-		reverse_proxy frontend:3000
+		root * /srv/site
+		@bundles path /_next/static/*
+		header @bundles Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} {path}.html {path}/index.html
+		file_server
+	}
+
+	handle_errors 404 {
+		root * /srv/site
+		rewrite * /404.html
+		file_server
 	}
 }
 

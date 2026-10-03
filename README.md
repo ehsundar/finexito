@@ -119,18 +119,19 @@ Every failure returns the same envelope:
 
 Next.js 16 (App Router) with Tailwind and shadcn/ui, in `frontend/`.
 
-**The browser never talks to Django directly.** Tokens live in `httpOnly`
-cookies, so no script on the page can read them, and every authenticated call is
-made by the Next.js server, which attaches the `Authorization: Bearer` header
-itself. Server Components fetch through `sessionApi()`; login, registration and
-sign-out are Server Actions in `src/lib/auth/actions.ts`.
+**A static site; the browser calls Django itself.** `next build` exports plain
+files (`output: "export"`), which Caddy serves: nothing runs on a server per
+request, so there are no Server Components fetching data, Server Actions,
+route handlers or proxy. Screens are client components that fetch through
+`useQuery` (SWR) and write through `api` (openapi-fetch), both in
+`src/lib/api/client.ts`. Detail screens take their id from the query string
+(`/todos/task?id=…`), since a static export can't have dynamic routes.
 
-`src/proxy.ts` guards `/dashboard` and `/account` by looking at whether the
-session cookies exist — an optimistic check, not authorisation; Django still
-verifies every token. The access cookie's lifetime matches the token's, so when
-it disappears the proxy sends the request to `/auth/refresh`, which rotates the
-pair and returns the visitor to where they were. (`ROTATE_REFRESH_TOKENS` is on,
-so the refresh token is replaced too, and both cookies are rewritten.)
+The JWT pair lives in localStorage (`src/lib/auth/session.ts`), and `api`
+sends it as `Authorization: Bearer`. On a 401 it rotates the pair once
+(`ROTATE_REFRESH_TOKENS` is on, so both tokens are replaced) and retries; if
+that fails, the visitor goes to `/login`. The access token is also mirrored
+into a cookie on `/api/admin`, which is how the admin signs staff in.
 
 ### The typed client is the contract
 
@@ -142,15 +143,10 @@ that no longer matches **fails to compile** rather than breaking at runtime.
 Both generated files are committed. `make schema-check` fails when they are
 stale; run it in CI.
 
-> A caveat worth knowing: openapi-fetch hands a `Request` object to `fetch`, and
-> Next 16's instrumented fetch drops the body of a Request built that way — every
-> POST arrives empty. `src/lib/api/client.ts` unwraps it back into
-> `fetch(url, init)`. Retest on a Next upgrade; when it is fixed, that can go.
-
 ## Deploying
 
 Production is one Ubuntu server running Docker Compose: Caddy (automatic HTTPS)
-in front, Django under gunicorn, the Next.js standalone server and Postgres.
+in front, serving the exported frontend, Django under gunicorn, and Postgres.
 Everything needed to rebuild it from nothing lives in [`deploy/`](deploy/README.md):
 
 ```bash
@@ -160,7 +156,7 @@ git push && make deploy
 
 ### Same-domain routing
 
-Caddy sends `/api/*` to Django and everything else to Next.js, so both share one
-origin and there is no CORS to configure in production. Because Django owns the
-whole `/api` namespace, **the Next.js app must not add Route Handlers under
-`app/api`**: the session routes live at `/auth/*` instead.
+Caddy sends `/api/*` to Django and serves the frontend's files for everything
+else, so both share one origin and there is no CORS to configure in production.
+Locally `next dev` on :3000 calls runserver on :8000 (`NEXT_PUBLIC_API_ORIGIN`),
+which DEBUG's CORS allows.

@@ -1,18 +1,32 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
-import { logout } from "@/lib/auth/actions";
-import { requireUser, sessionApi } from "@/lib/auth/current-user";
+import { api, useQuery } from "@/lib/api/client";
+import { clearSession, getSession } from "@/lib/auth/session";
 
-export default async function DashboardPage() {
-  const user = await requireUser();
-  const api = await sessionApi();
+export default function DashboardPage() {
+  const router = useRouter();
+  const { data: user } = useQuery("/api/v1/auth/me/");
+  const { data: profile, error } = useQuery("/api/v1/profiles/me/");
 
-  const { data: profile, error } = await api.GET("/api/v1/profiles/me/");
+  async function logout() {
+    // Blacklist the refresh token so it cannot be rotated after we drop it. A
+    // failure is not worth blocking sign-out over: forgetting the tokens is what
+    // ends the session in this browser.
+    const refresh = getSession()?.refresh;
+    if (refresh) await api.POST("/api/v1/auth/logout/", { body: { refresh } }).catch(() => undefined);
+    clearSession();
+    router.replace("/login?signed_out");
+  }
+
+  if (!user) return null;
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-6">
@@ -27,11 +41,9 @@ export default async function DashboardPage() {
           <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/todos" />}>
             Todos
           </Button>
-          <form action={logout}>
-          <Button type="submit" variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={logout}>
             Sign out
           </Button>
-          </form>
         </div>
       </header>
 
@@ -43,9 +55,9 @@ export default async function DashboardPage() {
           <CardDescription>Read straight from the Django service.</CardDescription>
         </CardHeader>
         <CardContent>
-          {error || !profile ? (
+          {error ? (
             <p className="text-destructive text-sm">Could not reach the API.</p>
-          ) : (
+          ) : profile && (
             <Table>
               <TableBody>
                 <TableRow>

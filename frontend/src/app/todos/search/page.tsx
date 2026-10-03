@@ -1,16 +1,18 @@
+"use client";
+
 import { Search } from "lucide-react";
 import Form from "next/form";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
+import { useTodos } from "@/app/todos/shell";
 import { TasksByProject } from "@/app/todos/tasks-by-project";
 import { AppBar, Screen } from "@/components/app/frame";
 import { Input } from "@/components/ui/input";
-import { sessionApi } from "@/lib/auth/current-user";
+import { useQuery } from "@/lib/api/client";
 
-export const metadata = { title: "Search" };
-
-export default async function SearchPage({ searchParams }: PageProps<"/todos/search">) {
-  const q = String((await searchParams).q ?? "").trim();
+export default function SearchPage() {
+  const q = (useSearchParams().get("q") ?? "").trim();
   return (
     <>
       <AppBar>
@@ -32,28 +34,23 @@ export default async function SearchPage({ searchParams }: PageProps<"/todos/sea
   );
 }
 
-async function Results({ q }: { q: string }) {
-  const api = await sessionApi();
-  const [{ data: projects = [] }, { data: sections = [] }, { data: labels = [] }, { data: tasks = [] }] =
-    await Promise.all([
-      api.GET("/api/v1/todos/projects/"),
-      api.GET("/api/v1/todos/sections/", { params: { query: { q } } }),
-      api.GET("/api/v1/todos/labels/"),
-      api.GET("/api/v1/todos/tasks/", { params: { query: { q } } }),
-    ]);
+function Results({ q }: { q: string }) {
+  const { projects, labels } = useTodos();
+  const { data: sections = [] } = useQuery("/api/v1/todos/sections/", { params: { query: { q } } });
+  const { data: tasks } = useQuery("/api/v1/todos/tasks/", { params: { query: { q } } });
   const needle = q.toLowerCase();
   const names = [
     ...projects
       .filter((p) => p.name.toLowerCase().includes(needle))
-      .map((p) => ({ key: p.id, text: p.name, href: p.is_inbox ? "/todos" : `/todos/projects/${p.id}` })),
+      .map((p) => ({ key: p.id, text: p.name, href: p.is_inbox ? "/todos" : `/todos/project?id=${p.id}` })),
     ...sections.map((s) => ({
       key: s.id,
       text: `${projects.find((p) => p.id === s.project)?.name ?? ""} / ${s.name}`,
-      href: `/todos/projects/${s.project}`,
+      href: `/todos/project?id=${s.project}`,
     })),
     ...labels
       .filter((l) => l.name.toLowerCase().includes(needle))
-      .map((l) => ({ key: l.id, text: `#${l.name}`, href: `/todos/labels/${l.id}` })),
+      .map((l) => ({ key: l.id, text: `#${l.name}`, href: `/todos/label?id=${l.id}` })),
   ];
   return (
     <>
@@ -68,7 +65,7 @@ async function Results({ q }: { q: string }) {
           ))}
         </ul>
       )}
-      <TasksByProject tasks={tasks} empty="No tasks match." />
+      {tasks && <TasksByProject tasks={tasks} empty="No tasks match." />}
     </>
   );
 }

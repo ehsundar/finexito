@@ -1,4 +1,6 @@
-import { MarkdownAsync } from "react-markdown";
+"use client";
+
+import { MarkdownHooks } from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import { markdownComponents } from "@/components/markdown/elements";
@@ -15,32 +17,28 @@ import { cn } from "@/lib/utils";
  *   `javascript:`, `data:` and the rest become empty.
  * - Nothing uses `dangerouslySetInnerHTML`.
  *
- * Fenced code blocks are highlighted on the server (see highlight.ts).
- *
- * Rendering hardly ever fails, but if it does the reader gets the source
- * as plain text rather than an error page.
+ * Fenced code blocks are highlighted in the browser (see highlight.ts); until
+ * that is ready, the reader sees the source as plain text.
  */
-export async function Markdown({ source, className }: { source: string; className?: string }) {
-  let rendered: React.ReactElement;
-  try {
-    rendered = await MarkdownAsync({
-      children: source,
-      components: markdownComponents,
-      remarkPlugins: [remarkGfm, htmlAsText],
-      rehypePlugins: [await rehypeHighlight()],
-      urlTransform: safeUrl,
-    });
-  } catch (error) {
-    console.error("Markdown failed to render; showing the source instead.", error);
-    return <RawText source={source} className={className} />;
-  }
-
-  return <div className={cn("text-base break-words", className)}>{rendered}</div>;
+export function Markdown({ source, className }: { source: string; className?: string }) {
+  return (
+    <div className={cn("text-base break-words", className)}>
+      <MarkdownHooks
+        components={markdownComponents}
+        remarkPlugins={[remarkGfm, htmlAsText]}
+        rehypePlugins={[rehypeHighlight]}
+        urlTransform={safeUrl}
+        fallback={<RawText source={source} />}
+      >
+        {source}
+      </MarkdownHooks>
+    </div>
+  );
 }
 
-function RawText({ source, className }: { source: string; className?: string }) {
+function RawText({ source }: { source: string }) {
   return (
-    <pre className={cn("font-sans text-base leading-7 whitespace-pre-wrap break-words", className)}>
+    <pre className="font-sans text-base leading-7 whitespace-pre-wrap break-words">
       {source}
     </pre>
   );

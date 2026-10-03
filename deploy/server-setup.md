@@ -8,7 +8,7 @@ What you end up with:
 
 ```
 Internet -> Caddy :80/:443 -> /api/* -> backend  (Django, gunicorn)
-                           -> /*     -> frontend (Next.js standalone) -> backend
+                           -> /*     -> the frontend, static files in the caddy image
                               db (Postgres 17, not exposed)
 ```
 
@@ -103,8 +103,7 @@ make provision DEPLOY_HOST=other DOMAIN=example.com
 
 [`deploy/provision.sh`](provision.sh) then:
 
-1. installs Docker and Compose, adds 2 GB swap (the Next.js build needs it on
-   4 GB), sets up `ufw` to allow only 22/80/443, turns off SSH password login and
+1. installs Docker and Compose, adds 2 GB swap, sets up `ufw` to allow only 22/80/443, turns off SSH password login and
    keeps unattended security upgrades on;
 2. runs `make deploy`, once the Deploy Action has written `/opt/finexito/.env`
    (see [Deploying from GitHub Actions](#deploying-from-github-actions));

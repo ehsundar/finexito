@@ -1,27 +1,13 @@
-# Next.js standalone server. Built and pushed to GHCR by .github/workflows/deploy.yml; see deploy/README.md.
-FROM node:24-alpine AS deps
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-
+# The site as static files, served by Caddy, which also proxies /api/ to Django:
+# there is no Node server in production. Built and pushed to GHCR by
+# .github/workflows/deploy.yml; see deploy/README.md.
 FROM node:24-alpine AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
-COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:24-alpine
-WORKDIR /app
-ENV NODE_ENV=production \
-    NEXT_TELEMETRY_DISABLED=1 \
-    HOSTNAME=0.0.0.0 \
-    PORT=3000
-
-COPY --from=build --chown=node:node /app/public ./public
-COPY --from=build --chown=node:node /app/.next/standalone ./
-COPY --from=build --chown=node:node /app/.next/static ./.next/static
-
-USER node
-EXPOSE 3000
-CMD ["node", "server.js"]
+FROM caddy:2-alpine
+COPY --from=build /app/out /srv/site

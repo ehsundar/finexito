@@ -1,21 +1,26 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useSearchParams } from "next/navigation";
 
 import { TaskEditor } from "@/app/todos/task-editor";
 import type { Task } from "@/app/todos/shell";
 import { TaskList } from "@/app/todos/task-list";
 import { AppBar, Screen } from "@/components/app/frame";
 import { Markdown } from "@/components/markdown/markdown";
-import { sessionApi } from "@/lib/auth/current-user";
+import { useQuery } from "@/lib/api/client";
 
-export default async function TaskPage({ params }: PageProps<"/todos/tasks/[id]">) {
-  const { id } = await params;
-  const api = await sessionApi();
-  const { data: task } = await api.GET("/api/v1/todos/tasks/{id}/", { params: { path: { id } } });
-  if (!task) notFound();
-  const [{ data: project }, { data: siblings = [] }] = await Promise.all([
-    api.GET("/api/v1/todos/projects/{id}/", { params: { path: { id: task.project } } }),
-    api.GET("/api/v1/todos/tasks/", { params: { query: { project: task.project } } }),
-  ]);
+/** `?id=`: the task. */
+export default function TaskPage() {
+  const id = useSearchParams().get("id") ?? "";
+  const { data: task, error } = useQuery("/api/v1/todos/tasks/{id}/", { params: { path: { id } } });
+  const inProject = task ? { params: { path: { id: task.project } } } : null;
+  const { data: project } = useQuery("/api/v1/todos/projects/{id}/", inProject);
+  const { data: siblings } = useQuery(
+    "/api/v1/todos/tasks/",
+    task ? { params: { query: { project: task.project } } } : null,
+  );
+  if (error) return <Screen>This task doesn&apos;t exist.</Screen>;
+  if (!task || !siblings) return null;
 
   // Open sub-tasks at every level below this one.
   const below: Task[] = [];
@@ -34,10 +39,10 @@ export default async function TaskPage({ params }: PageProps<"/todos/tasks/[id]"
       <AppBar
         back={
           parent
-            ? `/todos/tasks/${parent.id}`
+            ? `/todos/task?id=${parent.id}`
             : project?.is_inbox
               ? "/todos"
-              : `/todos/projects/${task.project}`
+              : `/todos/project?id=${task.project}`
         }
         title={<span className="text-muted-foreground truncate text-base">{parent?.content ?? project?.name}</span>}
       />

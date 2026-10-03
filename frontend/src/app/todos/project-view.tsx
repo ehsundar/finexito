@@ -1,33 +1,33 @@
-import { notFound } from "next/navigation";
+"use client";
+
+import { useSearchParams } from "next/navigation";
 
 import { Board } from "@/app/todos/board";
 import { CompletedList } from "@/app/todos/completed-list";
 import { ProjectHeader, SectionTitle } from "@/app/todos/project-header";
+import { useTodos } from "@/app/todos/shell";
 import { TaskList, type Group } from "@/app/todos/task-list";
 import { Screen } from "@/components/app/frame";
-import { sessionApi } from "@/lib/auth/current-user";
+import { useQuery } from "@/lib/api/client";
 
-/** A project, as a list or a board; the Inbox is one too. */
-export async function ProjectView({ id, completed }: { id: string; completed: boolean }) {
-  const api = await sessionApi();
-  const project = id === "inbox" ? null : id;
-  const [projects, found] = await Promise.all([
-    project ? null : api.GET("/api/v1/todos/projects/"),
-    project ? api.GET("/api/v1/todos/projects/{id}/", { params: { path: { id: project } } }) : null,
-  ]);
-  const current = found?.data ?? projects?.data?.find((p) => p.is_inbox);
-  if (!current) notFound();
-
-  const query = { project: current.id };
-  const [sections, tasks, done] = await Promise.all([
-    api.GET("/api/v1/todos/sections/", { params: { query } }),
-    api.GET("/api/v1/todos/tasks/", { params: { query } }),
-    completed
-      ? api.GET("/api/v1/todos/tasks/", { params: { query: { ...query, completed: true } } })
-      : null,
-  ]);
-  const allSections = sections.data ?? [];
-  const allTasks = tasks.data ?? [];
+/** A project, as a list or a board; the Inbox is the one without an `id`. */
+export function ProjectView() {
+  const params = useSearchParams();
+  const id = params.get("id");
+  const completed = params.has("completed");
+  const { projects } = useTodos();
+  // By id, since archived projects aren't in the shell's list.
+  const found = useQuery("/api/v1/todos/projects/{id}/", id ? { params: { path: { id } } } : null);
+  const current = id ? found.data : projects.find((p) => p.is_inbox);
+  const query = current ? { params: { query: { project: current.id } } } : null;
+  const { data: allSections } = useQuery("/api/v1/todos/sections/", query);
+  const { data: allTasks } = useQuery("/api/v1/todos/tasks/", query);
+  const { data: done } = useQuery(
+    "/api/v1/todos/tasks/",
+    current && completed ? { params: { query: { project: current.id, completed: true } } } : null,
+  );
+  if (found.error) return <Screen>This project doesn&apos;t exist.</Screen>;
+  if (!current || !allSections || !allTasks) return null;
 
   const groups: Group[] = [
     { key: "none", tasks: allTasks.filter((t) => !t.section), section: null },
@@ -48,7 +48,7 @@ export async function ProjectView({ id, completed }: { id: string; completed: bo
         ) : (
           <TaskList groups={groups} sort={current.sort} project={current} />
         )}
-        {done && <CompletedList tasks={done.data ?? []} />}
+        {completed && done && <CompletedList tasks={done} />}
       </Screen>
     </>
   );

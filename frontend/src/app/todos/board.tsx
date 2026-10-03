@@ -74,7 +74,7 @@ export function Board({
             >
               <TaskCheck task={task} onComplete={() => complete(task)} />
               <div className="min-w-0 flex-1">
-                <Link href={`/todos/tasks/${task.id}`} className="block break-words">
+                <Link href={`/todos/task?id=${task.id}`} className="block break-words">
                   <InlineMarkdown source={task.content} />
                 </Link>
                 <TaskMeta task={task} />

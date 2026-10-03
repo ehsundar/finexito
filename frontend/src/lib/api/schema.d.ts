@@ -616,7 +616,7 @@ export interface components {
         Page: {
             /** Format: uuid */
             readonly id: string;
-            /** @description The page lives at /pages/<slug>. */
+            /** @description The page lives at /pages?slug=<slug>. */
             readonly slug: string;
             readonly title: string;
             /** @description Shown in listings and link previews. */
@@ -636,7 +636,7 @@ export interface components {
         PageSummary: {
             /** Format: uuid */
             readonly id: string;
-            /** @description The page lives at /pages/<slug>. */
+            /** @description The page lives at /pages?slug=<slug>. */
             readonly slug: string;
             readonly title: string;
             /** @description Shown in listings and link previews. */

@@ -232,7 +232,7 @@ if not DEBUG:
     # TLS and forwards the original scheme.
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     # Behind Caddy this stays off: Caddy does the http->https redirect itself, and
-    # the frontend's internal calls to http://backend:8000 must not be bounced.
+    # its proxied calls and the healthcheck reach http://backend:8000 directly.
     SECURE_SSL_REDIRECT = env_bool("SECURE_SSL_REDIRECT", True)
     SECURE_HSTS_SECONDS = int(env_str("SECURE_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True

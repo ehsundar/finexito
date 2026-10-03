@@ -1,32 +1,53 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { currentUser } from "@/lib/auth/current-user";
-import { safeNext } from "@/lib/auth/session";
-import { getSite } from "@/lib/site";
+import { api, refresh } from "@/lib/api/client";
+import { clearSession, getSession, GOOGLE_KEY, safeNext } from "@/lib/auth/session";
+import { useSiteName } from "@/lib/site";
 
 const ERRORS: Record<string, string> = {
   google: "Google sign-in did not complete. Please try again.",
   disabled: "This account has been disabled.",
 };
 
-export default async function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ next?: string; error?: string; signed_out?: string }>;
-}) {
-  const { next, error, signed_out } = await searchParams;
-  if (await currentUser()) redirect(safeNext(next));
+/** Django builds Google's URL; the state and verifier wait here for the callback. */
+async function startGoogle(next: string) {
+  clearSession();
+  const { data } = await api.POST("/api/v1/auth/google/start/");
+  if (!data) return location.replace("/login?error=google");
+  sessionStorage.setItem(
+    GOOGLE_KEY,
+    JSON.stringify({ state: data.state, verifier: data.code_verifier, next }),
+  );
+  location.assign(data.url);
+}
+
+export default function LoginPage() {
+  const params = useSearchParams();
+  const next = safeNext(params.get("next"));
+  const error = params.get("error");
+  const signedOut = params.has("signed_out");
+  const name = useSiteName();
+
   // Google is the only way in, so go straight there. The page still shows after
   // a failed attempt (or it would loop) and after signing out (or Google would
   // sign the visitor straight back in), and is here for when there are options.
-  if (!error && signed_out === undefined) {
-    redirect(`/auth/google?next=${encodeURIComponent(safeNext(next))}`);
-  }
-  const { name } = await getSite();
+  // A live session goes on, with fresh tokens: the admin sends visitors here for
+  // its cookie. A full load, since `next` may be outside this app (/api/admin).
+  useEffect(() => {
+    if (error || signedOut) return;
+    (async () => {
+      if (getSession() && (await refresh())) location.replace(next);
+      else await startGoogle(next);
+    })();
+  }, [error, signedOut, next]);
 
+  if (!error && !signedOut) return null;
   return (
     <main className="flex flex-1 items-center justify-center p-6">
       <Card className="w-full max-w-sm">
@@ -44,13 +65,9 @@ export default async function LoginPage({
           ) : (
             <p className="text-muted-foreground text-sm">You have signed out.</p>
           )}
-          {/* A plain link: /auth/google is a route handler that redirects to Google. */}
-          <a
-            href={`/auth/google?next=${encodeURIComponent(safeNext(next))}`}
-            className={buttonVariants({ size: "lg" })}
-          >
+          <Button size="lg" onClick={() => startGoogle(next)}>
             Continue with Google
-          </a>
+          </Button>
         </CardContent>
       </Card>
     </main>

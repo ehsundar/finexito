@@ -40,7 +40,7 @@ export function LabelRows({ labels }: { labels: Label[] }) {
         {labels.map((l) => (
           <ListRow
             key={l.id}
-            href={`/todos/labels/${l.id}`}
+            href={`/todos/label?id=${l.id}`}
             icon={<Hash style={{ color: colourVar(l.colour) }} />}
             detail={l.open_task_count || undefined}
             trailing={

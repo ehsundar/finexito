@@ -1,7 +1,7 @@
 # content
 
 A small CMS: Markdown pages written in the admin and rendered by the frontend
-at `/pages/<slug>`.
+at `/pages?slug=<slug>`.
 
 ## Model
 
@@ -28,7 +28,7 @@ pages directly should call `full_clean()` first.
 ## Writing
 
 Create a page at `/api/admin/content/page/add/`; the slug fills itself from
-the title. Link to it as `/pages/<slug>` (the admin's *View on site* goes there).
+the title. Link to it as `/pages?slug=<slug>` (the admin's *View on site* goes there).
 
 The body is [GitHub-flavoured Markdown](https://github.github.com/gfm/):
 headings, emphasis, ~~strikethrough~~, links, images, lists, task lists

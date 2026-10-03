@@ -36,7 +36,7 @@ class PageQuerySet(models.QuerySet):
 class Page(BaseModel):
     title = models.CharField(max_length=200)
     slug = models.SlugField(
-        max_length=100, unique=True, help_text=_("The page lives at /pages/<slug>.")
+        max_length=100, unique=True, help_text=_("The page lives at /pages?slug=<slug>.")
     )
     summary = models.CharField(
         max_length=300, blank=True, help_text=_("Shown in listings and link previews.")
@@ -64,7 +64,7 @@ class Page(BaseModel):
         return self.title
 
     def get_absolute_url(self) -> str:
-        return f"/pages/{self.slug}"
+        return f"/pages?slug={self.slug}"
 
     def clean(self):
         super().clean()

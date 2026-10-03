@@ -1,74 +1,67 @@
-import "server-only";
-
-import createClient, { type Middleware } from "openapi-fetch";
+import createClient from "openapi-fetch";
+import { mutate } from "swr";
+import { createQueryHook } from "swr-openapi";
 
 import type { paths } from "@/lib/api/schema";
+import { clearSession, getSession, setSession } from "@/lib/auth/session";
 
 /**
- * Where the Django service lives.
- *
- * In production deploy/compose.yml sets BACKEND_INTERNAL_URL to the backend
- * container. Locally `next dev` reads BACKEND_ORIGIN from .env.local, or falls
- * back to the runserver default.
+ * The browser calls Django directly. In production Caddy serves both on one
+ * domain, so paths stay relative; `next dev` points at runserver through
+ * NEXT_PUBLIC_API_ORIGIN (DEBUG lets any origin through CORS).
  */
-export const backendOrigin =
-  process.env.BACKEND_INTERNAL_URL ?? process.env.BACKEND_ORIGIN ?? "http://127.0.0.1:8000";
+const baseUrl = process.env.NEXT_PUBLIC_API_ORIGIN ?? "";
+
+/** No credentials and no retries: only for rotating the tokens. */
+const bare = createClient<paths>({ baseUrl });
+
+let refreshing: Promise<boolean> | null = null;
 
 /**
- * Re-issues the call as `fetch(url, init)` instead of `fetch(request)`.
- *
- * openapi-fetch always builds a `Request` object and hands that to fetch. Next's
- * instrumented fetch drops the body of a `Request` constructed that way, so every
- * POST and PATCH would reach Django with an empty body and fail validation --
- * silently, because the request itself is perfectly well formed. Unwrapping the
- * Request back into a URL and an init object keeps the body intact.
- *
- * Verified against Next 16.3.4. Worth retesting on a Next upgrade: if the bug is
- * gone, this whole indirection can go with it.
+ * Swaps the refresh token for a new pair (ROTATE_REFRESH_TOKENS is on). Calls
+ * that hit a 401 together share one rotation, since each token works only once.
  */
-const unwrappingFetch: typeof fetch = async (input, init) => {
-  if (!(input instanceof Request)) {
-    return globalThis.fetch(input, init);
+export function refresh() {
+  refreshing ??= (async () => {
+    const token = getSession()?.refresh;
+    const { data } = token
+      ? await bare.POST("/api/v1/auth/refresh/", { body: { refresh: token } })
+      : { data: undefined };
+    if (data) setSession(data);
+    else clearSession();
+    return !!data;
+  })().finally(() => (refreshing = null));
+  return refreshing;
+}
+
+function signed(request: Request) {
+  const access = getSession()?.access;
+  if (access) request.headers.set("Authorization", `Bearer ${access}`);
+  return request;
+}
+
+/**
+ * Sends the bearer token. On a 401 it rotates the tokens and tries once more;
+ * when that fails the session is over, so the visitor goes to sign in.
+ */
+async function authedFetch(request: Request) {
+  const retry = request.clone();
+  const response = await fetch(signed(request));
+  if (response.status !== 401) return response;
+  if (await refresh()) return fetch(signed(retry));
+  if (!location.pathname.startsWith("/login")) {
+    location.replace(`/login?next=${encodeURIComponent(location.pathname + location.search)}`);
   }
-
-  const hasBody = input.method !== "GET" && input.method !== "HEAD";
-  return globalThis.fetch(input.url, {
-    method: input.method,
-    headers: input.headers,
-    body: hasBody ? await input.arrayBuffer() : undefined,
-    redirect: input.redirect,
-    signal: input.signal,
-  });
-};
-
-/**
- * Django mounts everything under /api, and service bindings preserve the
- * original path, so the client's base URL carries no prefix of its own.
- */
-function baseClient() {
-  return createClient<paths>({ baseUrl: backendOrigin, fetch: unwrappingFetch });
+  return response;
 }
 
-/** Unauthenticated client, for login and registration. */
-export const api = baseClient();
+export const api = createClient<paths>({ baseUrl, fetch: authedFetch });
 
-/**
- * Client that presents `token` as a bearer credential.
- *
- * Built per request rather than shared, because the token belongs to one
- * caller: a module-level authenticated client would leak it across requests.
- */
-export function authedApi(token: string) {
-  const client = baseClient();
-  const auth: Middleware = {
-    onRequest({ request }) {
-      request.headers.set("Authorization", `Bearer ${token}`);
-      return request;
-    },
-  };
-  client.use(auth);
-  return client;
-}
+/** `useQuery(path, init)`: a GET through `api`, cached and revalidated by SWR. */
+export const useQuery = createQueryHook(api, "api");
+
+/** Fetches every query on screen again, after a write. */
+export const revalidate = () => mutate(() => true);
 
 /** The error envelope that `apps.common.exceptions` puts on every failure. */
 export type ApiError = {

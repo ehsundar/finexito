@@ -144,7 +144,7 @@ class AdminLoginTests(PlatformTestCase):
         response = self.client.get("/api/admin/login/")
 
         self.assertEqual(response.status_code, 302)
-        self.assertTrue(response["Location"].startswith("http://localhost:3000/auth/refresh"))
+        self.assertTrue(response["Location"].startswith("http://localhost:3000/login?next="))
 
 
 class UserModelTests(PlatformTestCase):

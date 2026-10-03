@@ -33,7 +33,7 @@ export function ProjectHeader({ project, showingCompleted }: { project: Project;
   const { projects, confirm } = useTodos();
   const [sheet, setSheet] = useState<Sheet>(null);
   const update = (body: Parameters<typeof updateProject>[1]) => report(updateProject(project.id, body));
-  const here = project.is_inbox ? "/todos" : `/todos/projects/${project.id}`;
+  const here = project.is_inbox ? "/todos" : `/todos/project?id=${project.id}`;
   const close = (open: boolean) => !open && setSheet(null);
   // A sheet picked from the menu opens once the menu has closed.
   const then = (next: Sheet) => () => setTimeout(() => setSheet(next));
@@ -43,7 +43,7 @@ export function ProjectHeader({ project, showingCompleted }: { project: Project;
     { label: "Sort by", onSelect: then("sort") },
     {
       label: showingCompleted ? "Hide completed" : "Show completed",
-      onSelect: () => router.push(showingCompleted ? here : `${here}?completed=1`),
+      onSelect: () => router.push(showingCompleted ? here : `${here}${project.is_inbox ? "?" : "&"}completed=1`),
     },
   ];
   if (!project.is_inbox) {

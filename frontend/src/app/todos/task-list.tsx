@@ -145,7 +145,7 @@ function TaskRow({
   return (
     <li className="flex items-start gap-3 border-b py-3" style={{ paddingLeft: `${depth * 1.5}rem` }}>
       <TaskCheck task={task} onComplete={onComplete} />
-      <Link href={`/todos/tasks/${task.id}`} className="min-w-0 flex-1">
+      <Link href={`/todos/task?id=${task.id}`} className="min-w-0 flex-1">
         <span className="block break-words">
           <InlineMarkdown source={task.content} />
         </span>

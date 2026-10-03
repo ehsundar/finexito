@@ -1,10 +1,12 @@
+"use client";
+
 import Link from "next/link";
 
-import { getSite } from "@/lib/site";
+import { useSiteName } from "@/lib/site";
 
 /** Pages outside the app (sign-in, dashboard, content) carry the brand header. */
-export default async function SiteLayout({ children }: LayoutProps<"/">) {
-  const { name } = await getSite();
+export default function SiteLayout({ children }: LayoutProps<"/">) {
+  const name = useSiteName();
   return (
     <>
       <header className="px-6 py-5">

@@ -148,7 +148,7 @@ export function TaskEditor({ task, description }: { task: Task; description: Rea
             if (!(await confirm(`Delete “${task.content}”${subtasks}?`))) return;
             const { error } = await deleteTask(task.id);
             if (error) return toast.error(error);
-            router.push(project?.is_inbox ? "/todos" : `/todos/projects/${task.project}`);
+            router.push(project?.is_inbox ? "/todos" : `/todos/project?id=${task.project}`);
           }}
         >
           Delete task

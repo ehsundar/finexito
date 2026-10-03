@@ -74,5 +74,5 @@ Each reads `FINEXITO_<name>` from the environment.
 
 ## Frontend
 
-`frontend/src/app/todos/`: the screens, server actions in `actions.ts`, and the
+`frontend/src/app/todos/`: the screens, the writes in `actions.ts`, and the
 keyboard shortcuts (press `?` in the app for the list).

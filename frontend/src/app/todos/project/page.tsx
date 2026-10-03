@@ -1,7 +1,6 @@
 import { ProjectView } from "@/app/todos/project-view";
 
-export const metadata = { title: "Inbox" };
-
-export default function InboxPage() {
+/** `?id=`: the project. */
+export default function ProjectPage() {
   return <ProjectView />;
 }

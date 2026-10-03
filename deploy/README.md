@@ -5,7 +5,7 @@ One Ubuntu server runs everything with Docker Compose, serving your domain
 
 ```
 Internet -> caddy :80/:443 -> /api/* -> backend  (Django, gunicorn :8000)
-                           -> /*     -> frontend (Next standalone :3000) -> backend
+                           -> /*     -> the frontend, static files in the caddy image
                               db (Postgres 17, internal only, volume `finexito_pgdata`)
                               backup (nightly pg_dump to /var/backups/finexito)
                               uploads (volume `finexito_storage`, written by backend, served by caddy)
@@ -41,7 +41,7 @@ make logs                          # follow all services
 `make deploy` copies `compose.yml` and `Caddyfile` over, records `IMAGE_TAG` in
 `.env`, pulls, and runs `docker compose up -d --wait`. The one-shot `migrate`
 service runs first; the backend starts only once it succeeds, and `--wait`
-fails the deploy unless backend and frontend report healthy.
+fails the deploy unless the backend reports healthy.
 
 Migrations run forwards only: rolling back restores the old code, not the old
 schema, so keep migrations backwards-compatible with the release before them.
