@@ -81,6 +81,7 @@ jobs:
           git diff --exit-code -- src/lib/api/schema.d.ts
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm test
 
   build:
     needs: [test-backend, test-frontend]

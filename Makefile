@@ -49,6 +49,7 @@ schema-check: schema
 
 test: db-up
 	cd backend && uv run python manage.py test
+	cd frontend && npm test
 
 lint:
 	cd backend && uv run ruff check .

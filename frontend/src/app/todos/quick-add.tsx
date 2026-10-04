@@ -58,7 +58,7 @@ type Parsed = {
  * else one word as a new section. `p1`–`p4` is the priority. `@` is plain text,
  * kept for mentioning people. A backslash keeps a token as text.
  */
-function parse(
+export function parse(
   text: string,
   projects: Project[],
   labels: Label[],
@@ -138,7 +138,7 @@ function parse(
 }
 
 /** Marks the text from `start` to `end` as the date. */
-function markDate(parts: Segment[], [start, end]: number[]) {
+export function markDate(parts: Segment[], [start, end]: number[]) {
   const marked: Segment[] = [];
   let at = 0;
   for (const part of parts) {
