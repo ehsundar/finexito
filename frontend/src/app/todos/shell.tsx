@@ -2,10 +2,10 @@
 
 import { CalendarDays, CalendarRange, Inbox, LayoutList, Plus, Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { createContext, use, useCallback, useEffect, useState } from "react";
+import { createContext, use, useCallback, useState } from "react";
 import { toast } from "sonner";
 
-import { createProject, updateProfile } from "@/app/todos/actions";
+import { createProject } from "@/app/todos/actions";
 import { isoDate } from "@/app/todos/due";
 import { QuickAdd, type Prefill } from "@/app/todos/quick-add";
 import { AppFrame, Fab, Tab, TabBar } from "@/components/app/frame";
@@ -59,7 +59,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { data: labels } = useQuery("/api/v1/todos/labels/");
   const { data: filters } = useQuery("/api/v1/todos/filters/");
   const { data: today } = useQuery("/api/v1/todos/tasks/", { params: { query: { view: "today" } } });
-  const { data: profile } = useQuery("/api/v1/profiles/me/");
   const pathname = usePathname();
   const params = useSearchParams();
   const [prefill, setPrefill] = useState<Prefill | null>(null);
@@ -79,12 +78,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
     question?.answer(yes);
     setQuestion(null);
   };
-
-  // Dates are the member's, in the zone of the device they're using now.
-  useEffect(() => {
-    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (profile && zone && profile.timezone !== zone) updateProfile({ timezone: zone });
-  }, [profile]);
 
   // Everything on screen needs these; SWR fetches them again when the window
   // regains focus, so the client catches up with other tabs and devices.

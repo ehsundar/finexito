@@ -33,6 +33,7 @@ export function refresh() {
     const { data, response } = await bare.POST("/api/v1/auth/refresh/", { body: { refresh: token } });
     if (data) {
       setSession(data);
+      syncTimezone();
       return true;
     }
     if (getSession()?.refresh !== token) return true;
@@ -78,7 +79,17 @@ export async function signIn(tokens: { access: string; refresh: string }) {
   // The call above may have rotated the tokens; keep the newest.
   const current = getSession();
   if (current) setSession({ ...current, staff });
+  syncTimezone();
   return staff;
+}
+
+/**
+ * Dates are the member's, in the zone of the device they're using now, so the
+ * profile takes it whenever tokens are issued: at sign-in and on each refresh.
+ */
+function syncTimezone() {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (timezone) void api.PATCH("/api/v1/profiles/me/", { body: { timezone } });
 }
 
 /** `useQuery(path, init)`: a GET through `api`, cached and revalidated by SWR. */

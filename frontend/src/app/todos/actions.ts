@@ -120,10 +120,8 @@ export async function deleteReminder(reminder: string) {
 }
 
 /** Changes some keys of the profile's `extra`, keeping the others. */
-export async function updateProfile(body: { timezone?: string; extra?: Record<string, string> }) {
-  if (body.extra) {
-    const { data } = await api.GET("/api/v1/profiles/me/");
-    body = { ...body, extra: { ...data?.extra, ...body.extra } };
-  }
+export async function updateProfile(extra: Record<string, string>) {
+  const { data } = await api.GET("/api/v1/profiles/me/");
+  const body = { extra: { ...data?.extra, ...extra } };
   return done(api.PATCH("/api/v1/profiles/me/", { body }));
 }

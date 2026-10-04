@@ -117,7 +117,7 @@ export function ReminderSettingsSheet(props: { open: boolean; onOpenChange: (ope
   const emails = profile?.extra?.todos_reminder_emails !== "false";
 
   async function save(extra: Record<string, string>) {
-    const { error } = await updateProfile({ extra });
+    const { error } = await updateProfile(extra);
     if (error) toast.error(error);
   }
 
