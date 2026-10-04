@@ -106,7 +106,6 @@ class Connection(BaseModel):
                 "scope": SCOPE,
                 "access_type": "offline",
                 "prompt": "consent",
-                "include_granted_scopes": "true",
                 "login_hint": user.email,
                 "state": state,
             }
