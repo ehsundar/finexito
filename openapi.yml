@@ -1550,6 +1550,61 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/todos/sync/:
+    get:
+      operationId: todos_sync_retrieve
+      description: |-
+        An offline client's two halves: what changed since it last looked, and the
+        operations it queued while offline.
+      parameters:
+      - in: query
+        name: since
+        schema:
+          type: string
+        description: The last token; none for all.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Changes'
+          description: ''
+    post:
+      operationId: todos_sync_create
+      description: Apply queued operations in order, each as its own call to the API,
+        so every rule and limit applies. A refused one answers its error and the rest
+        go on.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SyncRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SyncRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Result'
+          description: ''
   /api/v1/todos/tasks/:
     get:
       operationId: todos_tasks_list
@@ -2697,6 +2752,43 @@ components:
       - access
       - refresh
       - user
+    Changes:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Send it as `since` next time.
+        full:
+          type: boolean
+          description: 'Everything, not changes: replace the local copy.'
+        projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+        sections:
+          type: array
+          items:
+            $ref: '#/components/schemas/Section'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        labels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Label'
+        deleted:
+          type: array
+          items:
+            $ref: '#/components/schemas/Deleted'
+      required:
+      - deleted
+      - full
+      - labels
+      - projects
+      - sections
+      - tasks
+      - token
     ColourEnum:
       enum:
       - neutral
@@ -2725,6 +2817,8 @@ components:
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer rows the caller can see; anything else reads as missing.
+        A new row may bring its own ``id``, made by a client that was offline, so other
+        rows can point at it before the server has seen it.
       properties:
         id:
           type: string
@@ -2772,6 +2866,8 @@ components:
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer rows the caller can see; anything else reads as missing.
+        A new row may bring its own ``id``, made by a client that was offline, so other
+        rows can point at it before the server has seen it.
       properties:
         task:
           type: string
@@ -2807,6 +2903,17 @@ components:
         * `image/webp` - image/webp
         * `image/avif` - image/avif
         * `application/pdf` - application/pdf
+    Deleted:
+      type: object
+      properties:
+        kind:
+          type: string
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
+      - kind
     Due:
       type: object
       properties:
@@ -2979,6 +3086,8 @@ components:
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer rows the caller can see; anything else reads as missing.
+        A new row may bring its own ``id``, made by a client that was offline, so other
+        rows can point at it before the server has seen it.
       properties:
         id:
           type: string
@@ -3010,6 +3119,8 @@ components:
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer rows the caller can see; anything else reads as missing.
+        A new row may bring its own ``id``, made by a client that was offline, so other
+        rows can point at it before the server has seen it.
       properties:
         name:
           type: string
@@ -3030,6 +3141,34 @@ components:
           minLength: 1
       required:
       - refresh
+    MethodEnum:
+      enum:
+      - POST
+      - PATCH
+      - DELETE
+      type: string
+      description: |-
+        * `POST` - POST
+        * `PATCH` - PATCH
+        * `DELETE` - DELETE
+    OperationRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Made by the client; sending it again does nothing.
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        path:
+          type: string
+          minLength: 1
+          description: A todos API path, as the client would call it.
+        body: {}
+      required:
+      - id
+      - method
+      - path
     Page:
       type: object
       description: 'What a listing needs: everything but the body.'
@@ -3171,6 +3310,8 @@ components:
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer rows the caller can see; anything else reads as missing.
+        A new row may bring its own ``id``, made by a client that was offline, so other
+        rows can point at it before the server has seen it.
       properties:
         task:
           type: string
@@ -3196,6 +3337,8 @@ components:
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer rows the caller can see; anything else reads as missing.
+        A new row may bring its own ``id``, made by a client that was offline, so other
+        rows can point at it before the server has seen it.
       properties:
         name:
           type: string
@@ -3263,6 +3406,8 @@ components:
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer rows the caller can see; anything else reads as missing.
+        A new row may bring its own ``id``, made by a client that was offline, so other
+        rows can point at it before the server has seen it.
       properties:
         project:
           type: string
@@ -3625,6 +3770,22 @@ components:
       required:
       - date
       - tasks
+    Result:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          type: integer
+          description: As the call would have answered.
+        body:
+          nullable: true
+          description: Null when sent before.
+      required:
+      - body
+      - id
+      - status
     RoleEnum:
       enum:
       - member
@@ -3660,6 +3821,8 @@ components:
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer rows the caller can see; anything else reads as missing.
+        A new row may bring its own ``id``, made by a client that was offline, so other
+        rows can point at it before the server has seen it.
       properties:
         id:
           type: string
@@ -3692,6 +3855,8 @@ components:
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
         Related fields only offer rows the caller can see; anything else reads as missing.
+        A new row may bring its own ``id``, made by a client that was offline, so other
+        rows can point at it before the server has seen it.
       properties:
         project:
           type: string
@@ -3764,6 +3929,15 @@ components:
       description: |-
         * `public` - Public, served and cached by anyone
         * `private` - Private, only through signed links
+    SyncRequestRequest:
+      type: object
+      properties:
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationRequest'
+      required:
+      - operations
     Task:
       type: object
       description: |-

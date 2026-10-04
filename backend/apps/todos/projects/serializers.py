@@ -13,10 +13,15 @@ class CleanedSerializer(serializers.ModelSerializer):
     """Saves through the model's ``full_clean()``, so its rules and limits apply.
 
     Related fields only offer rows the caller can see; anything else reads as missing.
+    A new row may bring its own ``id``, made by a client that was offline, so other
+    rows can point at it before the server has seen it.
     """
 
     def get_fields(self):
         fields = super().get_fields()
+        # Only while reading a new row's data: the schema keeps `id` read-only.
+        if self.instance is None and hasattr(self, "initial_data") and "id" in fields:
+            fields["id"] = serializers.UUIDField(required=False)
         user = self.context["request"].user
         if not user.is_authenticated:  # the schema generator
             return fields
@@ -29,7 +34,10 @@ class CleanedSerializer(serializers.ModelSerializer):
         return fields
 
     def create(self, validated_data):
-        return self.persist(self.Meta.model(), validated_data)
+        model = self.Meta.model
+        if "id" in validated_data and model.objects.filter(pk=validated_data["id"]).exists():
+            raise serializers.ValidationError({"id": "This id is taken."})
+        return self.persist(model(), validated_data)
 
     def update(self, instance, validated_data):
         return self.persist(instance, validated_data)

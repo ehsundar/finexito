@@ -12,6 +12,7 @@ It is several apps, each depending only on the ones above it:
 | `apps.todos.tasks` | `todos_tasks` | Tasks, labels, filters, due dates and reminders. Needs `profiles` (time zone), `messaging` (reminder email) and `reminders`. |
 | `apps.todos.comments` | `todos_comments` | Comments on tasks and projects, with attachments (`storage`) and notification emails. |
 | `apps.todos.templates` | `todos_templates` | Built-in and saved templates, applying them, and CSV export and import. |
+| `apps.todos.sync` | `todos_sync` | What offline clients need: changes since a token, deleted rows, and replaying queued calls. |
 
 All are optional together: take them out of `INSTALLED_APPS` (and their
 settings imports) and the todos are gone. Each also comes out on its own,
@@ -93,6 +94,24 @@ Built-in templates are subclasses of `templates.builtin.BuiltIn`, like filters;
 `TODOS_TEMPLATES_BUILT_IN` (comma-separated slugs) picks which a deployment
 offers. A member's own are `Template` rows.
 
+## Sync
+
+For the offline client. `GET sync/?since=<token>` answers the projects,
+sections, tasks and labels changed since the token (by `updated_at`, so bulk
+`update()`s set it too), the rows deleted since (`Tombstone`s, kept
+`TODOS_SYNC_TOMBSTONE_DAYS`), and a new token; no token, or one older than that,
+answers everything with `full: true`. A project joined or re-placed since comes
+whole. Tokens reach back a few seconds, so a change committed while a pull ran
+isn't missed; rows sent twice just overwrite themselves.
+
+`POST sync/` takes the calls the client queued offline, `{id, method, path,
+body}`, and replays each through the API as the same member, in order, so every
+rule and limit applies; it answers each one's status and body. A refused call
+doesn't stop the rest, and an `id` already applied (`SyncOperation`) is skipped.
+New rows may carry a client-made `id` (refused if taken), so queued calls can
+refer to rows the server hasn't seen yet. Conflicts resolve by arrival: the last
+`PATCH` of a field wins, and an edit after a delete is `404`.
+
 ## Due dates
 
 A task has a `due_date`, in its owner's time zone (their profile's); a timed
@@ -156,6 +175,8 @@ CSV), `templates/{id}/` (`PATCH`, `DELETE`: own only), `templates/{id}/apply/`
 (`{project}` to add to one, else a new project, `{name}`), and
 `templates/{id}/export/` and `projects/{id}/export/` (CSV).
 
+Sync: `sync/` (`GET ?since=`, `POST {operations}`).
+
 Comments: `comments/` (`?task=` or `?project=`; `POST`, `PATCH` the text,
 `DELETE`), `comments/attachments/` (`POST {name, content_type, size}` opens an
 upload ticket).
@@ -189,6 +210,8 @@ Everything is the caller's, or in a project they're in; anything else is `404`.
 | `TODOS_TEMPLATES_MAX` | 100 per member |
 | `TODOS_TEMPLATES_MAX_TASKS` | 1,000 per template |
 | `TODOS_TEMPLATES_BUILT_IN` | blank: all of them |
+| `TODOS_SYNC_TOMBSTONE_DAYS` | 30 |
+| `TODOS_SYNC_MAX_OPERATIONS` | 200 per `POST` |
 
 Each reads `FINEXITO_<name>` from the environment.
 

@@ -14,6 +14,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.dispatch import Signal
+from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
 from apps.common.models import BaseModel
@@ -193,7 +194,7 @@ class Project(TrackedModel):
         # Archiving takes the sub-projects with it; unarchiving brings them back.
         if cascade:
             Project.objects.filter(pk__in=self.descendant_ids()).update(
-                is_archived=self.is_archived
+                is_archived=self.is_archived, updated_at=tz.now()
             )
 
     def delete(self, *args, **kwargs):
@@ -237,7 +238,7 @@ class Project(TrackedModel):
         member = self.members.filter(user=user).first()
         if member is None:
             raise ValidationError(_("Choose someone in this project."))
-        Project.objects.filter(parent=self).update(parent=self.parent)
+        Project.objects.filter(parent=self).update(parent=self.parent, updated_at=tz.now())
         old = ProjectMember(
             project=self,
             user_id=self.owner_id,
@@ -343,4 +344,4 @@ class Section(TrackedModel):
         super().save(*args, **kwargs)
         # A section moves to another project with its tasks.
         if moved:
-            self.tasks.update(project_id=self.project_id)
+            self.tasks.update(project_id=self.project_id, updated_at=tz.now())

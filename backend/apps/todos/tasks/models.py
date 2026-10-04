@@ -296,7 +296,7 @@ class Task(TrackedModel):
         super().save(*args, **kwargs)
         if moved:
             Task.objects.filter(pk__in=self.descendant_ids()).update(
-                project_id=self.project_id, section_id=self.section_id
+                project_id=self.project_id, section_id=self.section_id, updated_at=tz.now()
             )
         if redated:
             self.follow_due(newly_timed=self.due_at is not None and not was_timed)
@@ -474,7 +474,7 @@ class FavouriteFilter(BaseModel):
 def forget_member(sender, project, user, **kwargs):
     """Someone leaving takes their assignments, reminders and labels with them."""
     tasks = Task.objects.filter(project=project)
-    tasks.filter(assignee=user).update(assignee=None)
+    tasks.filter(assignee=user).update(assignee=None, updated_at=tz.now())
     Reminder.objects.filter(
         user=user, content_type=ContentType.objects.get_for_model(Task), object_id__in=tasks
     ).delete()

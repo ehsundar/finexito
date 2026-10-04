@@ -620,6 +620,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/todos/sync/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description An offline client's two halves: what changed since it last looked, and the
+         *     operations it queued while offline.
+         */
+        get: operations["todos_sync_retrieve"];
+        put?: never;
+        /** @description Apply queued operations in order, each as its own call to the API, so every rule and limit applies. A refused one answers its error and the rest go on. */
+        post: operations["todos_sync_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/todos/tasks/": {
         parameters: {
             query?: never;
@@ -858,6 +879,17 @@ export interface components {
             readonly refresh: string;
             readonly user: components["schemas"]["User"];
         };
+        Changes: {
+            /** @description Send it as `since` next time. */
+            token: string;
+            /** @description Everything, not changes: replace the local copy. */
+            full: boolean;
+            projects: components["schemas"]["Project"][];
+            sections: components["schemas"]["Section"][];
+            tasks: components["schemas"]["Task"][];
+            labels: components["schemas"]["Label"][];
+            deleted: components["schemas"]["Deleted"][];
+        };
         /**
          * @description * `neutral` - Neutral
          *     * `red` - Red
@@ -875,6 +907,8 @@ export interface components {
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer rows the caller can see; anything else reads as missing.
+         *     A new row may bring its own ``id``, made by a client that was offline, so other
+         *     rows can point at it before the server has seen it.
          */
         Comment: {
             /** Format: uuid */
@@ -896,6 +930,8 @@ export interface components {
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer rows the caller can see; anything else reads as missing.
+         *     A new row may bring its own ``id``, made by a client that was offline, so other
+         *     rows can point at it before the server has seen it.
          */
         CommentRequest: {
             /** Format: uuid */
@@ -920,6 +956,11 @@ export interface components {
          * @enum {string}
          */
         ContentTypeEnum: "image/jpeg" | "image/png" | "image/gif" | "image/webp" | "image/avif" | "application/pdf";
+        Deleted: {
+            kind: string;
+            /** Format: uuid */
+            id: string;
+        };
         Due: {
             /** Format: date */
             date: string | null;
@@ -989,6 +1030,8 @@ export interface components {
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer rows the caller can see; anything else reads as missing.
+         *     A new row may bring its own ``id``, made by a client that was offline, so other
+         *     rows can point at it before the server has seen it.
          */
         Label: {
             /** Format: uuid */
@@ -1004,6 +1047,8 @@ export interface components {
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer rows the caller can see; anything else reads as missing.
+         *     A new row may bring its own ``id``, made by a client that was offline, so other
+         *     rows can point at it before the server has seen it.
          */
         LabelRequest: {
             name: string;
@@ -1012,6 +1057,24 @@ export interface components {
         };
         LogoutRequest: {
             refresh: string;
+        };
+        /**
+         * @description * `POST` - POST
+         *     * `PATCH` - PATCH
+         *     * `DELETE` - DELETE
+         * @enum {string}
+         */
+        MethodEnum: "POST" | "PATCH" | "DELETE";
+        OperationRequest: {
+            /**
+             * Format: uuid
+             * @description Made by the client; sending it again does nothing.
+             */
+            id: string;
+            method: components["schemas"]["MethodEnum"];
+            /** @description A todos API path, as the client would call it. */
+            path: string;
+            body?: unknown;
         };
         /** @description What a listing needs: everything but the body. */
         Page: {
@@ -1085,6 +1148,8 @@ export interface components {
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer rows the caller can see; anything else reads as missing.
+         *     A new row may bring its own ``id``, made by a client that was offline, so other
+         *     rows can point at it before the server has seen it.
          */
         PatchedCommentRequest: {
             /** Format: uuid */
@@ -1103,6 +1168,8 @@ export interface components {
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer rows the caller can see; anything else reads as missing.
+         *     A new row may bring its own ``id``, made by a client that was offline, so other
+         *     rows can point at it before the server has seen it.
          */
         PatchedLabelRequest: {
             name?: string;
@@ -1137,6 +1204,8 @@ export interface components {
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer rows the caller can see; anything else reads as missing.
+         *     A new row may bring its own ``id``, made by a client that was offline, so other
+         *     rows can point at it before the server has seen it.
          */
         PatchedSectionRequest: {
             /** Format: uuid */
@@ -1304,6 +1373,14 @@ export interface components {
             /** Format: date */
             date: string;
         };
+        Result: {
+            /** Format: uuid */
+            id: string;
+            /** @description As the call would have answered. */
+            status: number;
+            /** @description Null when sent before. */
+            body: unknown;
+        };
         /**
          * @description * `member` - Member
          *     * `moderator` - Moderator
@@ -1330,6 +1407,8 @@ export interface components {
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer rows the caller can see; anything else reads as missing.
+         *     A new row may bring its own ``id``, made by a client that was offline, so other
+         *     rows can point at it before the server has seen it.
          */
         Section: {
             /** Format: uuid */
@@ -1346,6 +1425,8 @@ export interface components {
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
          *     Related fields only offer rows the caller can see; anything else reads as missing.
+         *     A new row may bring its own ``id``, made by a client that was offline, so other
+         *     rows can point at it before the server has seen it.
          */
         SectionRequest: {
             /** Format: uuid */
@@ -1378,6 +1459,9 @@ export interface components {
          * @enum {string}
          */
         StoredObjectVisibilityEnum: "public" | "private";
+        SyncRequestRequest: {
+            operations: components["schemas"]["OperationRequest"][];
+        };
         /**
          * @description Due dates and times read and write in the caller's time zone.
          *
@@ -2866,6 +2950,53 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    todos_sync_retrieve: {
+        parameters: {
+            query?: {
+                /** @description The last token; none for all. */
+                since?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Changes"];
+                };
+            };
+        };
+    };
+    todos_sync_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SyncRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SyncRequestRequest"];
+                "multipart/form-data": components["schemas"]["SyncRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Result"][];
+                };
             };
         };
     };

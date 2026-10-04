@@ -98,7 +98,9 @@ class Comment(BaseModel):
         adding = self._state.adding
         super().save(*args, **kwargs)
         if adding and self.task_id:
-            Task.objects.filter(pk=self.task_id).update(comment_count=models.F("comment_count") + 1)
+            Task.objects.filter(pk=self.task_id).update(
+                comment_count=models.F("comment_count") + 1, updated_at=tz.now()
+            )
 
     def recipients(self) -> list:
         """Who hears about it: on a task, whoever created it or is assigned it; on
@@ -164,5 +166,5 @@ def drop_comment(sender, instance, **kwargs):
         StoredObject.objects.filter(pk=instance.attachment_id).delete()
     if instance.task_id:
         Task.objects.filter(pk=instance.task_id, comment_count__gt=0).update(
-            comment_count=models.F("comment_count") - 1
+            comment_count=models.F("comment_count") - 1, updated_at=tz.now()
         )
