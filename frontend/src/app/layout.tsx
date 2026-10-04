@@ -1,4 +1,4 @@
-import type { Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import { RotateCcw } from "lucide-react";
 import { Suspense } from "react";
@@ -18,6 +18,12 @@ const geistMono = Geist_Mono({
 
 // The app reaches under the notch and home bar; screens pad by the safe areas.
 export const viewport: Viewport = { viewportFit: "cover" };
+
+// Installable on a phone: Django serves the manifest, named after SITE_NAME.
+export const metadata: Metadata = {
+  manifest: "/api/v1/manifest.webmanifest",
+  appleWebApp: { capable: true },
+};
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

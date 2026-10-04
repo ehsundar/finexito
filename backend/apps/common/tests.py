@@ -89,8 +89,7 @@ class ExtraFieldTests(SimpleTestCase):
 
 class SiteTests(PlatformTestCase):
     @override_settings(SITE_NAME="Acme")
-    def test_site_reports_its_name_without_authentication(self):
-        response = self.client.get(reverse("site"))
+    def test_manifest_names_the_site_and_opens_on_the_home_page(self):
+        manifest = self.client.get(reverse("manifest")).json()
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.data, {"name": "Acme"})
+        self.assertEqual((manifest["name"], manifest["start_url"]), ("Acme", "/"))

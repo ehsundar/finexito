@@ -340,22 +340,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/Profile'
           description: ''
-  /api/v1/site/:
-    get:
-      operationId: site_retrieve
-      description: What this deployment is called, so the frontend never hard-codes
-        it.
-      tags:
-      - site
-      security:
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Site'
-          description: ''
   /api/v1/storage/uploads/{id}/:
     put:
       operationId: storage_upload
@@ -2786,14 +2770,6 @@ components:
       required:
       - name
       - project
-    Site:
-      type: object
-      properties:
-        name:
-          type: string
-          readOnly: true
-      required:
-      - name
     SortEnum:
       enum:
       - manual

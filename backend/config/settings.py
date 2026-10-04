@@ -25,7 +25,7 @@ DEBUG = env_bool("DEBUG", True)
 
 # Each deployment is its own white-labelled product built from the same apps.
 # Everything that names it to people (emails, the admin, the API docs, the
-# frontend via /api/v1/site/) reads this rather than spelling out a name.
+# frontend via /api/v1/manifest.webmanifest) reads this rather than spelling out a name.
 SITE_NAME = env_str("SITE_NAME", "ehsundar")
 
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", ["*"] if DEBUG else [])

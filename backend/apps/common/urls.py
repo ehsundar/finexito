@@ -1,7 +1,7 @@
 from django.urls import path
 
-from apps.common.views import SiteView
+from apps.common.views import manifest
 
 urlpatterns = [
-    path("site/", SiteView.as_view(), name="site"),
+    path("manifest.webmanifest", manifest, name="manifest"),
 ]

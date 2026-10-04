@@ -205,23 +205,6 @@ export interface paths {
         patch: operations["profiles_me_partial_update"];
         trace?: never;
     };
-    "/api/v1/site/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** @description What this deployment is called, so the frontend never hard-codes it. */
-        get: operations["site_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/storage/uploads/{id}/": {
         parameters: {
             query?: never;
@@ -993,9 +976,6 @@ export interface components {
             name: string;
             is_archived?: boolean;
         };
-        Site: {
-            readonly name: string;
-        };
         /**
          * @description * `manual` - Manual
          *     * `priority` - Priority
@@ -1454,25 +1434,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Profile"];
-                };
-            };
-        };
-    };
-    site_retrieve: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Site"];
                 };
             };
         };

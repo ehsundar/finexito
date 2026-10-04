@@ -57,7 +57,7 @@ envelope in a view's schema, use `serializers.ErrorSerializer`.
 
 | File             | What                                                                 |
 | ---------------- | -------------------------------------------------------------------- |
-| `views.py`       | `GET /api/v1/site/` → `{"name": SITE_NAME}`, unauthenticated. The frontend reads the product name from here. |
+| `views.py`       | `GET /api/v1/manifest.webmanifest`: the web app manifest, named after SITE_NAME, unauthenticated. The frontend reads the product name from here too. |
 | `apps.py`        | Titles the Django admin from `SITE_NAME`.                            |
 | `pagination.py`  | `DefaultPagination`: 20 per page, `?page_size=` up to 100.           |
 | `serializers.py` | `ExtraField`, `StrictCharField`, `ReadOnlyModelSerializer`, `ErrorSerializer` |
