@@ -346,6 +346,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/todos/google/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The member's Google Calendar: whether it's connected, which projects it shows,
+         *     and disconnecting it.
+         */
+        get: operations["todos_google_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * @description The member's Google Calendar: whether it's connected, which projects it shows,
+         *     and disconnecting it.
+         */
+        delete: operations["todos_google_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description The member's Google Calendar: whether it's connected, which projects it shows,
+         *     and disconnecting it.
+         */
+        patch: operations["todos_google_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/todos/google/callback/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Finish consent, with the `code` and `state` Google sent back to the page. */
+        get: operations["todos_google_callback_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/google/connect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Start consent: Google's URL to send the browser to. */
+        get: operations["todos_google_connect_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/todos/join/{token}/": {
         parameters: {
             query?: never;
@@ -946,6 +1008,21 @@ export interface components {
              */
             attachment_id?: string | null;
         };
+        Connection: {
+            status: components["schemas"]["ConnectionStatusEnum"];
+            /** @description The member's projects the calendar shows; null for all. */
+            projects: string[] | null;
+            /** Format: date-time */
+            last_synced_at: string | null;
+            last_error: string;
+        };
+        /**
+         * @description * `none` - none
+         *     * `connected` - connected
+         *     * `disconnected` - disconnected
+         * @enum {string}
+         */
+        ConnectionStatusEnum: "none" | "connected" | "disconnected";
         /**
          * @description * `image/jpeg` - image/jpeg
          *     * `image/png` - image/png
@@ -1002,6 +1079,10 @@ export interface components {
             readonly name: string;
             readonly is_favourite: boolean;
             readonly order: number | null;
+        };
+        GoogleConsent: {
+            /** Format: uri */
+            url: string;
         };
         GoogleLoginRequest: {
             code: string;
@@ -1163,6 +1244,9 @@ export interface components {
              * @description An uploaded file, from `comments/attachments/`; only when posting.
              */
             attachment_id?: string | null;
+        };
+        PatchedConnectionProjectsRequest: {
+            projects?: string[] | null;
         };
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
@@ -2252,6 +2336,109 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    todos_google_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Connection"];
+                };
+            };
+        };
+    };
+    todos_google_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_google_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedConnectionProjectsRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedConnectionProjectsRequest"];
+                "multipart/form-data": components["schemas"]["PatchedConnectionProjectsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Connection"];
+                };
+            };
+        };
+    };
+    todos_google_callback_retrieve: {
+        parameters: {
+            query: {
+                code: string;
+                state?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Connection"];
+                };
+            };
+        };
+    };
+    todos_google_connect_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleConsent"];
+                };
             };
         };
     };

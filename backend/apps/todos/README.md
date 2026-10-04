@@ -13,6 +13,7 @@ It is several apps, each depending only on the ones above it:
 | `apps.todos.comments` | `todos_comments` | Comments on tasks and projects, with attachments (`storage`) and notification emails. |
 | `apps.todos.templates` | `todos_templates` | Built-in and saved templates, applying them, and CSV export and import. |
 | `apps.todos.sync` | `todos_sync` | What offline clients need: changes since a token, deleted rows, and replaying queued calls. |
+| `apps.todos.google` | `todos_google` | Dated tasks in the member's Google Calendar, and changes there back in the tasks. Leave it out where there's no Google API access. |
 
 All are optional together: take them out of `INSTALLED_APPS` (and their
 settings imports) and the todos are gone. Each also comes out on its own,
@@ -112,6 +113,31 @@ New rows may carry a client-made `id` (refused if taken), so queued calls can
 refer to rows the server hasn't seen yet. Conflicts resolve by arrival: the last
 `PATCH` of a field wins, and an edit after a delete is `404`.
 
+## Google Calendar
+
+`google/models.py`. Connecting asks Google for the narrowest scope that works
+(`calendar.app.created`: only calendars the app makes) on top of sign-in, with
+the same OAuth client; the Calendar API must be on in that Google Cloud project.
+`Connection.connect()` keeps the refresh token encrypted
+(`TODOS_GOOGLE_ENCRYPTION_KEY`), makes a calendar named "Tasks — `SITE_NAME`",
+watches it, and sends the member's dated tasks: their own projects (or the ones
+they chose) and shared projects' tasks assigned to them.
+
+- A task is one event, whose id is the task's id in hex, so nothing links them
+  but that. Timed tasks last `TODOS_GOOGLE_EVENT_MINUTES`; dated ones are
+  all-day; a recurring one shows its next date. Completing, deleting or
+  undating a task removes its event.
+- Saving a task (and `tasks_changed`, for completing and reopening) notes a
+  `Push` for each connection that might follow it, and a background task pushes
+  them after the commit. A failed push waits, retried by the connection's
+  reminder every 15 minutes (the reminders cron), which also renews the watch
+  channel before it lapses.
+- Google calls the webhook when the calendar changes; it checks the channel's
+  token and a background task pulls the changes with the sync token. A moved or
+  renamed event moves or renames its task; a deleted one takes its date away.
+- A token Google refuses marks the connection disconnected. Disconnecting
+  deletes the calendar, stops the channel and revokes the token.
+
 ## Due dates
 
 A task has a `due_date`, in its owner's time zone (their profile's); a timed
@@ -175,6 +201,11 @@ CSV), `templates/{id}/` (`PATCH`, `DELETE`: own only), `templates/{id}/apply/`
 (`{project}` to add to one, else a new project, `{name}`), and
 `templates/{id}/export/` and `projects/{id}/export/` (CSV).
 
+Google Calendar: `google/` (`GET` status; `PATCH {projects}`, null for all;
+`DELETE` disconnects), `google/connect/` (`GET` Google's consent URL),
+`google/callback/` (`GET ?code=&state=` from the page Google returns to,
+`/todos/google`), `google/webhook/` (Google's notices).
+
 Sync: `sync/` (`GET ?since=`, `POST {operations}`).
 
 Comments: `comments/` (`?task=` or `?project=`; `POST`, `PATCH` the text,
@@ -212,6 +243,8 @@ Everything is the caller's, or in a project they're in; anything else is `404`.
 | `TODOS_TEMPLATES_BUILT_IN` | blank: all of them |
 | `TODOS_SYNC_TOMBSTONE_DAYS` | 30 |
 | `TODOS_SYNC_MAX_OPERATIONS` | 200 per `POST` |
+| `TODOS_GOOGLE_EVENT_MINUTES` | 30 |
+| `TODOS_GOOGLE_ENCRYPTION_KEY` | a Fernet key; a GitHub secret |
 
 Each reads `FINEXITO_<name>` from the environment.
 

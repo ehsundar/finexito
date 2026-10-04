@@ -719,6 +719,108 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/todos/google/:
+    get:
+      operationId: todos_google_retrieve
+      description: |-
+        The member's Google Calendar: whether it's connected, which projects it shows,
+        and disconnecting it.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+          description: ''
+    patch:
+      operationId: todos_google_partial_update
+      description: |-
+        The member's Google Calendar: whether it's connected, which projects it shows,
+        and disconnecting it.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConnectionProjectsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConnectionProjectsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConnectionProjectsRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+          description: ''
+    delete:
+      operationId: todos_google_destroy
+      description: |-
+        The member's Google Calendar: whether it's connected, which projects it shows,
+        and disconnecting it.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/google/callback/:
+    get:
+      operationId: todos_google_callback_retrieve
+      description: Finish consent, with the `code` and `state` Google sent back to
+        the page.
+      parameters:
+      - in: query
+        name: code
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: state
+        schema:
+          type: string
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Connection'
+          description: ''
+  /api/v1/todos/google/connect/:
+    get:
+      operationId: todos_google_connect_retrieve
+      description: 'Start consent: Google''s URL to send the browser to.'
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoogleConsent'
+          description: ''
   /api/v1/todos/join/{token}/:
     get:
       operationId: todos_join_retrieve
@@ -2887,6 +2989,39 @@ components:
           writeOnly: true
           nullable: true
           description: An uploaded file, from `comments/attachments/`; only when posting.
+    Connection:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ConnectionStatusEnum'
+        projects:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
+          description: The member's projects the calendar shows; null for all.
+        last_synced_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_error:
+          type: string
+      required:
+      - last_error
+      - last_synced_at
+      - projects
+      - status
+    ConnectionStatusEnum:
+      enum:
+      - none
+      - connected
+      - disconnected
+      type: string
+      description: |-
+        * `none` - none
+        * `connected` - connected
+        * `disconnected` - disconnected
     ContentTypeEnum:
       enum:
       - image/jpeg
@@ -3018,6 +3153,14 @@ components:
       - name
       - order
       - slug
+    GoogleConsent:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+      required:
+      - url
     GoogleLoginRequest:
       type: object
       properties:
@@ -3331,6 +3474,15 @@ components:
           writeOnly: true
           nullable: true
           description: An uploaded file, from `comments/attachments/`; only when posting.
+    PatchedConnectionProjectsRequest:
+      type: object
+      properties:
+        projects:
+          type: array
+          items:
+            type: string
+            format: uuid
+          nullable: true
     PatchedLabelRequest:
       type: object
       description: |-

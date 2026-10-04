@@ -63,6 +63,7 @@ LOCAL_APPS = [
     "apps.todos.comments",
     "apps.todos.templates",
     "apps.todos.sync",
+    "apps.todos.google",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -76,11 +77,12 @@ from apps.messaging.settings import *  # noqa: E402, F403
 from apps.profiles.settings import *  # noqa: E402, F403
 from apps.reminders.settings import *  # noqa: E402, F403
 from apps.storage.settings import *  # noqa: E402, F403
-from apps.todos.projects.settings import *  # noqa: E402, F403
-from apps.todos.tasks.settings import *  # noqa: E402, F403
 from apps.todos.comments.settings import *  # noqa: E402, F403
-from apps.todos.templates.settings import *  # noqa: E402, F403
+from apps.todos.google.settings import *  # noqa: E402, F403
+from apps.todos.projects.settings import *  # noqa: E402, F403
 from apps.todos.sync.settings import *  # noqa: E402, F403
+from apps.todos.tasks.settings import *  # noqa: E402, F403
+from apps.todos.templates.settings import *  # noqa: E402, F403
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

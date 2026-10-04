@@ -16,7 +16,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.functions import Lower
-from django.dispatch import receiver
+from django.dispatch import Signal, receiver
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
@@ -33,6 +33,10 @@ from apps.todos.projects.models import (
 )
 
 MAX_TASK_DEPTH = 4
+
+# Sent with ``ids`` when tasks change without being saved one by one (completing
+# and reopening), for apps that follow tasks; saves send ``post_save`` as usual.
+tasks_changed = Signal()
 
 
 class LabelQuerySet(models.QuerySet):
@@ -379,10 +383,10 @@ class Task(TrackedModel):
             self.complete_occurrence(upcoming)
             return
         now = tz.now()
-        Task.objects.filter(pk__in=[self.pk, *self.descendant_ids()]).open().update(
-            completed_at=now, updated_at=now
-        )
+        ids = [self.pk, *self.descendant_ids()]
+        Task.objects.filter(pk__in=ids).open().update(completed_at=now, updated_at=now)
         self.completed_at = now
+        tasks_changed.send(Task, ids=ids)
 
     def complete_occurrence(self, upcoming: datetime):
         labels = list(self.labels.all())
@@ -426,10 +430,10 @@ class Task(TrackedModel):
             pk__in=self.descendant_ids(), completed_at=self.completed_at
         ).values_list("pk", flat=True)
         parents = [task.pk for task in self.ancestors() if task.completed_at]
-        Task.objects.filter(pk__in=[self.pk, *together, *parents]).update(
-            completed_at=None, updated_at=tz.now()
-        )
+        ids = [self.pk, *together, *parents]
+        Task.objects.filter(pk__in=ids).update(completed_at=None, updated_at=tz.now())
         self.completed_at = None
+        tasks_changed.send(Task, ids=ids)
 
     def tell_assignee(self, by):
         """Email the assignee that ``by`` gave them this task, unless they did it
