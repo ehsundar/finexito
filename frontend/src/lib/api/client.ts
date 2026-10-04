@@ -10,7 +10,14 @@ import { clearSession, getSession, setSession } from "@/lib/auth/session";
  * domain, so paths stay relative; `next dev` points at runserver through
  * NEXT_PUBLIC_API_ORIGIN (DEBUG lets any origin through CORS).
  */
-const baseUrl = process.env.NEXT_PUBLIC_API_ORIGIN ?? "";
+const configured = process.env.NEXT_PUBLIC_API_ORIGIN ?? "";
+const loopback = /^(127\.0\.0\.1|localhost)$/;
+// `next dev` opened from a phone by this machine's address: runserver is on
+// this machine too, not on the phone's own loopback.
+const baseUrl =
+  typeof location !== "undefined" && !loopback.test(location.hostname)
+    ? configured.replace(/\/\/(127\.0\.0\.1|localhost)(?=[:/]|$)/, `//${location.hostname}`)
+    : configured;
 
 /** A path Django hands out (a signed file link), as the browser can open it. */
 export const apiUrl = (path: string) => baseUrl + path;

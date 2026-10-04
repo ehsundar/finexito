@@ -18,8 +18,9 @@ db-down:
 run:
 	$(MAKE) -j2 run-back run-front
 
+# On every interface, so a phone on the same network can reach it too.
 run-back:
-	cd backend && uv run python manage.py runserver
+	cd backend && uv run python manage.py runserver 0.0.0.0:8000
 
 run-front:
 	cd frontend && npm run dev

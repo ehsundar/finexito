@@ -1,6 +1,8 @@
 import useSWR from "swr";
 
-const manifest = `${process.env.NEXT_PUBLIC_API_ORIGIN ?? ""}/api/v1/manifest.webmanifest`;
+import { apiUrl } from "@/lib/api/client";
+
+const manifest = apiUrl("/api/v1/manifest.webmanifest");
 
 /**
  * What this deployment is called. Django's SITE_NAME is the only source, read
