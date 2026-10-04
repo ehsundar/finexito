@@ -20,7 +20,7 @@ import { toast } from "sonner";
 import { closeTask, reopenTask, updateTask } from "@/app/todos/actions";
 import { addDays, dayName, dueText, isoDate } from "@/app/todos/due";
 import { useTodos, type Task } from "@/app/todos/shell";
-import { TaskCheck, TaskMeta } from "@/app/todos/task-list";
+import { TaskCheck, TaskMeta, useClickGuard } from "@/app/todos/task-list";
 import { AppBar, Screen } from "@/components/app/frame";
 import { Button } from "@/components/ui/button";
 import { InlineMarkdown } from "@/components/markdown/inline";
@@ -142,6 +142,7 @@ function DaySection({ day, title, tasks }: { day?: string; title: string; tasks:
 function DayRow({ task }: { task: Task }) {
   const { setNodeRef, listeners, isDragging, transform } = useDraggable({ id: task.id });
   const [done, setDone] = useState(false);
+  const guard = useClickGuard(isDragging);
 
   async function complete() {
     setDone(true);
@@ -170,6 +171,7 @@ function DayRow({ task }: { task: Task }) {
     <li
       ref={setNodeRef}
       {...listeners}
+      onClickCapture={guard}
       className={cn("relative flex items-start gap-3 border-b py-3 select-none [-webkit-touch-callout:none]", isDragging && "bg-background z-10 shadow-lg")}
       style={{ transform: CSS.Translate.toString(transform) }}
     >

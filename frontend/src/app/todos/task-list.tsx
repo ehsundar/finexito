@@ -14,7 +14,7 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronDown, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { closeTask, moveTask, reopenTask, reorder } from "@/app/todos/actions";
@@ -219,6 +219,28 @@ export function TaskList({
   );
 }
 
+/**
+ * Releasing a dragged row ends in a click on it, which would open the task.
+ * Put the returned handler on the row's `onClickCapture` to swallow that click.
+ */
+export function useClickGuard(isDragging: boolean) {
+  const dragged = useRef(false);
+  useEffect(() => {
+    if (isDragging) dragged.current = true;
+    // The click comes straight after the release, if at all; a later tap is real.
+    else if (dragged.current) {
+      const timer = setTimeout(() => (dragged.current = false), 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isDragging]);
+  return (event: React.MouseEvent) => {
+    if (!dragged.current) return;
+    dragged.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+}
+
 export function withoutId(ids: Set<string>, id: string) {
   const next = new Set(ids);
   next.delete(id);
@@ -248,10 +270,12 @@ function TaskRow({
     id: task.id,
     disabled: { draggable: !draggable, droppable: !droppable },
   });
+  const guard = useClickGuard(isDragging);
   return (
     <li
       ref={setNodeRef}
       {...listeners}
+      onClickCapture={guard}
       // A long press lifts the row, rather than selecting text or opening the link's menu.
       className={cn("relative select-none [-webkit-touch-callout:none]", isDragging && "bg-background z-10 shadow-lg")}
       style={{ transform: CSS.Translate.toString(transform), transition }}
