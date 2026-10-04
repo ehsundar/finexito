@@ -441,13 +441,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DueParseRequestRequest'
+              $ref: '#/components/schemas/DueParseRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/DueParseRequestRequest'
+              $ref: '#/components/schemas/DueParseRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/DueParseRequestRequest'
+              $ref: '#/components/schemas/DueParseRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1949,13 +1949,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RescheduleRequestRequest'
+              $ref: '#/components/schemas/RescheduleRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/RescheduleRequestRequest'
+              $ref: '#/components/schemas/RescheduleRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/RescheduleRequestRequest'
+              $ref: '#/components/schemas/RescheduleRequest'
         required: true
       security:
       - jwtAuth: []
@@ -2062,7 +2062,7 @@ components:
           description: The text without the phrase.
       required:
       - content
-    DueParseRequestRequest:
+    DueParseRequest:
       type: object
       properties:
         text:
@@ -2711,7 +2711,7 @@ components:
         * `scheduled` - Scheduled
         * `done` - Done
         * `failed` - Failed
-    RescheduleRequestRequest:
+    RescheduleRequest:
       type: object
       properties:
         tasks:

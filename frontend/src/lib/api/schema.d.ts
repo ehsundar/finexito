@@ -644,7 +644,7 @@ export interface components {
             /** @description The text without the phrase. */
             content: string;
         };
-        DueParseRequestRequest: {
+        DueParseRequest: {
             text: string;
             /**
              * @description Look for a phrase inside the text.
@@ -954,7 +954,7 @@ export interface components {
          * @enum {string}
          */
         ReminderStatusEnum: "scheduled" | "done" | "failed";
-        RescheduleRequestRequest: {
+        RescheduleRequest: {
             tasks: string[];
             /** Format: date */
             date: string;
@@ -1567,9 +1567,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["DueParseRequestRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["DueParseRequestRequest"];
-                "multipart/form-data": components["schemas"]["DueParseRequestRequest"];
+                "application/json": components["schemas"]["DueParseRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DueParseRequest"];
+                "multipart/form-data": components["schemas"]["DueParseRequest"];
             };
         };
         responses: {
@@ -2573,9 +2573,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RescheduleRequestRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["RescheduleRequestRequest"];
-                "multipart/form-data": components["schemas"]["RescheduleRequestRequest"];
+                "application/json": components["schemas"]["RescheduleRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RescheduleRequest"];
+                "multipart/form-data": components["schemas"]["RescheduleRequest"];
             };
         };
         responses: {

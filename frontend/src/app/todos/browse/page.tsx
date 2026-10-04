@@ -1,7 +1,9 @@
 "use client";
 
-import { Archive, Filter, Hash, Inbox, Star } from "lucide-react";
+import { Archive, Bell, Filter, Hash, Inbox, Star } from "lucide-react";
+import { useState } from "react";
 
+import { ReminderSettingsSheet } from "@/app/todos/reminders";
 import { colourVar, Dot, NewProject, useTodos, type Project } from "@/app/todos/shell";
 import { AppBar, Screen } from "@/components/app/frame";
 import { List, ListRow } from "@/components/app/list";
@@ -13,6 +15,7 @@ export default function BrowsePage() {
   const { data: archived = [] } = useQuery("/api/v1/todos/projects/", {
     params: { query: { archived: true } },
   });
+  const [settings, setSettings] = useState(false);
   const inbox = projects.find((p) => p.is_inbox);
   const mine = projects.filter((p) => !p.is_inbox);
   const favourites = [
@@ -43,6 +46,9 @@ export default function BrowsePage() {
           <ListRow href="/todos/filters" icon={<Filter />}>
             Filters &amp; labels
           </ListRow>
+          <ListRow icon={<Bell />} onClick={() => setSettings(true)}>
+            Reminders
+          </ListRow>
         </List>
         {favourites.length > 0 && (
           <List title="Favourites">
@@ -67,6 +73,7 @@ export default function BrowsePage() {
           </List>
         )}
       </Screen>
+      <ReminderSettingsSheet open={settings} onOpenChange={setSettings} />
     </>
   );
 }

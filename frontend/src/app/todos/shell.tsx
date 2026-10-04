@@ -1,11 +1,12 @@
 "use client";
 
-import { Inbox, LayoutList, Plus, Search } from "lucide-react";
+import { CalendarDays, CalendarRange, Inbox, LayoutList, Plus, Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { createContext, use, useCallback, useState } from "react";
+import { createContext, use, useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { createProject } from "@/app/todos/actions";
+import { createProject, updateProfile } from "@/app/todos/actions";
+import { isoDate } from "@/app/todos/due";
 import { QuickAdd, type Prefill } from "@/app/todos/quick-add";
 import { AppFrame, Fab, Tab, TabBar } from "@/components/app/frame";
 import { ActionSheet, PromptSheet } from "@/components/app/sheet";
@@ -57,6 +58,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { data: sections } = useQuery("/api/v1/todos/sections/");
   const { data: labels } = useQuery("/api/v1/todos/labels/");
   const { data: filters } = useQuery("/api/v1/todos/filters/");
+  const { data: today } = useQuery("/api/v1/todos/tasks/", { params: { query: { view: "today" } } });
+  const { data: profile } = useQuery("/api/v1/profiles/me/");
   const pathname = usePathname();
   const params = useSearchParams();
   const [prefill, setPrefill] = useState<Prefill | null>(null);
@@ -77,12 +80,20 @@ export function Shell({ children }: { children: React.ReactNode }) {
     setQuestion(null);
   };
 
+  // Dates are the member's, in the zone of the device they're using now.
+  useEffect(() => {
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (profile && zone && profile.timezone !== zone) updateProfile({ timezone: zone });
+  }, [profile]);
+
   // Everything on screen needs these; SWR fetches them again when the window
   // regains focus, so the client catches up with other tabs and devices.
   if (!projects || !sections || !labels || !filters) return null;
 
   // On a project's screen, new tasks go to that project.
   const project = (pathname === "/todos/project" && params.get("id")) || undefined;
+  // On Today, they're due today.
+  const due = pathname === "/todos/today" ? isoDate() : undefined;
 
   return (
     <TodosContext value={{ projects, sections, labels, filters, quickAdd, confirm }}>
@@ -90,12 +101,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
         {children}
         <TabBar
           action={
-            <Fab aria-label="Add task" onClick={() => quickAdd({ project })}>
+            <Fab aria-label="Add task" onClick={() => quickAdd({ project, due })}>
               <Plus />
             </Fab>
           }
         >
           <Tab href="/todos" icon={<Inbox />} label="Inbox" />
+          <Tab href="/todos/today" icon={<CalendarDays />} label="Today" badge={today?.length || undefined} />
+          <Tab href="/todos/upcoming" icon={<CalendarRange />} label="Upcoming" />
           <Tab href="/todos/search" icon={<Search />} label="Search" />
           <Tab
             href="/todos/browse"

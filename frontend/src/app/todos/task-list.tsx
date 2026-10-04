@@ -18,15 +18,18 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { closeTask, moveTask, reopenTask, reorder } from "@/app/todos/actions";
+import { DueLabel, dueText } from "@/app/todos/due";
 import { colourVar, useTodos, type Project, type Task } from "@/app/todos/shell";
 import { InlineMarkdown } from "@/components/markdown/inline";
 import { cn } from "@/lib/utils";
 
-type Sort = NonNullable<Project["sort"]>;
+/** `given`: as the server listed them (Today, Upcoming), which can't be reordered. */
+type Sort = NonNullable<Project["sort"]> | "given";
 
 /** Display order only: the manual order stays as it is. */
 export function sortTasks(tasks: Task[], sort: Sort = "manual") {
-  const by: Record<Sort, (a: Task, b: Task) => number> = {
+  if (sort === "given") return tasks;
+  const by: Record<Exclude<Sort, "given">, (a: Task, b: Task) => number> = {
     manual: (a, b) => a.order - b.order,
     priority: (a, b) => (a.priority ?? 4) - (b.priority ?? 4) || a.order - b.order,
     name: (a, b) => a.content.localeCompare(b.content),
@@ -91,12 +94,15 @@ export function TaskList({
 
   async function complete(task: Task) {
     setHidden((h) => new Set(h).add(task.id));
-    const { error } = await closeTask(task.id);
+    const { data, error } = await closeTask(task.id);
     if (error) {
       setHidden((h) => withoutId(h, task.id));
       return toast.error(error);
     }
-    toast("Task completed", {
+    // A recurring task stays open, on its next date.
+    const next = data && !data.completed_at && data.due_date;
+    if (next) setHidden((h) => withoutId(h, task.id));
+    toast(next ? `Completed; next on ${dueText(next, data.due_time)}` : "Task completed", {
       duration: 8000,
       action: {
         label: "Undo",
@@ -311,9 +317,10 @@ export function TaskCheck({ task, onComplete }: { task: Task; onComplete: () => 
 export function TaskMeta({ task }: { task: Task }) {
   const { labels } = useTodos();
   const own = labels.filter((l) => task.labels?.includes(l.id));
-  if (!task.subtask_count && !own.length && !task.description) return null;
+  if (!task.subtask_count && !own.length && !task.description && !task.due_date) return null;
   return (
     <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+      <DueLabel task={task} />
       {task.subtask_count > 0 && (
         <span className="tabular-nums">
           {task.completed_subtask_count}/{task.subtask_count}

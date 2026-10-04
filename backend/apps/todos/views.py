@@ -289,7 +289,7 @@ class TaskViewSet(TodosViewSet):
 
     @extend_schema(
         request=inline_serializer(
-            "RescheduleRequest",
+            "Reschedule",
             {
                 "tasks": serializers.ListField(child=serializers.UUIDField()),
                 "date": serializers.DateField(),
@@ -360,7 +360,7 @@ class DueDateParseView(APIView):
 
     @extend_schema(
         request=inline_serializer(
-            "DueParseRequest",
+            "DueParse",
             {
                 "text": serializers.CharField(max_length=500),
                 "find": serializers.BooleanField(

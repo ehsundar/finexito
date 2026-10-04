@@ -1,11 +1,13 @@
 "use client";
 
-import { Check, Flag, Folder, Tag, Trash2 } from "lucide-react";
+import { Bell, CalendarDays, Check, Flag, Folder, Tag, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { closeTask, createLabel, deleteTask, reopenTask, updateTask } from "@/app/todos/actions";
+import { DueLabel, DueSheet } from "@/app/todos/due";
+import { reminderText, RemindersSheet, useReminders } from "@/app/todos/reminders";
 import { colourVar, Dot, useTodos, type Task } from "@/app/todos/shell";
 import { priorityVar, TaskCheck, withoutId } from "@/app/todos/task-list";
 import { List, ListRow } from "@/components/app/list";
@@ -21,7 +23,8 @@ export function TaskEditor({ task, description }: { task: Task; description: Rea
   const router = useRouter();
   const { projects, sections, labels, confirm } = useTodos();
   const [editing, setEditing] = useState(false);
-  const [sheet, setSheet] = useState<"move" | "labels" | "priority" | null>(null);
+  const [sheet, setSheet] = useState<"move" | "labels" | "priority" | "due" | "reminders" | null>(null);
+  const { data: reminders = [] } = useReminders(task);
   const project = projects.find((p) => p.id === task.project);
   const section = sections.find((s) => s.id === task.section);
   const own = labels.filter((l) => task.labels?.includes(l.id));
@@ -103,6 +106,26 @@ export function TaskEditor({ task, description }: { task: Task; description: Rea
 
       <List>
         <ListRow
+          icon={<CalendarDays />}
+          onClick={() => setSheet("due")}
+          detail={task.due_date ? <DueLabel task={task} /> : "None"}
+        >
+          Due date
+        </ListRow>
+        <ListRow
+          icon={<Bell />}
+          onClick={() => setSheet("reminders")}
+          detail={
+            reminders.length > 1
+              ? `${reminders.length} reminders`
+              : reminders.length
+                ? reminderText(reminders[0])
+                : "None"
+          }
+        >
+          Reminders
+        </ListRow>
+        <ListRow
           icon={<Folder />}
           onClick={() => setSheet("move")}
           detail={
@@ -166,6 +189,8 @@ export function TaskEditor({ task, description }: { task: Task; description: Rea
           onSelect: () => save({ priority }),
         }))}
       />
+      <DueSheet task={task} open={sheet === "due"} onOpenChange={close} />
+      <RemindersSheet task={task} open={sheet === "reminders"} onOpenChange={close} />
       <MoveSheet task={task} open={sheet === "move"} onOpenChange={close} />
       <LabelSheet task={task} open={sheet === "labels"} onOpenChange={close} />
     </article>

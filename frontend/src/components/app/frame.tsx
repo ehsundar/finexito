@@ -70,11 +70,14 @@ export function Tab({
   href,
   icon,
   label,
+  badge,
   match = [],
 }: {
   href: string;
   icon: React.ReactNode;
   label: string;
+  /** A count beside the icon. */
+  badge?: number;
   /** Other paths that belong to this tab. */
   match?: string[];
 }) {
@@ -90,7 +93,14 @@ export function Tab({
           active && "text-primary font-medium",
         )}
       >
-        {icon}
+        <span className="relative">
+          {icon}
+          {badge != null && (
+            <span className="bg-primary text-primary-foreground absolute -top-1.5 left-3.5 min-w-4 rounded-full px-1 text-[10px] leading-4 font-medium tabular-nums">
+              {badge}
+            </span>
+          )}
+        </span>
         {label}
       </Link>
     </li>

@@ -96,3 +96,34 @@ export async function favouriteFilter(slug: string, on: boolean) {
       : api.DELETE("/api/v1/todos/filters/{slug}/favourite/", path),
   );
 }
+
+/** Moves tasks to a date, each keeping its time. */
+export async function rescheduleTasks(tasks: string[], date: string) {
+  return done(api.POST("/api/v1/todos/tasks/reschedule/", { body: { tasks, date } }));
+}
+
+/**
+ * What a typed date means. With `find`, looks for one inside a task's text.
+ * Called while typing, so it changes nothing and refetches nothing.
+ */
+export async function parseDue(text: string, find = false) {
+  const { data, error } = await api.POST("/api/v1/todos/dates/parse/", { body: { text, find } });
+  return error ? { error: errorMessage(error) } : { data };
+}
+
+export async function addReminder(task: string, body: Schemas["ReminderRequest"]) {
+  return done(api.POST("/api/v1/todos/tasks/{id}/reminders/", { ...id(task), body }));
+}
+
+export async function deleteReminder(reminder: string) {
+  return done(api.DELETE("/api/v1/todos/reminders/{id}/", id(reminder)));
+}
+
+/** Changes some keys of the profile's `extra`, keeping the others. */
+export async function updateProfile(body: { timezone?: string; extra?: Record<string, string> }) {
+  if (body.extra) {
+    const { data } = await api.GET("/api/v1/profiles/me/");
+    body = { ...body, extra: { ...data?.extra, ...body.extra } };
+  }
+  return done(api.PATCH("/api/v1/profiles/me/", { body }));
+}

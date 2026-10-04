@@ -6,6 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { closeTask, reopenTask } from "@/app/todos/actions";
+import { dueText } from "@/app/todos/due";
 import { SectionTitle } from "@/app/todos/project-header";
 import { useTodos, type Project, type Section, type Task } from "@/app/todos/shell";
 import { sortTasks, TaskCheck, TaskMeta, withoutId } from "@/app/todos/task-list";
@@ -38,9 +39,12 @@ export function Board({
 
   async function complete(task: Task) {
     setHidden((h) => new Set(h).add(task.id));
-    const { error } = await closeTask(task.id);
+    const { data, error } = await closeTask(task.id);
     if (error) return toast.error(error);
-    toast("Task completed", {
+    // A recurring task stays open, on its next date.
+    const next = data && !data.completed_at && data.due_date;
+    if (next) setHidden((h) => withoutId(h, task.id));
+    toast(next ? `Completed; next on ${dueText(next, data.due_time)}` : "Task completed", {
       duration: 8000,
       action: {
         label: "Undo",

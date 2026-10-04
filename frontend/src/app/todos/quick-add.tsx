@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { createLabel, createSection, createTask } from "@/app/todos/actions";
+import { dueText, useParsedDue } from "@/app/todos/due";
 import { Dot, useTodos, type Label, type Project, type Section } from "@/app/todos/shell";
 import { List, ListRow } from "@/components/app/list";
 import { Sheet } from "@/components/app/sheet";
@@ -13,9 +14,16 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 /** What quick add was opened from; what the line names wins over it. */
-export type Prefill = { project?: string; section?: string; parent?: string; labels?: string[] };
+export type Prefill = {
+  project?: string;
+  section?: string;
+  parent?: string;
+  labels?: string[];
+  /** A day, `2026-10-07`, unless the line names one. */
+  due?: string;
+};
 
-type Kind = "text" | "project" | "section" | "label" | "priority";
+type Kind = "text" | "project" | "section" | "label" | "priority" | "date";
 type Segment = { text: string; kind: Kind; created?: boolean };
 
 const NEW_LABEL = /^([\p{L}\p{N}_-]{1,60})(?=\s|$)/u;
@@ -129,6 +137,25 @@ function parse(
   return scan(sectionsOf(scan([]).project));
 }
 
+/** Marks the text from `start` to `end` as the date. */
+function markDate(parts: Segment[], [start, end]: number[]) {
+  const marked: Segment[] = [];
+  let at = 0;
+  for (const part of parts) {
+    const [from, to] = [at, at + part.text.length];
+    at = to;
+    if (part.kind !== "text" || to <= start || from >= end) {
+      marked.push(part);
+      continue;
+    }
+    const cut = (a: number, b: number) => part.text.slice(Math.max(a, from) - from, Math.min(b, to) - from);
+    if (from < start) marked.push({ text: cut(from, start), kind: "text" });
+    marked.push({ text: cut(start, end), kind: "date" });
+    if (to > end) marked.push({ text: cut(end, to), kind: "text" });
+  }
+  return marked;
+}
+
 /** The `#` being typed at the caret, if any: where it starts and what follows it. */
 function typingTag(text: string, caret: number) {
   const match = /(?:^|\s)#([^#\n]*)$/.exec(text.slice(0, caret));
@@ -142,6 +169,7 @@ const STYLE: Record<Kind, string> = {
   section: "bg-accent rounded px-0.5",
   label: "bg-secondary rounded px-0.5",
   priority: "rounded px-0.5 font-medium",
+  date: "bg-accent rounded px-0.5",
 };
 
 /** Opens with a prefill, closes with none. */
@@ -154,9 +182,19 @@ export function QuickAdd({ prefill, onClose }: { prefill: Prefill | null; onClos
 
   const prefilled =
     projects.find((p) => p.id === prefill?.project) ?? projects.find((p) => p.is_inbox) ?? null;
-  const parsed = parse(text, projects, labels, (project) =>
-    sections.filter((s) => s.project === (project ?? prefilled)?.id),
+  // The server finds a date in the line; the rest is read here.
+  const found = useParsedDue(text, true);
+  const date = found?.due && found.match ? { due: found.due, match: found.match } : null;
+  const sectionsOf = (project: Project | null) => sections.filter((s) => s.project === (project ?? prefilled)?.id);
+  const parsed = parse(
+    date ? text.slice(0, date.match[0]) + text.slice(date.match[1]) : text,
+    projects,
+    labels,
+    sectionsOf,
   );
+  // A backslash keeps a date as text, and goes.
+  if (date) parsed.content = parsed.content.replace(/(^|\s)\\(?=\w)/g, "$1");
+  const parts = date ? markDate(parse(text, projects, labels, sectionsOf).parts, date.match) : parsed.parts;
   const project = parsed.project ?? prefilled;
 
   // While a `#` is being typed: matching projects first, then labels.
@@ -216,6 +254,7 @@ export function QuickAdd({ prefill, onClose }: { prefill: Prefill | null; onClos
       content: parsed.content,
       priority: parsed.priority ?? undefined,
       labels: [...new Set(labelIds)],
+      ...(date ? { due_string: date.due.string } : prefill?.due ? { due_date: prefill.due } : {}),
     });
     return error;
   }
@@ -241,7 +280,7 @@ export function QuickAdd({ prefill, onClose }: { prefill: Prefill | null; onClos
           className="text-muted-foreground min-h-5 text-sm break-words whitespace-pre-wrap"
         >
           {text ? (
-            parsed.parts.map((part, index) => (
+            parts.map((part, index) => (
               <span
                 key={index}
                 title={part.created ? `New ${part.kind}` : undefined}
@@ -258,7 +297,16 @@ export function QuickAdd({ prefill, onClose }: { prefill: Prefill | null; onClos
               </span>
             ))
           ) : (
-            <>Type # for a project or label, / for a section, p1 for priority.</>
+            <>Type # for a project or label, / for a section, p1 for priority, or a date.</>
+          )}
+          {(date || prefill?.due) && (
+            <span className="block">
+              {date
+                ? date.due.date
+                  ? `Due ${dueText(date.due.date, date.due.time)}${date.due.is_recurring ? ", repeating" : ""}`
+                  : "No date"
+                : `Due ${dueText(prefill!.due!)}`}
+            </span>
           )}
         </p>
         <Input
