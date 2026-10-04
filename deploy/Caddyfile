@@ -45,6 +45,17 @@
 		}
 	}
 
+	# The web app manifest, a file of the site, with this deployment's name
+	# (FINEXITO_SITE_NAME) written in as it's served.
+	handle /manifest.webmanifest {
+		root * /srv/site
+		header Content-Type application/manifest+json
+		templates {
+			mime application/manifest+json
+		}
+		file_server
+	}
+
 	# The frontend, exported as plain files (frontend/Dockerfile). /todos is
 	# todos.html. Next's hashed bundles never change, so they are cached for good.
 	handle {

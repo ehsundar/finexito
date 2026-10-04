@@ -19,9 +19,10 @@ const geistMono = Geist_Mono({
 // The app reaches under the notch and home bar; screens pad by the safe areas.
 export const viewport: Viewport = { viewportFit: "cover" };
 
-// Installable on a phone: Django serves the manifest, named after SITE_NAME.
+// Installable on a phone. The manifest is one of the site's own files, as iOS
+// wants; Caddy writes this deployment's name into it (deploy/Caddyfile).
 export const metadata: Metadata = {
-  manifest: "/api/v1/manifest.webmanifest",
+  manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true },
 };
 

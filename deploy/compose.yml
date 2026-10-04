@@ -51,6 +51,8 @@ services:
       - "443:443/udp"
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS in .env}
+      # Written into the web app manifest (deploy/Caddyfile).
+      FINEXITO_SITE_NAME: ${FINEXITO_SITE_NAME}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
