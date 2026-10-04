@@ -1,8 +1,9 @@
 "use client";
 
-import { Archive, Bell, Filter, Hash, Inbox, LayoutTemplate, Star, Users } from "lucide-react";
+import { Archive, Bell, CalendarDays, Filter, Hash, Inbox, LayoutTemplate, Star, Users } from "lucide-react";
 import { useState } from "react";
 
+import { GoogleCalendarSheet, useGoogleCalendar } from "@/app/todos/google-calendar";
 import { NotificationSettingsSheet } from "@/app/todos/reminders";
 import { colourVar, Dot, NewProject, useTodos, type Project } from "@/app/todos/shell";
 import { AppBar, Screen } from "@/components/app/frame";
@@ -16,6 +17,9 @@ export default function BrowsePage() {
     params: { query: { archived: true } },
   });
   const [settings, setSettings] = useState(false);
+  const [calendar, setCalendar] = useState(false);
+  // Absent where the deployment leaves Google Calendar out.
+  const { data: google } = useGoogleCalendar();
   const inbox = projects.find((p) => p.is_inbox);
   const mine = projects.filter((p) => !p.is_inbox);
   const favourites = [
@@ -52,6 +56,15 @@ export default function BrowsePage() {
           <ListRow icon={<Bell />} onClick={() => setSettings(true)}>
             Notifications
           </ListRow>
+          {google && (
+            <ListRow
+              icon={<CalendarDays />}
+              onClick={() => setCalendar(true)}
+              detail={google.status === "connected" ? "On" : google.status === "disconnected" ? "Disconnected" : "Off"}
+            >
+              Google Calendar
+            </ListRow>
+          )}
         </List>
         {favourites.length > 0 && (
           <List title="Favourites">
@@ -77,6 +90,7 @@ export default function BrowsePage() {
         )}
       </Screen>
       <NotificationSettingsSheet open={settings} onOpenChange={setSettings} />
+      {google && <GoogleCalendarSheet open={calendar} onOpenChange={setCalendar} />}
     </>
   );
 }
