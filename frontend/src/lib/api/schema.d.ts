@@ -222,6 +222,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/todos/comments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Oldest first. The author edits or deletes their own; the project's owner
+         *     deletes any.
+         */
+        get: operations["todos_comments_list"];
+        put?: never;
+        /**
+         * @description Oldest first. The author edits or deletes their own; the project's owner
+         *     deletes any.
+         */
+        post: operations["todos_comments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/comments/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Oldest first. The author edits or deletes their own; the project's owner
+         *     deletes any.
+         */
+        get: operations["todos_comments_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * @description Oldest first. The author edits or deletes their own; the project's owner
+         *     deletes any.
+         */
+        delete: operations["todos_comments_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Oldest first. The author edits or deletes their own; the project's owner
+         *     deletes any.
+         */
+        patch: operations["todos_comments_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/todos/comments/attachments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Open an upload ticket for a comment's file: PUT the file to `upload_url`, then post the comment with its `id` as `attachment_id`. */
+        post: operations["todos_comments_attachments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/todos/dates/parse/": {
         parameters: {
             query?: never;
@@ -661,6 +730,32 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Attachment: {
+            /** Format: uuid */
+            id: string;
+            readonly name: string;
+            content_type: string;
+            size: number;
+            /** @description A signed link, good for an hour or so. */
+            readonly url: string;
+        };
+        AttachmentRequest: {
+            /** Format: uuid */
+            id: string;
+            content_type: string;
+            size: number;
+        };
+        AttachmentTicket: {
+            /** Format: uuid */
+            id: string;
+            /** @description PUT the file's raw bytes here. */
+            upload_url: string;
+        };
+        AttachmentTicketRequestRequest: {
+            name: string;
+            content_type: components["schemas"]["ContentTypeEnum"];
+            size: number;
+        };
         AuthResponse: {
             readonly access: string;
             readonly refresh: string;
@@ -679,6 +774,45 @@ export interface components {
          * @enum {string}
          */
         ColourEnum: "neutral" | "red" | "orange" | "yellow" | "green" | "teal" | "blue" | "purple" | "pink";
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer rows the caller can see; anything else reads as missing.
+         */
+        Comment: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            task?: string | null;
+            /** Format: uuid */
+            project?: string | null;
+            readonly author: components["schemas"]["Person"];
+            /** @description Markdown. */
+            text?: string;
+            readonly attachment: components["schemas"]["Attachment"] | null;
+            /** Format: date-time */
+            readonly edited_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer rows the caller can see; anything else reads as missing.
+         */
+        CommentRequest: {
+            /** Format: uuid */
+            task?: string | null;
+            /** Format: uuid */
+            project?: string | null;
+            /** @description Markdown. */
+            text?: string;
+            /**
+             * Format: uuid
+             * @description An uploaded file, from `comments/attachments/`; only when posting.
+             */
+            attachment_id?: string | null;
+        };
         /**
          * @description * `image/jpeg` - image/jpeg
          *     * `image/png` - image/png
@@ -855,6 +989,24 @@ export interface components {
          *
          *     Related fields only offer rows the caller can see; anything else reads as missing.
          */
+        PatchedCommentRequest: {
+            /** Format: uuid */
+            task?: string | null;
+            /** Format: uuid */
+            project?: string | null;
+            /** @description Markdown. */
+            text?: string;
+            /**
+             * Format: uuid
+             * @description An uploaded file, from `comments/attachments/`; only when posting.
+             */
+            attachment_id?: string | null;
+        };
+        /**
+         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         *
+         *     Related fields only offer rows the caller can see; anything else reads as missing.
+         */
         PatchedLabelRequest: {
             name?: string;
             colour?: components["schemas"]["ColourEnum"];
@@ -932,6 +1084,13 @@ export interface components {
             /** Format: email */
             email: string;
             readonly avatar_url: string;
+        };
+        /** @description Someone in a project, as the others in it see them. */
+        PersonRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
         };
         /**
          * @description * `1` - Priority 1
@@ -1627,6 +1786,176 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    todos_comments_list: {
+        parameters: {
+            query?: {
+                /** @description The project's own comments. */
+                project?: string;
+                /** @description The task's comments. */
+                task?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"][];
+                };
+            };
+        };
+    };
+    todos_comments_create: {
+        parameters: {
+            query?: {
+                /** @description The project's own comments. */
+                project?: string;
+                /** @description The task's comments. */
+                task?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CommentRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CommentRequest"];
+                "multipart/form-data": components["schemas"]["CommentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+        };
+    };
+    todos_comments_retrieve: {
+        parameters: {
+            query?: {
+                /** @description The project's own comments. */
+                project?: string;
+                /** @description The task's comments. */
+                task?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this comment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+        };
+    };
+    todos_comments_destroy: {
+        parameters: {
+            query?: {
+                /** @description The project's own comments. */
+                project?: string;
+                /** @description The task's comments. */
+                task?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this comment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_comments_partial_update: {
+        parameters: {
+            query?: {
+                /** @description The project's own comments. */
+                project?: string;
+                /** @description The task's comments. */
+                task?: string;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this comment. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCommentRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCommentRequest"];
+                "multipart/form-data": components["schemas"]["PatchedCommentRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comment"];
+                };
+            };
+        };
+    };
+    todos_comments_attachments_create: {
+        parameters: {
+            query?: {
+                /** @description The project's own comments. */
+                project?: string;
+                /** @description The task's comments. */
+                task?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachmentTicketRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AttachmentTicketRequestRequest"];
+                "multipart/form-data": components["schemas"]["AttachmentTicketRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AttachmentTicket"];
                 };
             };
         };

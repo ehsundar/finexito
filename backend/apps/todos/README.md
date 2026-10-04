@@ -10,6 +10,7 @@ It is several apps, each depending only on the ones above it:
 | --- | ----- | ---- |
 | `apps.todos.projects` | `todos_projects` | Projects and sections, and the base the others build on (`TodosViewSet`, `CleanedSerializer`, the write throttle). |
 | `apps.todos.tasks` | `todos_tasks` | Tasks, labels, filters, due dates and reminders. Needs `profiles` (time zone), `messaging` (reminder email) and `reminders`. |
+| `apps.todos.comments` | `todos_comments` | Comments on tasks and projects, with attachments (`storage`) and notification emails. |
 
 All are optional together: take them out of `INSTALLED_APPS` (and their
 settings imports) and the todos are gone. Each also comes out on its own,
@@ -59,6 +60,21 @@ doesn't share its sub-projects.
   assignee their default reminder, or everyone if no one is assigned.
 - `Task.tell_assignee(by)` emails someone given a task by someone else, unless
   their profile's `todos_assigned_emails` is `false`.
+
+## Comments
+
+`Comment` is on a task or a project (not both), in Markdown, with at most one
+file. Files go through `apps.storage` as private objects: the client opens a
+ticket (`comments/attachments/`), `PUT`s the file, then posts the comment with
+`attachment_id`. Deleting a comment deletes its file; deleting a task or
+project deletes its comments. `Task.comment_count` is kept by this app.
+
+`Comment.notify()` emails, after a new comment, whoever created or is assigned
+the task, or, for a project's own comments, everyone in it who set
+`todos_project_comment_emails` to `true`; `todos_comment_emails` set to `false`
+turns the first kind off. The author never hears about their own comment. An
+email waits `TODOS_COMMENTS_EMAIL_DELAY_MINUTES`, and later comments on the same
+thing join it until it goes.
 
 ## Due dates
 
@@ -117,6 +133,10 @@ Sharing: `projects/{id}/collaborators/` (`GET` the owner then the rest;
 `POST` makes a new token; `DELETE` turns joining off), and `join/{token}/`
 (`GET` a preview anyone holding the link may see; `POST` joins).
 
+Comments: `comments/` (`?task=` or `?project=`; `POST`, `PATCH` the text,
+`DELETE`), `comments/attachments/` (`POST {name, content_type, size}` opens an
+upload ticket).
+
 `tasks/` lists open tasks by default; it takes `?project=&section=&parent=`
 (`none` for no section or the top level) `&label=&filter=&q=&completed=true`,
 or `?view=today` (overdue and today) or `?view=upcoming&from=&to=` (by day).
@@ -139,6 +159,10 @@ Everything is the caller's, or in a project they're in; anything else is `404`.
 | `TODOS_TASKS_MAX_REMINDERS` | 10 per member per task |
 | `TODOS_PROJECTS_MAX_COLLABORATORS` | 50 |
 | `TODOS_PROJECTS_JOIN_RATE` | `30/hour` per member or address |
+| `TODOS_COMMENTS_MAX_ATTACHMENT_BYTES` | 25 MB |
+| `TODOS_COMMENTS_MAX_STORAGE_BYTES` | 1 GB of attachments per member |
+| `TODOS_COMMENTS_RATE` | `120/hour` new comments and uploads per member |
+| `TODOS_COMMENTS_EMAIL_DELAY_MINUTES` | 5 |
 
 Each reads `FINEXITO_<name>` from the environment.
 

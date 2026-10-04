@@ -413,6 +413,229 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/todos/comments/:
+    get:
+      operationId: todos_comments_list
+      description: |-
+        Oldest first. The author edits or deletes their own; the project's owner
+        deletes any.
+      parameters:
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: The project's own comments.
+      - in: query
+        name: task
+        schema:
+          type: string
+        description: The task's comments.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+          description: ''
+    post:
+      operationId: todos_comments_create
+      description: |-
+        Oldest first. The author edits or deletes their own; the project's owner
+        deletes any.
+      parameters:
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: The project's own comments.
+      - in: query
+        name: task
+        schema:
+          type: string
+        description: The task's comments.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+  /api/v1/todos/comments/{id}/:
+    get:
+      operationId: todos_comments_retrieve
+      description: |-
+        Oldest first. The author edits or deletes their own; the project's owner
+        deletes any.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this comment.
+        required: true
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: The project's own comments.
+      - in: query
+        name: task
+        schema:
+          type: string
+        description: The task's comments.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+    patch:
+      operationId: todos_comments_partial_update
+      description: |-
+        Oldest first. The author edits or deletes their own; the project's owner
+        deletes any.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this comment.
+        required: true
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: The project's own comments.
+      - in: query
+        name: task
+        schema:
+          type: string
+        description: The task's comments.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCommentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCommentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCommentRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+    delete:
+      operationId: todos_comments_destroy
+      description: |-
+        Oldest first. The author edits or deletes their own; the project's owner
+        deletes any.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this comment.
+        required: true
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: The project's own comments.
+      - in: query
+        name: task
+        schema:
+          type: string
+        description: The task's comments.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/comments/attachments/:
+    post:
+      operationId: todos_comments_attachments_create
+      description: 'Open an upload ticket for a comment''s file: PUT the file to `upload_url`,
+        then post the comment with its `id` as `attachment_id`.'
+      parameters:
+      - in: query
+        name: project
+        schema:
+          type: string
+        description: The project's own comments.
+      - in: query
+        name: task
+        schema:
+          type: string
+        description: The task's comments.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachmentTicketRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AttachmentTicketRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AttachmentTicketRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachmentTicket'
+          description: ''
   /api/v1/todos/dates/parse/:
     post:
       operationId: todos_dates_parse_create
@@ -2177,6 +2400,72 @@ paths:
           description: No response body
 components:
   schemas:
+    Attachment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          readOnly: true
+        content_type:
+          type: string
+        size:
+          type: integer
+        url:
+          type: string
+          readOnly: true
+          description: A signed link, good for an hour or so.
+      required:
+      - content_type
+      - id
+      - name
+      - size
+      - url
+    AttachmentRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content_type:
+          type: string
+          minLength: 1
+        size:
+          type: integer
+      required:
+      - content_type
+      - id
+      - size
+    AttachmentTicket:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        upload_url:
+          type: string
+          description: PUT the file's raw bytes here.
+      required:
+      - id
+      - upload_url
+    AttachmentTicketRequestRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        content_type:
+          $ref: '#/components/schemas/ContentTypeEnum'
+        size:
+          type: integer
+          minimum: 1
+      required:
+      - content_type
+      - name
+      - size
     AuthResponse:
       type: object
       properties:
@@ -2216,6 +2505,78 @@ components:
         * `blue` - Blue
         * `purple` - Purple
         * `pink` - Pink
+    Comment:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer rows the caller can see; anything else reads as missing.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        task:
+          type: string
+          format: uuid
+          nullable: true
+        project:
+          type: string
+          format: uuid
+          nullable: true
+        author:
+          allOf:
+          - $ref: '#/components/schemas/Person'
+          readOnly: true
+        text:
+          type: string
+          description: Markdown.
+          maxLength: 15000
+        attachment:
+          allOf:
+          - $ref: '#/components/schemas/Attachment'
+          readOnly: true
+          nullable: true
+        edited_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - attachment
+      - author
+      - created_at
+      - edited_at
+      - id
+    CommentRequest:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer rows the caller can see; anything else reads as missing.
+      properties:
+        task:
+          type: string
+          format: uuid
+          nullable: true
+        project:
+          type: string
+          format: uuid
+          nullable: true
+        text:
+          type: string
+          description: Markdown.
+          maxLength: 15000
+        attachment_id:
+          type: string
+          format: uuid
+          writeOnly: true
+          nullable: true
+          description: An uploaded file, from `comments/attachments/`; only when posting.
     ContentTypeEnum:
       enum:
       - image/jpeg
@@ -2590,6 +2951,31 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PublicProfile'
+    PatchedCommentRequest:
+      type: object
+      description: |-
+        Saves through the model's ``full_clean()``, so its rules and limits apply.
+
+        Related fields only offer rows the caller can see; anything else reads as missing.
+      properties:
+        task:
+          type: string
+          format: uuid
+          nullable: true
+        project:
+          type: string
+          format: uuid
+          nullable: true
+        text:
+          type: string
+          description: Markdown.
+          maxLength: 15000
+        attachment_id:
+          type: string
+          format: uuid
+          writeOnly: true
+          nullable: true
+          description: An uploaded file, from `comments/attachments/`; only when posting.
     PatchedLabelRequest:
       type: object
       description: |-
@@ -2749,6 +3135,20 @@ components:
       - email
       - id
       - name
+    PersonRequest:
+      type: object
+      description: Someone in a project, as the others in it see them.
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
+      - id
     PriorityEnum:
       enum:
       - 1
