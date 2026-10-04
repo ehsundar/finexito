@@ -7,15 +7,17 @@ import { toast } from "sonner";
 
 import { inviteLink, leaveProject, removeCollaborator, transferProject } from "@/app/todos/actions";
 import { useTodos, type Project } from "@/app/todos/shell";
+import { Avatar } from "@/components/app/avatar";
 import { List, ListRow } from "@/components/app/list";
 import { ActionSheet, Sheet } from "@/components/app/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
-import { cn } from "@/lib/utils";
 
 export type Person = components["schemas"]["Person"];
+
+export { Avatar };
 
 /** The people in a shared project, owner first; none for a project of one. */
 export function usePeople(project: Pick<Project, "id" | "is_shared"> | undefined) {
@@ -24,18 +26,6 @@ export function usePeople(project: Pick<Project, "id" | "is_shared"> | undefined
     project?.is_shared ? { params: { path: { id: project.id } } } : null,
   );
   return data ?? [];
-}
-
-export function Avatar({ person, className }: { person: Person; className?: string }) {
-  const style = cn("bg-secondary text-secondary-foreground inline-flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-medium uppercase", className);
-  if (person.avatar_url)
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={person.avatar_url} alt={person.name} title={person.name} className={style} />;
-  return (
-    <span className={style} title={person.name} aria-label={person.name}>
-      {person.name.slice(0, 2)}
-    </span>
-  );
 }
 
 /** Overlapping avatars, as in a shared project's header. */

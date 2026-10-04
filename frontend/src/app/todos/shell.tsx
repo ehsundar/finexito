@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CalendarRange, Inbox, LayoutList, Plus, Search } from "lucide-react";
+import { CalendarDays, CalendarRange, Inbox, LayoutList, Plus, Search, UserRound } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createContext, use, useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -109,8 +109,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
             href="/todos/browse"
             icon={<LayoutList />}
             label="Browse"
-            match={["/todos/project", "/todos/filter", "/todos/label"]}
+            match={["/todos/project", "/todos/filter", "/todos/label", "/todos/templates"]}
           />
+          <Tab href="/todos/me" icon={<UserRound />} label="Me" />
         </TabBar>
       </AppFrame>
 

@@ -98,6 +98,19 @@ export async function signIn(tokens: { access: string; refresh: string }) {
 }
 
 /**
+ * Ends the session in this browser. The refresh token is blacklisted first so it
+ * can't be rotated after we drop it; a failure there isn't worth blocking
+ * sign-out over, since forgetting the tokens is what ends it here. Apps' offline
+ * copies (the todos client's) go with it.
+ */
+export async function signOut() {
+  const refresh = getSession()?.refresh;
+  if (refresh) await api.POST("/api/v1/auth/logout/", { body: { refresh } }).catch(() => undefined);
+  clearSession();
+  for (const { name } of (await indexedDB.databases?.()) ?? []) if (name) indexedDB.deleteDatabase(name);
+}
+
+/**
  * Dates are the member's, in the zone of the device they're using now, so the
  * profile takes it whenever tokens are issued: at sign-in and on each refresh.
  */

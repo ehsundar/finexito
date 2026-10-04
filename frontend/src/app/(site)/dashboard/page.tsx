@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableRow } from "@/components/ui/table";
-import { api, useQuery } from "@/lib/api/client";
-import { clearSession, getSession } from "@/lib/auth/session";
+import { signOut, useQuery } from "@/lib/api/client";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -17,14 +16,7 @@ export default function DashboardPage() {
   const { data: profile, error } = useQuery("/api/v1/profiles/me/");
 
   async function logout() {
-    // Blacklist the refresh token so it cannot be rotated after we drop it. A
-    // failure is not worth blocking sign-out over: forgetting the tokens is what
-    // ends the session in this browser.
-    const refresh = getSession()?.refresh;
-    if (refresh) await api.POST("/api/v1/auth/logout/", { body: { refresh } }).catch(() => undefined);
-    clearSession();
-    // Apps' offline copies (the todos client's) go with the session.
-    for (const { name } of (await indexedDB.databases?.()) ?? []) if (name) indexedDB.deleteDatabase(name);
+    await signOut();
     router.replace("/");
   }
 

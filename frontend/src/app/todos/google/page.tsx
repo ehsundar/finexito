@@ -21,13 +21,13 @@ export default function GoogleCallbackPage() {
     const state = params.get("state") ?? "";
     api.GET("/api/v1/todos/google/callback/", { params: { query: { code, state } } }).then(({ error }) => {
       if (error) setError(errorMessage(error));
-      else router.replace("/todos/browse");
+      else router.replace("/todos/me");
     });
   }, [code, params, router]);
 
   return (
     <>
-      <AppBar back="/todos/browse" title="Google Calendar" />
+      <AppBar back="/todos/me" title="Google Calendar" />
       <Screen>{error || "Connecting…"}</Screen>
     </>
   );
