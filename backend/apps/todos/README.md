@@ -11,6 +11,7 @@ It is several apps, each depending only on the ones above it:
 | `apps.todos.projects` | `todos_projects` | Projects and sections, and the base the others build on (`TodosViewSet`, `CleanedSerializer`, the write throttle). |
 | `apps.todos.tasks` | `todos_tasks` | Tasks, labels, filters, due dates and reminders. Needs `profiles` (time zone), `messaging` (reminder email) and `reminders`. |
 | `apps.todos.comments` | `todos_comments` | Comments on tasks and projects, with attachments (`storage`) and notification emails. |
+| `apps.todos.templates` | `todos_templates` | Built-in and saved templates, applying them, and CSV export and import. |
 
 All are optional together: take them out of `INSTALLED_APPS` (and their
 settings imports) and the todos are gone. Each also comes out on its own,
@@ -76,6 +77,22 @@ turns the first kind off. The author never hears about their own comment. An
 email waits `TODOS_COMMENTS_EMAIL_DELAY_MINUTES`, and later comments on the same
 thing join it until it goes.
 
+## Templates
+
+A template is a list of rows, the same as its CSV file's lines (`type`,
+`content`, `description`, `priority`, `indent`, `labels`, `due`): a `section`
+row starts a section, and a `task` indented one more than the task above is its
+sub-task. `due` is an offset from the day it's applied (`+3`, `+3 09:00`) or a
+recurrence phrase (`every monday`). `templates/models.py` has the format and
+the three operations: `snapshot()` a project (open tasks, the member's own
+labels; not comments, assignees or reminders), `apply()` rows to a new or
+existing project (in one transaction, so a row breaking a limit creates
+nothing; missing labels are made), and `to_csv()`/`from_csv()`.
+
+Built-in templates are subclasses of `templates.builtin.BuiltIn`, like filters;
+`TODOS_TEMPLATES_BUILT_IN` (comma-separated slugs) picks which a deployment
+offers. A member's own are `Template` rows.
+
 ## Due dates
 
 A task has a `due_date`, in its owner's time zone (their profile's); a timed
@@ -133,6 +150,12 @@ Sharing: `projects/{id}/collaborators/` (`GET` the owner then the rest;
 `POST` makes a new token; `DELETE` turns joining off), and `join/{token}/`
 (`GET` a preview anyone holding the link may see; `POST` joins).
 
+Templates: `templates/` (`GET` built-ins, whose ids are their slugs, then the
+member's own; `POST {project}` saves one, `POST` a multipart `file` imports a
+CSV), `templates/{id}/` (`PATCH`, `DELETE`: own only), `templates/{id}/apply/`
+(`{project}` to add to one, else a new project, `{name}`), and
+`templates/{id}/export/` and `projects/{id}/export/` (CSV).
+
 Comments: `comments/` (`?task=` or `?project=`; `POST`, `PATCH` the text,
 `DELETE`), `comments/attachments/` (`POST {name, content_type, size}` opens an
 upload ticket).
@@ -163,6 +186,9 @@ Everything is the caller's, or in a project they're in; anything else is `404`.
 | `TODOS_COMMENTS_MAX_STORAGE_BYTES` | 1 GB of attachments per member |
 | `TODOS_COMMENTS_RATE` | `120/hour` new comments and uploads per member |
 | `TODOS_COMMENTS_EMAIL_DELAY_MINUTES` | 5 |
+| `TODOS_TEMPLATES_MAX` | 100 per member |
+| `TODOS_TEMPLATES_MAX_TASKS` | 1,000 per template |
+| `TODOS_TEMPLATES_BUILT_IN` | blank: all of them |
 
 Each reads `FINEXITO_<name>` from the environment.
 

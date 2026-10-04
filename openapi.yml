@@ -1131,6 +1131,29 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/todos/projects/{id}/export/:
+    get:
+      operationId: todos_projects_export_retrieve
+      description: A project's open sections and tasks as a template CSV file.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+          description: ''
   /api/v1/todos/projects/{id}/invite-link/:
     get:
       operationId: todos_projects_invite_link_retrieve
@@ -2403,8 +2426,194 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/todos/templates/:
+    get:
+      operationId: todos_templates_list
+      description: Built-in templates first, then the member's own.
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Template'
+          description: ''
+    post:
+      operationId: todos_templates_create
+      description: Save a project as a template, or import a CSV file.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveTemplateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SaveTemplateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+          description: ''
+  /api/v1/todos/templates/{id}/:
+    get:
+      operationId: todos_templates_retrieve
+      description: Built-in templates first, then the member's own.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+          description: ''
+    patch:
+      operationId: todos_templates_partial_update
+      description: Built-in templates first, then the member's own.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTemplateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTemplateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTemplateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Template'
+          description: ''
+    delete:
+      operationId: todos_templates_destroy
+      description: Built-in templates first, then the member's own.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/templates/{id}/apply/:
+    post:
+      operationId: todos_templates_apply_create
+      description: Create the template's sections and tasks in a new project, or at
+        the end of `project`. Nothing is created if any of it breaks a limit.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplyTemplateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ApplyTemplateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ApplyTemplateRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
+  /api/v1/todos/templates/{id}/export/:
+    get:
+      operationId: todos_templates_export_retrieve
+      description: Built-in templates first, then the member's own.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[^/]+$
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+          description: ''
 components:
   schemas:
+    ApplyTemplateRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+          nullable: true
+          description: Add to this project; default a new one.
+        name:
+          type: string
+          minLength: 1
+          description: The new project's name; default the template's.
+          maxLength: 120
     Attachment:
       type: object
       properties:
@@ -3119,6 +3328,18 @@ components:
           type: string
           maxLength: 200
         extra: {}
+    PatchedTemplateRequest:
+      type: object
+      description: A built-in template (its id is its slug) or one of the member's
+        own.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 2000
     Person:
       type: object
       description: Someone in a project, as the others in it see them.
@@ -3414,6 +3635,25 @@ components:
         * `member` - Member
         * `moderator` - Moderator
         * `admin` - Admin
+    SaveTemplateRequest:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+          description: Save this project as a template.
+        file:
+          type: string
+          format: binary
+          description: Or import a CSV file.
+        name:
+          type: string
+          minLength: 1
+          description: 'Default: the project''s or file''s.'
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 2000
     Section:
       type: object
       description: |-
@@ -3697,6 +3937,39 @@ components:
       required:
       - content
       - project
+    Template:
+      type: object
+      description: A built-in template (its id is its slug) or one of the member's
+        own.
+      properties:
+        id:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 2000
+        category:
+          type: string
+          readOnly: true
+        is_mine:
+          type: boolean
+          readOnly: true
+        task_count:
+          type: integer
+          readOnly: true
+        section_count:
+          type: integer
+          readOnly: true
+      required:
+      - category
+      - id
+      - is_mine
+      - name
+      - section_count
+      - task_count
     TokenRefreshRequestRequest:
       type: object
       description: |-

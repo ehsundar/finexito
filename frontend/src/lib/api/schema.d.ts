@@ -479,6 +479,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/todos/projects/{id}/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description A project's open sections and tasks as a template CSV file. */
+        get: operations["todos_projects_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/todos/projects/{id}/invite-link/": {
         parameters: {
             query?: never;
@@ -726,10 +743,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/todos/templates/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Built-in templates first, then the member's own. */
+        get: operations["todos_templates_list"];
+        put?: never;
+        /** @description Save a project as a template, or import a CSV file. */
+        post: operations["todos_templates_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/templates/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Built-in templates first, then the member's own. */
+        get: operations["todos_templates_retrieve"];
+        put?: never;
+        post?: never;
+        /** @description Built-in templates first, then the member's own. */
+        delete: operations["todos_templates_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Built-in templates first, then the member's own. */
+        patch: operations["todos_templates_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/todos/templates/{id}/apply/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Create the template's sections and tasks in a new project, or at the end of `project`. Nothing is created if any of it breaks a limit. */
+        post: operations["todos_templates_apply_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/templates/{id}/export/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Built-in templates first, then the member's own. */
+        get: operations["todos_templates_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ApplyTemplateRequest: {
+            /**
+             * Format: uuid
+             * @description Add to this project; default a new one.
+             */
+            project?: string | null;
+            /** @description The new project's name; default the template's. */
+            name?: string;
+        };
         Attachment: {
             /** Format: uuid */
             id: string;
@@ -1076,6 +1173,11 @@ export interface components {
             due_string?: string;
             extra?: unknown;
         };
+        /** @description A built-in template (its id is its slug) or one of the member's own. */
+        PatchedTemplateRequest: {
+            name?: string;
+            description?: string;
+        };
         /** @description Someone in a project, as the others in it see them. */
         Person: {
             /** Format: uuid */
@@ -1209,6 +1311,21 @@ export interface components {
          * @enum {string}
          */
         RoleEnum: "member" | "moderator" | "admin";
+        SaveTemplateRequest: {
+            /**
+             * Format: uuid
+             * @description Save this project as a template.
+             */
+            project?: string;
+            /**
+             * Format: binary
+             * @description Or import a CSV file.
+             */
+            file?: string;
+            /** @description Default: the project's or file's. */
+            name?: string;
+            description?: string;
+        };
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
@@ -1338,6 +1455,16 @@ export interface components {
             due_time?: string | null;
             due_string?: string;
             extra?: unknown;
+        };
+        /** @description A built-in template (its id is its slug) or one of the member's own. */
+        Template: {
+            readonly id: string;
+            name: string;
+            description?: string;
+            readonly category: string;
+            readonly is_mine: boolean;
+            readonly task_count: number;
+            readonly section_count: number;
         };
         /**
          * @description The refresh request really only accepts the refresh token.
@@ -2405,6 +2532,27 @@ export interface operations {
             };
         };
     };
+    todos_projects_export_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+        };
+    };
     todos_projects_invite_link_retrieve: {
         parameters: {
             query?: {
@@ -3184,6 +3332,165 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    todos_templates_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"][];
+                };
+            };
+        };
+    };
+    todos_templates_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["SaveTemplateRequest"];
+                "multipart/form-data": components["schemas"]["SaveTemplateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
+                };
+            };
+        };
+    };
+    todos_templates_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
+                };
+            };
+        };
+    };
+    todos_templates_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_templates_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTemplateRequest"];
+                "multipart/form-data": components["schemas"]["PatchedTemplateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTemplateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Template"];
+                };
+            };
+        };
+    };
+    todos_templates_apply_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ApplyTemplateRequest"];
+                "multipart/form-data": components["schemas"]["ApplyTemplateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ApplyTemplateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+        };
+    };
+    todos_templates_export_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
             };
         };
     };

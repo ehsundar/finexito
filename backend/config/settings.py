@@ -61,6 +61,7 @@ LOCAL_APPS = [
     "apps.todos.projects",
     "apps.todos.tasks",
     "apps.todos.comments",
+    "apps.todos.templates",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -77,6 +78,7 @@ from apps.storage.settings import *  # noqa: E402, F403
 from apps.todos.projects.settings import *  # noqa: E402, F403
 from apps.todos.tasks.settings import *  # noqa: E402, F403
 from apps.todos.comments.settings import *  # noqa: E402, F403
+from apps.todos.templates.settings import *  # noqa: E402, F403
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
