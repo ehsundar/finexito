@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 
 from apps.common.serializers import ErrorSerializer
 from apps.storage import services
+from apps.storage.backends import LocalStorage, check_signature
 from apps.storage.models import StoredObject
 from apps.storage.serializers import StoredObjectSerializer
 
@@ -30,24 +31,36 @@ class UploadRefused(APIException):
 
 
 class UploadView(APIView):
-    """The upload link a ticket's owner PUTs the file's raw bytes to."""
+    """A LocalStorage upload link, signed like a presigned S3 PUT: whoever
+    holds it PUTs the file's raw bytes to it, once, before the ticket expires."""
+
+    permission_classes = (AllowAny,)
+    authentication_classes = ()
 
     @extend_schema(
         operation_id="storage_upload",
         request={"*/*": OpenApiTypes.BINARY},
         responses={
-            200: StoredObjectSerializer,
+            200: None,
             **dict.fromkeys((400, 404, 409, 410, 411, 413, 415), ErrorSerializer),
         },
         description=(
             "Send the file as the raw body, with the Content-Type the ticket names "
-            "and a Content-Length. Only the ticket's owner may upload, once, "
-            "before it expires."
+            "and a Content-Length of exactly its size. Then POST `complete/`."
         ),
     )
     def put(self, request, pk):
-        obj = StoredObject.objects.filter(pk=pk, owner=request.user).first()
-        if obj is None:
+        obj = StoredObject.objects.filter(pk=pk).first()
+        if not (
+            obj
+            and isinstance(obj.backend, LocalStorage)
+            and check_signature(
+                obj,
+                request.query_params.get("expires"),
+                request.query_params.get("signature"),
+                "upload",
+            )
+        ):
             raise NotFound()
         # Read straight from Django's request: DRF's request.data would buffer
         # and parse the whole body before any limit is checked.
@@ -57,17 +70,38 @@ class UploadView(APIView):
         except ValueError:
             length = None
         try:
-            services.receive_upload(
-                obj, request.user, raw, content_type=raw.content_type or "", length=length
-            )
+            services.receive_upload(obj, raw, content_type=raw.content_type or "", length=length)
         except services.UploadError as error:
             raise UploadRefused(error) from error
-        return Response(StoredObjectSerializer(obj).data, status=status.HTTP_200_OK)
+        return Response(status=status.HTTP_200_OK)
+
+
+class CompleteView(APIView):
+    """Its owner says the file has been sent; it is checked and made ready."""
+
+    @extend_schema(
+        operation_id="storage_upload_complete",
+        request=None,
+        responses={
+            200: StoredObjectSerializer,
+            **dict.fromkeys((404, 409, 410, 413, 415), ErrorSerializer),
+        },
+    )
+    def post(self, request, pk):
+        obj = StoredObject.objects.filter(pk=pk, owner=request.user).first()
+        if obj is None:
+            raise NotFound()
+        try:
+            services.complete_upload(obj)
+        except services.UploadError as error:
+            raise UploadRefused(error) from error
+        return Response(StoredObjectSerializer(obj).data)
 
 
 @extend_schema(exclude=True)
 class ObjectView(APIView):
-    """A private object, opened through a signed link from ``services.object_url``.
+    """A private LocalStorage object, opened through a signed link from
+    ``services.object_url``.
 
     Behind Caddy the file never passes through Django: the response only names
     it in X-Accel-Redirect and Caddy sends it from the private directory.
@@ -78,8 +112,16 @@ class ObjectView(APIView):
 
     def get(self, request, pk):
         obj = StoredObject.objects.ready().filter(pk=pk).first()
-        remaining = obj and services.check_signature(
-            obj, request.query_params.get("expires"), request.query_params.get("signature", "")
+        remaining = (
+            obj
+            and isinstance(obj.backend, LocalStorage)
+            and not obj.backend.public
+            and check_signature(
+                obj,
+                request.query_params.get("expires"),
+                request.query_params.get("signature"),
+                "object",
+            )
         )
         if not remaining:
             raise NotFound()
@@ -87,7 +129,7 @@ class ObjectView(APIView):
         if settings.STORAGE_ACCEL_REDIRECT:
             response = HttpResponse(headers={"X-Accel-Redirect": f"/{obj.key}"})
         else:
-            response = FileResponse(obj.path.open("rb"), content_type=obj.content_type)
+            response = FileResponse(obj.backend.open(obj.key), content_type=obj.content_type)
         # Only for as long as the link is valid, and never in a shared cache.
         response["Cache-Control"] = f"private, max-age={remaining}"
         for header, value in FILE_HEADERS.items():

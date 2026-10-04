@@ -7,11 +7,23 @@ from apps.storage.models import StoredObject
 
 @admin.register(StoredObject)
 class StoredObjectAdmin(admin.ModelAdmin):
-    list_display = ("id", "owner", "content_type", "visibility", "status", "size", "created_at")
-    list_filter = ("status", "visibility", "content_type")
-    search_fields = ("id", "owner__email", "sha256")
+    list_display = (
+        "id",
+        "owner",
+        "scope",
+        "location",
+        "content_type",
+        "status",
+        "size",
+        "created_at",
+    )
+    list_filter = ("status", "location", "scope", "content_type")
+    search_fields = ("id", "key", "owner__email", "sha256")
     raw_id_fields = ("owner",)
     readonly_fields = (
+        "scope",
+        "location",
+        "key",
         "status",
         "size",
         "sha256",
@@ -30,5 +42,5 @@ class StoredObjectAdmin(admin.ModelAdmin):
         )
 
     def has_change_permission(self, request, obj=None):
-        # The file on disk is immutable; only deleting (which removes it) makes sense.
+        # The stored file is immutable; only deleting (which removes it) makes sense.
         return False

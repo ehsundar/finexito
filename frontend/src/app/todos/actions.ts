@@ -1,4 +1,4 @@
-import { api, errorMessage, revalidate } from "@/lib/api/client";
+import { api, apiUrl, errorMessage, revalidate } from "@/lib/api/client";
 import type { components } from "@/lib/api/schema";
 
 type Schemas = components["schemas"];
@@ -159,19 +159,23 @@ export async function joinProject(token: string) {
   return done(api.POST("/api/v1/todos/join/{token}/", { params: { path: { token } } }));
 }
 
-/** Uploads a file for a comment: a ticket first, then the bytes. Returns its id. */
+/**
+ * Uploads a file for a comment: a ticket first, then the bytes to wherever it
+ * says (this API or a storage bucket), then a check. Returns its id.
+ */
 export async function uploadAttachment(file: File): Promise<Result<string>> {
   const ticket = await api.POST("/api/v1/todos/comments/attachments/", {
     body: { name: file.name, content_type: file.type as Schemas["ContentTypeEnum"], size: file.size },
   });
   if (!ticket.data) return { error: errorMessage(ticket.error) };
-  const sent = await api.PUT("/api/v1/storage/uploads/{id}/", {
-    params: { path: { id: ticket.data.id } },
-    body: file as unknown as string,
-    bodySerializer: (body) => body,
-    headers: { "Content-Type": file.type },
-  });
-  return sent.error ? { error: errorMessage(sent.error) } : { data: ticket.data.id };
+  const sent = await fetch(apiUrl(ticket.data.upload_url), {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": file.type, "If-None-Match": "*" },
+  }).catch(() => null);
+  if (!sent?.ok) return { error: "The file didn't upload. Try again." };
+  const checked = await api.POST("/api/v1/storage/uploads/{id}/complete/", id(ticket.data.id));
+  return checked.error ? { error: errorMessage(checked.error) } : { data: ticket.data.id };
 }
 
 export async function createComment(body: Schemas["CommentRequest"]) {

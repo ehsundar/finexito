@@ -8,5 +8,5 @@ from apps.storage.models import StoredObject
 @receiver(post_delete, sender=StoredObject)
 def remove_file(sender, instance, **kwargs):
     # After commit, so a rolled-back delete still has its file.
-    path = instance.path
-    transaction.on_commit(lambda: path.unlink(missing_ok=True))
+    backend, key = instance.backend, instance.key
+    transaction.on_commit(lambda: backend.delete(key))

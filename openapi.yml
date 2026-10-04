@@ -344,8 +344,7 @@ paths:
     put:
       operationId: storage_upload
       description: Send the file as the raw body, with the Content-Type the ticket
-        names and a Content-Length. Only the ticket's owner may upload, once, before
-        it expires.
+        names and a Content-Length of exactly its size. Then POST `complete/`.
       parameters:
       - in: path
         name: id
@@ -362,15 +361,10 @@ paths:
               type: string
               format: binary
       security:
-      - jwtAuth: []
-      - cookieAuth: []
+      - {}
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StoredObject'
-          description: ''
+          description: No response body
         '400':
           content:
             application/json:
@@ -396,6 +390,59 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '411':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '413':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '415':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/v1/storage/uploads/{id}/complete/:
+    post:
+      operationId: storage_upload_complete
+      description: Its owner says the file has been sent; it is checked and made ready.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - storage
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoredObject'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '410':
           content:
             application/json:
               schema:
@@ -600,7 +647,8 @@ paths:
     post:
       operationId: todos_comments_attachments_create
       description: 'Open an upload ticket for a comment''s file: PUT the file to `upload_url`,
-        then post the comment with its `id` as `attachment_id`.'
+        POST `/api/v1/storage/uploads/{id}/complete/`, then post the comment with
+        its `id` as `attachment_id`.'
       parameters:
       - in: query
         name: project
@@ -2817,7 +2865,8 @@ components:
           format: uuid
         upload_url:
           type: string
-          description: PUT the file's raw bytes here.
+          description: 'PUT the file''s raw bytes here, with `If-None-Match: *`. It
+            may be a path on this API or a URL elsewhere.'
       required:
       - id
       - upload_url
@@ -3334,7 +3383,7 @@ components:
           description: Shown in listings and link previews.
         visibility:
           allOf:
-          - $ref: '#/components/schemas/Visibility6ddEnum'
+          - $ref: '#/components/schemas/VisibilityEnum'
           readOnly: true
         published_at:
           type: string
@@ -3381,7 +3430,7 @@ components:
           description: Shown in listings and link previews.
         visibility:
           allOf:
-          - $ref: '#/components/schemas/Visibility6ddEnum'
+          - $ref: '#/components/schemas/VisibilityEnum'
           readOnly: true
         published_at:
           type: string
@@ -4041,18 +4090,22 @@ components:
           type: string
           format: uuid
           readOnly: true
+        scope:
+          type: string
+          readOnly: true
+          description: The app it belongs to.
         content_type:
           allOf:
           - $ref: '#/components/schemas/ContentTypeEnum'
           readOnly: true
-        visibility:
-          allOf:
-          - $ref: '#/components/schemas/StoredObjectVisibilityEnum'
-          readOnly: true
         size:
           type: integer
           readOnly: true
-          nullable: true
+          description: The exact bytes the upload must be.
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StoredObjectStatusEnum'
+          readOnly: true
         sha256:
           type: string
           readOnly: true
@@ -4068,19 +4121,22 @@ components:
       required:
       - content_type
       - id
+      - scope
       - sha256
       - size
+      - status
       - uploaded_at
       - url
-      - visibility
-    StoredObjectVisibilityEnum:
+    StoredObjectStatusEnum:
       enum:
-      - public
-      - private
+      - pending
+      - checking
+      - ready
       type: string
       description: |-
-        * `public` - Public, served and cached by anyone
-        * `private` - Private, only through signed links
+        * `pending` - Waiting for the upload
+        * `checking` - Uploaded, being checked
+        * `ready` - Uploaded
     SyncRequestRequest:
       type: object
       properties:
@@ -4377,7 +4433,7 @@ components:
       description: |-
         * `list` - List
         * `board` - Board
-    Visibility6ddEnum:
+    VisibilityEnum:
       enum:
       - public
       - private

@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.db.models import Sum
-from django.db.models.functions import Coalesce
 from django.utils import timezone as tz
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
@@ -10,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 
 from apps.storage import services
-from apps.storage.models import ObjectVisibility, StoredObject
+from apps.storage.models import StoredObject
 from apps.todos.comments.models import ATTACHMENT_PURPOSE, Comment
 from apps.todos.comments.serializers import (
     AttachmentTicketRequestSerializer,
@@ -82,7 +81,8 @@ class CommentViewSet(TodosViewSet):
         request=AttachmentTicketRequestSerializer,
         responses={201: AttachmentTicketSerializer},
         description="Open an upload ticket for a comment's file: PUT the file to "
-        "`upload_url`, then post the comment with its `id` as `attachment_id`.",
+        "`upload_url`, POST `/api/v1/storage/uploads/{id}/complete/`, then post the "
+        "comment with its `id` as `attachment_id`.",
     )
     @action(detail=False, methods=["post"])
     def attachments(self, request):
@@ -94,14 +94,16 @@ class CommentViewSet(TodosViewSet):
             raise ValidationError({"size": f"Attach files up to {limit} MB."})
         used = StoredObject.objects.filter(
             owner=request.user, extra__purpose=ATTACHMENT_PURPOSE
-        ).aggregate(used=Sum(Coalesce("size", "max_size")))["used"]
+        ).aggregate(used=Sum("size"))["used"]
         if (used or 0) + size > settings.TODOS_COMMENTS_MAX_STORAGE_BYTES:
             raise ValidationError({"size": "You've used all the space for attachments."})
         obj = services.create_upload(
             request.user,
             content_type=ticket.validated_data["content_type"],
-            max_size=size,
-            visibility=ObjectVisibility.PRIVATE,
+            scope="todos",
+            folder="comments",
+            storage_class="private",
+            size=size,
             purpose=ATTACHMENT_PURPOSE,
             name=ticket.validated_data["name"],
         )

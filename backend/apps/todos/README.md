@@ -67,8 +67,9 @@ doesn't share its sub-projects.
 ## Comments
 
 `Comment` is on a task or a project (not both), in Markdown, with at most one
-file. Files go through `apps.storage` as private objects: the client opens a
-ticket (`comments/attachments/`), `PUT`s the file, then posts the comment with
+file. Files go through `apps.storage` in its private class, under
+`todos/comments/`: the client opens a ticket (`comments/attachments/`), `PUT`s
+the file to its `upload_url`, completes the upload, then posts the comment with
 `attachment_id`. Deleting a comment deletes its file; deleting a task or
 project deletes its comments. `Task.comment_count` is kept by this app.
 

@@ -230,6 +230,8 @@ CORS_ALLOW_HEADERS = (
     "accept",
     "authorization",
     "content-type",
+    # Sent with uploads, which never overwrite (apps.storage).
+    "if-none-match",
     "origin",
     "user-agent",
     "x-csrftoken",

@@ -213,9 +213,26 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** @description Send the file as the raw body, with the Content-Type the ticket names and a Content-Length. Only the ticket's owner may upload, once, before it expires. */
+        /** @description Send the file as the raw body, with the Content-Type the ticket names and a Content-Length of exactly its size. Then POST `complete/`. */
         put: operations["storage_upload"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/storage/uploads/{id}/complete/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Its owner says the file has been sent; it is checked and made ready. */
+        post: operations["storage_upload_complete"];
         delete?: never;
         options?: never;
         head?: never;
@@ -283,7 +300,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Open an upload ticket for a comment's file: PUT the file to `upload_url`, then post the comment with its `id` as `attachment_id`. */
+        /** @description Open an upload ticket for a comment's file: PUT the file to `upload_url`, POST `/api/v1/storage/uploads/{id}/complete/`, then post the comment with its `id` as `attachment_id`. */
         post: operations["todos_comments_attachments_create"];
         delete?: never;
         options?: never;
@@ -928,7 +945,7 @@ export interface components {
         AttachmentTicket: {
             /** Format: uuid */
             id: string;
-            /** @description PUT the file's raw bytes here. */
+            /** @description PUT the file's raw bytes here, with `If-None-Match: *`. It may be a path on this API or a URL elsewhere. */
             upload_url: string;
         };
         AttachmentTicketRequestRequest: {
@@ -1166,7 +1183,7 @@ export interface components {
             readonly title: string;
             /** @description Shown in listings and link previews. */
             readonly summary: string;
-            readonly visibility: components["schemas"]["Visibility6ddEnum"];
+            readonly visibility: components["schemas"]["VisibilityEnum"];
             /**
              * Format: date-time
              * @description Set when first published. A future time schedules the page.
@@ -1186,7 +1203,7 @@ export interface components {
             readonly title: string;
             /** @description Shown in listings and link previews. */
             readonly summary: string;
-            readonly visibility: components["schemas"]["Visibility6ddEnum"];
+            readonly visibility: components["schemas"]["VisibilityEnum"];
             /**
              * Format: date-time
              * @description Set when first published. A future time schedules the page.
@@ -1529,20 +1546,24 @@ export interface components {
         StoredObject: {
             /** Format: uuid */
             readonly id: string;
+            /** @description The app it belongs to. */
+            readonly scope: string;
             readonly content_type: components["schemas"]["ContentTypeEnum"];
-            readonly visibility: components["schemas"]["StoredObjectVisibilityEnum"];
-            readonly size: number | null;
+            /** @description The exact bytes the upload must be. */
+            readonly size: number;
+            readonly status: components["schemas"]["StoredObjectStatusEnum"];
             readonly sha256: string;
             /** Format: date-time */
             readonly uploaded_at: string | null;
             readonly url: string | null;
         };
         /**
-         * @description * `public` - Public, served and cached by anyone
-         *     * `private` - Private, only through signed links
+         * @description * `pending` - Waiting for the upload
+         *     * `checking` - Uploaded, being checked
+         *     * `ready` - Uploaded
          * @enum {string}
          */
-        StoredObjectVisibilityEnum: "public" | "private";
+        StoredObjectStatusEnum: "pending" | "checking" | "ready";
         SyncRequestRequest: {
             operations: components["schemas"]["OperationRequest"][];
         };
@@ -1680,7 +1701,7 @@ export interface components {
          *     * `private` - Signed-in members only
          * @enum {string}
          */
-        Visibility6ddEnum: "public" | "private";
+        VisibilityEnum: "public" | "private";
     };
     responses: never;
     parameters: never;
@@ -2019,13 +2040,12 @@ export interface operations {
             };
         };
         responses: {
+            /** @description No response body */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["StoredObject"];
-                };
+                content?: never;
             };
             400: {
                 headers: {
@@ -2060,6 +2080,67 @@ export interface operations {
                 };
             };
             411: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    storage_upload_complete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoredObject"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            410: {
                 headers: {
                     [name: string]: unknown;
                 };

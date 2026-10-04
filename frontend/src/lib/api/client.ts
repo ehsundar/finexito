@@ -19,8 +19,11 @@ const baseUrl =
     ? configured.replace(/\/\/(127\.0\.0\.1|localhost)(?=[:/]|$)/, `//${location.hostname}`)
     : configured;
 
-/** A path Django hands out (a signed file link), as the browser can open it. */
-export const apiUrl = (path: string) => baseUrl + path;
+/**
+ * A link Django hands out (a signed file link), as the browser can open it:
+ * a path on the API, or a full URL elsewhere (a storage bucket) left as it is.
+ */
+export const apiUrl = (link: string) => (/^https?:\/\//.test(link) ? link : baseUrl + link);
 
 /** No credentials and no retries: only for rotating the tokens. */
 const bare = createClient<paths>({ baseUrl });

@@ -65,4 +65,7 @@ class AttachmentTicketRequestSerializer(serializers.Serializer):
 
 class AttachmentTicketSerializer(serializers.Serializer):
     id = serializers.UUIDField()
-    upload_url = serializers.CharField(help_text="PUT the file's raw bytes here.")
+    upload_url = serializers.CharField(
+        help_text="PUT the file's raw bytes here, with `If-None-Match: *`. It may be "
+        "a path on this API or a URL elsewhere."
+    )

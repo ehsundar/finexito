@@ -75,7 +75,7 @@ than by switching renderers.
 | Markdown + GFM      | `react-markdown` + `remark-gfm`         | Done    |
 | Code highlighting   | Shiki (`@shikijs/rehype`), server-side  | Done    |
 | Custom widgets      | `remark-directive` + a component registry | Planned |
-| Uploaded images     | `apps.storage`, on the server's disk     | Storage done |
+| Uploaded images     | `apps.storage` (a bucket or the disk)    | Storage done |
 
 **Code highlighting — Shiki.** It uses VS Code's grammars and themes and runs
 on the server, so pages arrive already coloured and the browser loads no
@@ -94,5 +94,5 @@ widget falls back to its raw text.
   revisiting only if widgets grow complex enough to need its validation.
 
 **Images.** Linked images (`![alt](https://…)`) already work. Uploads are
-stored by `apps.storage` on the server's disk and served by Caddy; the admin
+stored by `apps.storage` in its public class; the admin
 still needs a way to upload one and insert its URL.

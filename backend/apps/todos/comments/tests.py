@@ -1,3 +1,4 @@
+import uuid
 from datetime import timedelta
 from unittest import mock
 
@@ -10,7 +11,7 @@ from django.utils import timezone as tz
 from apps.common.testing import PlatformTestCase
 from apps.messaging.models import EmailMessage
 from apps.profiles.models import Profile
-from apps.storage.models import ObjectStatus, ObjectVisibility, StoredObject
+from apps.storage.models import ObjectStatus, StoredObject
 from apps.todos.comments.models import Comment
 from apps.todos.projects.models import Project
 from apps.todos.tasks.models import Task
@@ -41,11 +42,12 @@ class CommentTests(PlatformTestCase):
     def upload(self, user=None):
         return StoredObject.objects.create(
             owner=user or self.user,
+            scope="todos",
+            location="local-private",
+            key=f"todos/comments/{uuid.uuid4().hex}.png",
             content_type="image/png",
-            max_size=100,
             size=100,
             status=ObjectStatus.READY,
-            visibility=ObjectVisibility.PRIVATE,
             expires_at=tz.now(),
             extra={"purpose": "todos_comment", "name": "list.png"},
         )

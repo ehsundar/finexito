@@ -1,8 +1,7 @@
-"""A StoredObject is one uploaded file: a ticket first, then the file on disk."""
-
-from pathlib import Path
+"""A StoredObject is one uploaded file: a ticket first, then the file in its location."""
 
 from django.conf import settings
+from django.core.files.storage import StorageHandler
 from django.db import models
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
@@ -10,15 +9,13 @@ from django.utils.translation import gettext_lazy as _
 from apps.common.models import BaseModel
 from apps.storage.formats import FORMATS
 
-
-class ObjectVisibility(models.TextChoices):
-    PUBLIC = "public", _("Public, served and cached by anyone")
-    PRIVATE = "private", _("Private, only through signed links")
+# The configured locations, each built once on first use.
+locations = StorageHandler(settings.STORAGE_LOCATIONS)
 
 
 class ObjectStatus(models.TextChoices):
     PENDING = "pending", _("Waiting for the upload")
-    UPLOADING = "uploading", _("Upload in progress")
+    CHECKING = "checking", _("Uploaded, being checked")
     READY = "ready", _("Uploaded")
 
 
@@ -33,25 +30,26 @@ class StoredObjectQuerySet(models.QuerySet):
 
 class StoredObject(BaseModel):
     # The one account allowed to upload the file. Once it is there, access is
-    # decided by visibility and signed links, not by owner.
+    # decided by its location (public or signed links), not by owner.
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="stored_objects"
     )
-    content_type = models.CharField(max_length=100, choices=[(t, t) for t in FORMATS])
-    max_size = models.PositiveBigIntegerField(help_text=_("The most bytes the upload may be."))
-    visibility = models.CharField(
-        max_length=20, choices=ObjectVisibility, default=ObjectVisibility.PUBLIC
+    scope = models.CharField(max_length=50, blank=True, help_text=_("The app it belongs to."))
+    location = models.CharField(
+        max_length=50, help_text=_("Where the file lives: a name in STORAGE_LOCATIONS.")
     )
+    key = models.CharField(max_length=255, unique=True, help_text=_("Its name in the location."))
+    content_type = models.CharField(max_length=100, choices=[(t, t) for t in FORMATS])
+    size = models.PositiveBigIntegerField(help_text=_("The exact bytes the upload must be."))
     status = models.CharField(max_length=20, choices=ObjectStatus, default=ObjectStatus.PENDING)
     expires_at = models.DateTimeField(help_text=_("The upload must finish before this."))
 
-    size = models.PositiveBigIntegerField(null=True, blank=True)
     sha256 = models.CharField(max_length=64, blank=True)
     uploaded_at = models.DateTimeField(null=True, blank=True)
 
     objects = StoredObjectQuerySet.as_manager()
 
-    class Meta:
+    class Meta(BaseModel.Meta):
         verbose_name = _("stored object")
         verbose_name_plural = _("stored objects")
         ordering = ("-created_at",)
@@ -61,18 +59,8 @@ class StoredObject(BaseModel):
         return f"{self.id} ({self.content_type})"
 
     @property
-    def key(self) -> str:
-        """Where the file sits under its visibility's directory.
-
-        Built only from the id and the type's extension, never from anything the
-        uploader sent, so it cannot point outside the store. The two-character
-        prefix keeps any one directory from growing huge.
-        """
-        return f"{self.id.hex[:2]}/{self.id.hex}.{FORMATS[self.content_type].extension}"
-
-    @property
-    def path(self) -> Path:
-        return Path(settings.STORAGE_ROOT) / self.visibility / self.key
+    def backend(self):
+        return locations[self.location]
 
     @property
     def is_ready(self) -> bool:

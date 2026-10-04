@@ -10,7 +10,7 @@ class StoredObjectSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StoredObject
-        fields = ("id", "content_type", "visibility", "size", "sha256", "uploaded_at", "url")
+        fields = ("id", "scope", "content_type", "size", "status", "sha256", "uploaded_at", "url")
         read_only_fields = fields
 
     @extend_schema_field(serializers.CharField(allow_null=True))
