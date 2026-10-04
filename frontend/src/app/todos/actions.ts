@@ -185,3 +185,47 @@ export async function updateComment(comment: string, text: string) {
 export async function deleteComment(comment: string) {
   return done(api.DELETE("/api/v1/todos/comments/{id}/", path(comment)));
 }
+
+export async function saveTemplate(project: string) {
+  return done(api.POST("/api/v1/todos/templates/", { body: { project } }));
+}
+
+export async function importTemplate(file: File) {
+  const form = new FormData();
+  form.append("file", file);
+  return done(
+    api.POST("/api/v1/todos/templates/", {
+      body: form as unknown as { file: string },
+      bodySerializer: (body) => body as unknown as FormData,
+    }),
+  );
+}
+
+export async function applyTemplate(template: string, body: Schemas["ApplyTemplateRequest"] = {}) {
+  return done(api.POST("/api/v1/todos/templates/{id}/apply/", { ...path(template), body }));
+}
+
+export async function renameTemplate(template: string, name: string) {
+  return done(api.PATCH("/api/v1/todos/templates/{id}/", { ...path(template), body: { name } }));
+}
+
+export async function deleteTemplate(template: string) {
+  return done(api.DELETE("/api/v1/todos/templates/{id}/", path(template)));
+}
+
+/** Downloads a template's or a project's CSV; the link needs the session, so it's fetched first. */
+export async function downloadCsv(kind: "templates" | "projects", id: string) {
+  const call =
+    kind === "templates"
+      ? api.GET("/api/v1/todos/templates/{id}/export/", { ...path(id), parseAs: "blob" })
+      : api.GET("/api/v1/todos/projects/{id}/export/", { ...path(id), parseAs: "blob" });
+  const { data, error, response } = await call;
+  if (error || !data) return { error: errorMessage(error) };
+  const name = /filename="([^"]+)"/.exec(response.headers.get("Content-Disposition") ?? "")?.[1];
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(data as Blob);
+  link.download = name ?? "template.csv";
+  link.click();
+  URL.revokeObjectURL(link.href);
+  return {};
+}

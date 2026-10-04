@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, Bell, Filter, Hash, Inbox, Star, Users } from "lucide-react";
+import { Archive, Bell, Filter, Hash, Inbox, LayoutTemplate, Star, Users } from "lucide-react";
 import { useState } from "react";
 
 import { NotificationSettingsSheet } from "@/app/todos/reminders";
@@ -45,6 +45,9 @@ export default function BrowsePage() {
           </ListRow>
           <ListRow href="/todos/filters" icon={<Filter />}>
             Filters &amp; labels
+          </ListRow>
+          <ListRow href="/todos/templates" icon={<LayoutTemplate />}>
+            Templates
           </ListRow>
           <ListRow icon={<Bell />} onClick={() => setSettings(true)}>
             Notifications

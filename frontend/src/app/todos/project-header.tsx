@@ -9,6 +9,8 @@ import {
   createSection,
   deleteProject,
   deleteSection,
+  downloadCsv,
+  saveTemplate,
   updateProject,
   updateSection,
 } from "@/app/todos/actions";
@@ -48,7 +50,17 @@ export function ProjectHeader({ project, showingCompleted }: { project: Project;
       onSelect: () => router.push(showingCompleted ? here : `${here}${project.is_inbox ? "?" : "&"}completed=1`),
     },
   ];
-  menu.push({ label: "Comments", onSelect: () => router.push(`/todos/comments?project=${project.id}`) });
+  menu.push(
+    { label: "Comments", onSelect: () => router.push(`/todos/comments?project=${project.id}`) },
+    { label: "Add from a template", onSelect: () => router.push("/todos/templates") },
+    {
+      label: "Save as template",
+      onSelect: async () => {
+        if (await report(saveTemplate(project.id))) toast.success("Saved; find it in Templates");
+      },
+    },
+    { label: "Download CSV", onSelect: () => report(downloadCsv("projects", project.id)) },
+  );
   if (!project.is_inbox) {
     menu.push({ label: project.is_owner ? "Share" : "People", onSelect: then("share") });
   }
