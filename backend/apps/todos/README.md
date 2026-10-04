@@ -1,10 +1,19 @@
 # todos
 
 A personal task manager: an Inbox, projects, sections, tasks and sub-tasks,
-priorities, labels, built-in filters and search, with one-line quick add. It is
-optional: take `apps.todos` out of `INSTALLED_APPS` (and its settings import)
-and it is gone. It needs `profiles` (time zone), `messaging` (reminder email) and
-`reminders`. The specs are [docs/prd/todos/](../../../docs/prd/todos/).
+priorities, labels, built-in filters and search, with one-line quick add. The
+specs are [docs/prd/todos/](../../../docs/prd/todos/).
+
+It is several apps, each depending only on the ones above it:
+
+| App | Label | What |
+| --- | ----- | ---- |
+| `apps.todos.projects` | `todos_projects` | Projects and sections, and the base the others build on (`TodosViewSet`, `CleanedSerializer`, the write throttle). |
+| `apps.todos.tasks` | `todos_tasks` | Tasks, labels, filters, due dates and reminders. Needs `profiles` (time zone), `messaging` (reminder email) and `reminders`. |
+
+All are optional together: take them out of `INSTALLED_APPS` (and their
+settings imports) and the todos are gone. Each also comes out on its own,
+starting from the bottom of the table.
 
 ## Models
 
@@ -28,7 +37,7 @@ through `full_clean()`, so the admin and the API enforce the same ones:
 - New rows, and rows moved somewhere new, go to the end of their siblings.
 - `Task.close()` completes a task and its open sub-tasks. `Task.reopen()`
   reopens it, the sub-tasks completed with it, and any completed parents.
-- `extra` is any JSON object up to `TODOS_MAX_EXTRA_BYTES`, stored as is.
+- `extra` is any JSON object up to `TODOS_TASKS_MAX_EXTRA_BYTES`, stored as is.
 
 ## Due dates
 
@@ -37,7 +46,7 @@ one also has `due_at`, the instant, which is what counts for it, so it stays put
 when the owner travels. The API reads and writes `due_date` and `due_time` in
 the caller's zone.
 
-`dates.py` reads English phrases (`tomorrow 9am`, `every other friday`,
+`tasks/dates.py` reads English phrases (`tomorrow 9am`, `every other friday`,
 `every! 3 days until dec 1`): `Due.parse()` a whole phrase, `Due.find()` one
 inside a task's text. Calendar dates go to dateparser, recurrence to dateutil's
 rrule; `due_rule` holds the DTSTART and RRULE.
@@ -61,7 +70,7 @@ theme variable.
 
 ## Filters
 
-`filters.py`. Each filter is a `Filter` subclass with a `slug`, a `name` and
+`tasks/filters.py`. Each filter is a `Filter` subclass with a `slug`, a `name` and
 `queryset(user)`; defining the class registers it.
 
 ## Quick add
@@ -94,13 +103,13 @@ Everything is the caller's own; anyone else's rows are `404`.
 
 | Setting | Default |
 | ------- | ------- |
-| `TODOS_MAX_PROJECTS` | 500 per member |
-| `TODOS_MAX_SECTIONS_PER_PROJECT` | 50 |
-| `TODOS_MAX_TASKS_PER_PROJECT` | 5,000 open tasks |
-| `TODOS_MAX_LABELS` | 500 per member |
-| `TODOS_MAX_EXTRA_BYTES` | 16 KB |
-| `TODOS_WRITE_RATE` | `1000/hour` per member, writes only |
-| `TODOS_MAX_REMINDERS_PER_TASK` | 10 |
+| `TODOS_PROJECTS_MAX` | 500 per member |
+| `TODOS_PROJECTS_MAX_SECTIONS` | 50 |
+| `TODOS_TASKS_MAX_PER_PROJECT` | 5,000 open tasks |
+| `TODOS_TASKS_MAX_LABELS` | 500 per member |
+| `TODOS_TASKS_MAX_EXTRA_BYTES` | 16 KB |
+| `TODOS_PROJECTS_WRITE_RATE` | `1000/hour` per member, writes only |
+| `TODOS_TASKS_MAX_REMINDERS` | 10 |
 
 Each reads `FINEXITO_<name>` from the environment.
 

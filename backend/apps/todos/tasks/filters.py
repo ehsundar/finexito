@@ -8,7 +8,7 @@ from datetime import timedelta
 
 from django.utils import timezone as tz
 
-from apps.todos.models import Priority, Task, member_today
+from apps.todos.tasks.models import Priority, Task, member_today
 
 
 class Filter:
