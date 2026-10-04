@@ -2382,9 +2382,10 @@ export interface operations {
     };
     todos_projects_collaborators_destroy: {
         parameters: {
-            query?: {
+            query: {
                 /** @description Archived projects instead. */
                 archived?: boolean;
+                user: string;
             };
             header?: never;
             path: {

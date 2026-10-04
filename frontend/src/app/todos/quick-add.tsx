@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { createLabel, createSection, createTask } from "@/app/todos/actions";
 import { dueText, useParsedDue } from "@/app/todos/due";
+import { Avatar, usePeople, type Person } from "@/app/todos/people";
 import { Dot, useTodos, type Label, type Project, type Section } from "@/app/todos/shell";
 import { List, ListRow } from "@/components/app/list";
 import { Sheet } from "@/components/app/sheet";
@@ -23,7 +24,7 @@ export type Prefill = {
   due?: string;
 };
 
-type Kind = "text" | "project" | "section" | "label" | "priority" | "date";
+type Kind = "text" | "project" | "section" | "label" | "priority" | "date" | "person";
 type Segment = { text: string; kind: Kind; created?: boolean };
 
 const NEW_LABEL = /^([\p{L}\p{N}_-]{1,60})(?=\s|$)/u;
@@ -48,6 +49,8 @@ type Parsed = {
   /** Existing labels, or names of ones to create. */
   labels: (Label | string)[];
   priority: 1 | 2 | 3 | 4 | null;
+  /** Someone in the project, by `@name`. */
+  assignee: Person | null;
   content: string;
 };
 
@@ -55,17 +58,27 @@ type Parsed = {
  * Reads one line of quick add. `#` takes the longest matching project name
  * (only the first project counts), else the longest label name, else one word
  * as a new label. `/` takes the longest section name in the chosen project,
- * else one word as a new section. `p1`–`p4` is the priority. `@` is plain text,
- * kept for mentioning people. A backslash keeps a token as text.
+ * else one word as a new section. `p1`–`p4` is the priority. `@` takes the
+ * longest name of someone in the project, who is assigned the task. A backslash
+ * keeps a token as text.
  */
 export function parse(
   text: string,
   projects: Project[],
   labels: Label[],
   sectionsOf: (project: Project | null) => Section[],
+  people: Person[] = [],
 ): Parsed {
   const scan = (sections: Section[]) => {
-    const found: Parsed = { parts: [], project: null, section: null, labels: [], priority: null, content: "" };
+    const found: Parsed = {
+      parts: [],
+      project: null,
+      section: null,
+      labels: [],
+      priority: null,
+      assignee: null,
+      content: "",
+    };
     const push = (piece: string, kind: Kind, created = false) => {
       const last = found.parts.at(-1);
       if (kind === "text" && last?.kind === "text") last.text += piece;
@@ -80,7 +93,7 @@ export function parse(
       const startsWord = i === 0 || /\s/.test(text[i - 1]);
       const char = text[i];
       const rest = text.slice(i + 1);
-      if (startsWord && char === "\\" && "#/p".includes(rest[0] ?? " ")) {
+      if (startsWord && char === "\\" && "#/p@".includes(rest[0] ?? " ")) {
         push(rest[0], "text");
         i += 2;
         continue;
@@ -111,6 +124,15 @@ export function parse(
           found.section ??= sections.find((s) => s.name === name) ?? word!;
           push(char + rest.slice(0, length), "section", name === null);
           i += 1 + length;
+          continue;
+        }
+      }
+      if (startsWord && char === "@") {
+        const name = longest(rest, people.map((p) => p.name));
+        if (name !== null) {
+          found.assignee ??= people.find((p) => p.name === name) ?? null;
+          push(char + rest.slice(0, name.length), "person");
+          i += 1 + name.length;
           continue;
         }
       }
@@ -156,11 +178,11 @@ export function markDate(parts: Segment[], [start, end]: number[]) {
   return marked;
 }
 
-/** The `#` being typed at the caret, if any: where it starts and what follows it. */
+/** The `#` or `@` being typed at the caret, if any: where it starts and what follows it. */
 function typingTag(text: string, caret: number) {
-  const match = /(?:^|\s)#([^#\n]*)$/.exec(text.slice(0, caret));
+  const match = /(?:^|\s)([#@])([^#@\n]*)$/.exec(text.slice(0, caret));
   if (!match) return null;
-  return { start: caret - match[1].length - 1, query: match[1] };
+  return { sign: match[1], start: caret - match[2].length - 1, query: match[2] };
 }
 
 const STYLE: Record<Kind, string> = {
@@ -170,6 +192,7 @@ const STYLE: Record<Kind, string> = {
   label: "bg-secondary rounded px-0.5",
   priority: "rounded px-0.5 font-medium",
   date: "bg-accent rounded px-0.5",
+  person: "bg-accent rounded px-0.5",
 };
 
 /** Opens with a prefill, closes with none. */
@@ -186,33 +209,41 @@ export function QuickAdd({ prefill, onClose }: { prefill: Prefill | null; onClos
   const found = useParsedDue(text, true);
   const date = found?.due && found.match ? { due: found.due, match: found.match } : null;
   const sectionsOf = (project: Project | null) => sections.filter((s) => s.project === (project ?? prefilled)?.id);
+  // `@` names people in the project the line ends up in.
+  const people = usePeople(parse(text, projects, labels, () => []).project ?? prefilled ?? undefined);
   const parsed = parse(
     date ? text.slice(0, date.match[0]) + text.slice(date.match[1]) : text,
     projects,
     labels,
     sectionsOf,
+    people,
   );
   // A backslash keeps a date as text, and goes.
   if (date) parsed.content = parsed.content.replace(/(^|\s)\\(?=\w)/g, "$1");
-  const parts = date ? markDate(parse(text, projects, labels, sectionsOf).parts, date.match) : parsed.parts;
+  const parts = date ? markDate(parse(text, projects, labels, sectionsOf, people).parts, date.match) : parsed.parts;
   const project = parsed.project ?? prefilled;
 
-  // While a `#` is being typed: matching projects first, then labels.
+  // While a `#` is being typed: matching projects first, then labels. While
+  // an `@` is: people in the project.
   const tag = typingTag(text, caret);
   const needle = tag?.query.toLowerCase() ?? "";
   const matches = (name: string) => name.toLowerCase().startsWith(needle);
-  const suggestions = tag
-    ? [
-        ...projects
-          .filter((p) => !p.is_inbox && matches(p.name))
-          .map((p) => ({ key: p.id, name: p.name, icon: <Dot colour={p.colour} /> })),
-        ...labels.filter((l) => matches(l.name)).map((l) => ({ key: l.id, name: l.name, icon: <Hash /> })),
-      ].slice(0, 6)
-    : [];
+  const suggestions = !tag
+    ? []
+    : tag.sign === "@"
+      ? people
+          .filter((p) => matches(p.name))
+          .map((p) => ({ key: p.id, name: p.name, icon: <Avatar person={p} className="size-5" /> }))
+      : [
+          ...projects
+            .filter((p) => !p.is_inbox && matches(p.name))
+            .map((p) => ({ key: p.id, name: p.name, icon: <Dot colour={p.colour} /> })),
+          ...labels.filter((l) => matches(l.name)).map((l) => ({ key: l.id, name: l.name, icon: <Hash /> })),
+        ].slice(0, 6);
 
   function pick(name: string) {
     if (!tag) return;
-    const before = `${text.slice(0, tag.start)}#${name} `;
+    const before = `${text.slice(0, tag.start)}${tag.sign}${name} `;
     setText(before + text.slice(caret).trimStart());
     setCaret(before.length);
     requestAnimationFrame(() => input.current?.setSelectionRange(before.length, before.length));
@@ -253,6 +284,7 @@ export function QuickAdd({ prefill, onClose }: { prefill: Prefill | null; onClos
       parent: parsed.project || parsed.section ? null : (prefill?.parent ?? null),
       content: parsed.content,
       priority: parsed.priority ?? undefined,
+      assignee: parsed.assignee?.id,
       labels: [...new Set(labelIds)],
       ...(date ? { due_string: date.due.string } : prefill?.due ? { due_date: prefill.due } : {}),
     });
@@ -297,7 +329,7 @@ export function QuickAdd({ prefill, onClose }: { prefill: Prefill | null; onClos
               </span>
             ))
           ) : (
-            <>Type # for a project or label, / for a section, p1 for priority, or a date.</>
+            <>Type # for a project or label, / for a section, p1 for priority, @ for someone, or a date.</>
           )}
           {(date || prefill?.due) && (
             <span className="block">

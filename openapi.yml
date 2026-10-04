@@ -1118,6 +1118,11 @@ paths:
           format: uuid
         description: A UUID string identifying this project.
         required: true
+      - in: query
+        name: user
+        schema:
+          type: string
+        required: true
       tags:
       - todos
       security:

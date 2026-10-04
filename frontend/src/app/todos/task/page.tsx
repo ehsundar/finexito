@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 
+import { Comments } from "@/app/todos/comments";
 import { TaskEditor } from "@/app/todos/task-editor";
 import type { Task } from "@/app/todos/shell";
 import { TaskList } from "@/app/todos/task-list";
@@ -61,6 +62,7 @@ export default function TaskPage() {
           ]}
           parentTask={task}
         />
+        {project && <Comments task={task.id} project={project} />}
       </Screen>
     </>
   );

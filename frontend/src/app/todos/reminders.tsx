@@ -110,19 +110,29 @@ const DEFAULTS = [
   { value: "60", label: "1 hour before" },
 ];
 
-/** The member's reminder preferences, kept in their profile. */
-export function ReminderSettingsSheet(props: { open: boolean; onOpenChange: (open: boolean) => void }) {
+/** The member's reminder and email preferences, kept in their profile. */
+export function NotificationSettingsSheet(props: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { data: profile } = useQuery("/api/v1/profiles/me/");
-  const current = profile?.extra?.todos_reminder_before ?? "30";
-  const emails = profile?.extra?.todos_reminder_emails !== "false";
+  const extra = profile?.extra ?? {};
+  const current = extra.todos_reminder_before ?? "30";
 
   async function save(extra: Record<string, string>) {
     const { error } = await updateProfile(extra);
     if (error) toast.error(error);
   }
 
+  /** An email switch: `on` when the key is unset. */
+  const toggle = (key: string, label: string, on = true) => {
+    const enabled = extra[key] ? extra[key] === "true" : on;
+    return (
+      <ListRow onClick={() => save({ [key]: enabled ? "false" : "true" })} detail={enabled ? "On" : "Off"}>
+        {label}
+      </ListRow>
+    );
+  };
+
   return (
-    <Sheet {...props} title="Reminders">
+    <Sheet {...props} title="Notifications">
       <List title="Remind me of timed tasks">
         {DEFAULTS.map((d) => (
           <ListRow
@@ -134,13 +144,11 @@ export function ReminderSettingsSheet(props: { open: boolean; onOpenChange: (ope
           </ListRow>
         ))}
       </List>
-      <List>
-        <ListRow
-          onClick={() => save({ todos_reminder_emails: emails ? "false" : "true" })}
-          detail={emails ? "On" : "Off"}
-        >
-          Reminder emails
-        </ListRow>
+      <List title="Email me">
+        {toggle("todos_reminder_emails", "Reminders")}
+        {toggle("todos_assigned_emails", "Tasks assigned to me")}
+        {toggle("todos_comment_emails", "Comments on my tasks")}
+        {toggle("todos_project_comment_emails", "Comments on shared projects", false)}
       </List>
     </Sheet>
   );

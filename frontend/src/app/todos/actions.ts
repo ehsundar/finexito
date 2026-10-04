@@ -125,3 +125,63 @@ export async function updateProfile(extra: Record<string, string>) {
   const body = { extra: { ...data?.extra, ...extra } };
   return done(api.PATCH("/api/v1/profiles/me/", { body }));
 }
+
+const path = (value: string) => ({ params: { path: { id: value } } });
+
+/** Reads the project's invite link, makes a new one, or turns joining off. */
+export async function inviteLink(project: string, change?: "reset" | "off") {
+  if (change === "reset") return done(api.POST("/api/v1/todos/projects/{id}/invite-link/", path(project)));
+  if (change === "off") return done(api.DELETE("/api/v1/todos/projects/{id}/invite-link/", path(project)));
+  const { data, error } = await api.GET("/api/v1/todos/projects/{id}/invite-link/", path(project));
+  return error ? { error: errorMessage(error) } : { data };
+}
+
+/** Removes someone from a project; with your own id, leaves it. */
+export async function removeCollaborator(project: string, user: string) {
+  return done(
+    api.DELETE("/api/v1/todos/projects/{id}/collaborators/", {
+      params: { path: { id: project }, query: { user } },
+    }),
+  );
+}
+
+export async function leaveProject(project: string) {
+  const { data: me } = await api.GET("/api/v1/auth/me/");
+  if (!me) return { error: "Couldn't reach the server." };
+  return removeCollaborator(project, me.id);
+}
+
+export async function transferProject(project: string, user: string) {
+  return done(api.POST("/api/v1/todos/projects/{id}/transfer/", { ...path(project), body: { user } }));
+}
+
+export async function joinProject(token: string) {
+  return done(api.POST("/api/v1/todos/join/{token}/", { params: { path: { token } } }));
+}
+
+/** Uploads a file for a comment: a ticket first, then the bytes. Returns its id. */
+export async function uploadAttachment(file: File): Promise<Result<string>> {
+  const ticket = await api.POST("/api/v1/todos/comments/attachments/", {
+    body: { name: file.name, content_type: file.type as Schemas["ContentTypeEnum"], size: file.size },
+  });
+  if (!ticket.data) return { error: errorMessage(ticket.error) };
+  const sent = await api.PUT("/api/v1/storage/uploads/{id}/", {
+    params: { path: { id: ticket.data.id } },
+    body: file as unknown as string,
+    bodySerializer: (body) => body,
+    headers: { "Content-Type": file.type },
+  });
+  return sent.error ? { error: errorMessage(sent.error) } : { data: ticket.data.id };
+}
+
+export async function createComment(body: Schemas["CommentRequest"]) {
+  return done(api.POST("/api/v1/todos/comments/", { body }));
+}
+
+export async function updateComment(comment: string, text: string) {
+  return done(api.PATCH("/api/v1/todos/comments/{id}/", { ...path(comment), body: { text } }));
+}
+
+export async function deleteComment(comment: string) {
+  return done(api.DELETE("/api/v1/todos/comments/{id}/", path(comment)));
+}

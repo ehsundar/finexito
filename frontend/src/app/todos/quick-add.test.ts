@@ -15,6 +15,17 @@ const sectionsOf = (project: Project | null) => sections.filter((s) => s.project
 const read = (text: string) => parse(text, projects, labels, sectionsOf);
 
 describe("quick add", () => {
+  it("assigns someone in the project by @name, and keeps other @s as text", () => {
+    const people = [
+      { id: "a", name: "Sam", email: "sam@example.com", avatar_url: "" },
+      { id: "b", name: "Sam Lee", email: "lee@example.com", avatar_url: "" },
+    ];
+    const parsed = parse("Call plumber @Sam Lee @nobody", projects, labels, sectionsOf, people);
+    expect(parsed.assignee?.id).toBe("b");
+    expect(parsed.content).toBe("Call plumber @nobody");
+  });
+
+
   it("takes the longest project name, a section in it, and the priority", () => {
     const parsed = read("Fix tap #Home office p2");
     expect(parsed.project?.id).toBe("home-office");

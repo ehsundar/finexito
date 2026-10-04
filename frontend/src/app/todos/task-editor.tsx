@@ -1,12 +1,13 @@
 "use client";
 
-import { Bell, CalendarDays, Check, Flag, Folder, Tag, Trash2 } from "lucide-react";
+import { Bell, CalendarDays, Check, Flag, Folder, Tag, Trash2, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
 import { closeTask, createLabel, deleteTask, reopenTask, updateTask } from "@/app/todos/actions";
 import { DueLabel, DueSheet } from "@/app/todos/due";
+import { Avatar, usePeople } from "@/app/todos/people";
 import { reminderText, RemindersSheet, useReminders } from "@/app/todos/reminders";
 import { colourVar, Dot, useTodos, type Task } from "@/app/todos/shell";
 import { priorityVar, TaskCheck, withoutId } from "@/app/todos/task-list";
@@ -23,10 +24,12 @@ export function TaskEditor({ task, description }: { task: Task; description: Rea
   const router = useRouter();
   const { projects, sections, labels, confirm } = useTodos();
   const [editing, setEditing] = useState(false);
-  const [sheet, setSheet] = useState<"move" | "labels" | "priority" | "due" | "reminders" | null>(null);
+  const [sheet, setSheet] = useState<"move" | "labels" | "priority" | "due" | "reminders" | "assignee" | null>(null);
   const { data: reminders = [] } = useReminders(task);
   const project = projects.find((p) => p.id === task.project);
   const section = sections.find((s) => s.id === task.section);
+  const people = usePeople(project);
+  const assignee = people.find((p) => p.id === task.assignee);
   const own = labels.filter((l) => task.labels?.includes(l.id));
   const close = (open: boolean) => !open && setSheet(null);
 
@@ -125,6 +128,24 @@ export function TaskEditor({ task, description }: { task: Task; description: Rea
         >
           Reminders
         </ListRow>
+        {people.length > 0 && (
+          <ListRow
+            icon={<UserRound />}
+            onClick={() => setSheet("assignee")}
+            detail={
+              assignee ? (
+                <span className="flex items-center gap-1.5">
+                  <Avatar person={assignee} className="size-5" />
+                  {assignee.name}
+                </span>
+              ) : (
+                "No one"
+              )
+            }
+          >
+            Assignee
+          </ListRow>
+        )}
         <ListRow
           icon={<Folder />}
           onClick={() => setSheet("move")}
@@ -189,6 +210,20 @@ export function TaskEditor({ task, description }: { task: Task; description: Rea
           onSelect: () => save({ priority }),
         }))}
       />
+      <ActionSheet
+        open={sheet === "assignee"}
+        onOpenChange={close}
+        title="Assign to"
+        actions={[
+          { label: "No one", checked: !task.assignee, onSelect: () => save({ assignee: null }) },
+          ...people.map((person) => ({
+            label: person.name,
+            icon: <Avatar person={person} className="size-5" />,
+            checked: task.assignee === person.id,
+            onSelect: () => save({ assignee: person.id }),
+          })),
+        ]}
+      />
       <DueSheet task={task} open={sheet === "due"} onOpenChange={close} />
       <RemindersSheet task={task} open={sheet === "reminders"} onOpenChange={close} />
       <MoveSheet task={task} open={sheet === "move"} onOpenChange={close} />
@@ -201,7 +236,10 @@ export function TaskEditor({ task, description }: { task: Task; description: Rea
 function MoveSheet({ task, ...props }: { task: Task; open: boolean; onOpenChange: (open: boolean) => void }) {
   const { projects, sections } = useTodos();
   const [q, setQ] = useState("");
-  const options = projects.flatMap((p) => [
+  // Only the owner moves tasks out of a shared project.
+  const here = projects.find((p) => p.id === task.project);
+  const targets = here?.is_owner === false ? [here] : projects;
+  const options = targets.flatMap((p) => [
     { project: p, section: null as null | (typeof sections)[number] },
     ...sections.filter((s) => s.project === p.id).map((s) => ({ project: p, section: s })),
   ]);

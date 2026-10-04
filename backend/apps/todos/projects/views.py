@@ -152,7 +152,11 @@ class ProjectViewSet(TodosViewSet):
         people = [project.owner, *(m.user for m in project.members.select_related("user__profile"))]
         return Response(PersonSerializer(people, many=True).data)
 
-    @extend_schema(request=None, responses={204: None})
+    @extend_schema(
+        request=None,
+        responses={204: None},
+        parameters=[OpenApiParameter("user", str, required=True)],
+    )
     @collaborators.mapping.delete
     def remove_collaborator(self, request, pk=None):
         """Remove someone (`?user=`), or leave, with your own id."""

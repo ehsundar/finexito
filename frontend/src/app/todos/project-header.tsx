@@ -12,6 +12,7 @@ import {
   updateProject,
   updateSection,
 } from "@/app/todos/actions";
+import { Avatars, ShareSheet, usePeople } from "@/app/todos/people";
 import { COLOURS, Dot, useTodos, type Project, type Section } from "@/app/todos/shell";
 import { AppBar } from "@/components/app/frame";
 import { ActionSheet, PromptSheet, type Action } from "@/components/app/sheet";
@@ -25,13 +26,14 @@ async function report(result: Promise<{ error?: string }>) {
   return !error;
 }
 
-type Sheet = "menu" | "sort" | "colour" | "parent" | "rename" | "section" | null;
+type Sheet = "menu" | "sort" | "colour" | "parent" | "rename" | "section" | "share" | null;
 
 /** A project's top bar, with the list/board switch and its menu. */
 export function ProjectHeader({ project, showingCompleted }: { project: Project; showingCompleted: boolean }) {
   const router = useRouter();
   const { projects, confirm } = useTodos();
   const [sheet, setSheet] = useState<Sheet>(null);
+  const people = usePeople(project);
   const update = (body: Parameters<typeof updateProject>[1]) => report(updateProject(project.id, body));
   const here = project.is_inbox ? "/todos" : `/todos/project?id=${project.id}`;
   const close = (open: boolean) => !open && setSheet(null);
@@ -46,7 +48,22 @@ export function ProjectHeader({ project, showingCompleted }: { project: Project;
       onSelect: () => router.push(showingCompleted ? here : `${here}${project.is_inbox ? "?" : "&"}completed=1`),
     },
   ];
+  menu.push({ label: "Comments", onSelect: () => router.push(`/todos/comments?project=${project.id}`) });
   if (!project.is_inbox) {
+    menu.push({ label: project.is_owner ? "Share" : "People", onSelect: then("share") });
+  }
+  if (!project.is_inbox && !project.is_owner) {
+    // A collaborator's own place for the project; the rest is the owner's.
+    menu.push(
+      { label: "Colour", onSelect: then("colour") },
+      { label: "Move under", onSelect: then("parent") },
+      {
+        label: project.is_favourite ? "Remove from favourites" : "Add to favourites",
+        onSelect: () => update({ is_favourite: !project.is_favourite }),
+      },
+    );
+  }
+  if (!project.is_inbox && project.is_owner) {
     menu.push(
       { label: "Rename", onSelect: then("rename") },
       { label: "Colour", onSelect: then("colour") },
@@ -83,6 +100,11 @@ export function ProjectHeader({ project, showingCompleted }: { project: Project;
         }
         actions={
           <>
+            {people.length > 0 && (
+              <button type="button" aria-label="People" className="px-1" onClick={() => setSheet("share")}>
+                <Avatars people={people} max={3} />
+              </button>
+            )}
             <Button
               variant="ghost"
               size="icon-lg"
@@ -127,7 +149,8 @@ export function ProjectHeader({ project, showingCompleted }: { project: Project;
         actions={[
           { label: "Top level", checked: !project.parent, onSelect: () => update({ parent: null }) },
           ...projects
-            .filter((p) => p.id !== project.id && !p.is_inbox)
+            // Only your own projects: a shared one goes under them, not theirs.
+            .filter((p) => p.id !== project.id && !p.is_inbox && p.is_owner)
             .map((p) => ({
               label: p.name,
               icon: <Dot colour={p.colour} />,
@@ -144,6 +167,7 @@ export function ProjectHeader({ project, showingCompleted }: { project: Project;
         maxLength={120}
         onSubmit={(name) => update({ name })}
       />
+      {!project.is_inbox && <ShareSheet project={project} open={sheet === "share"} onOpenChange={close} />}
       <PromptSheet
         open={sheet === "section"}
         onOpenChange={close}
@@ -173,7 +197,10 @@ export function SectionTitle({ section }: { section: Section }) {
         title={section.name}
         actions={[
           { label: "Rename", onSelect: () => setTimeout(() => setSheet("rename")) },
-          { label: "Move to", onSelect: () => setTimeout(() => setSheet("move")) },
+          // Only the owner moves sections out of a shared project.
+          ...(projects.find((p) => p.id === section.project)?.is_owner === false
+            ? []
+            : [{ label: "Move to", onSelect: () => setTimeout(() => setSheet("move")) }]),
           { label: "Archive", onSelect: () => report(updateSection(section.id, { is_archived: true })) },
           {
             label: "Delete",

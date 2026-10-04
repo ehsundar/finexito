@@ -1,9 +1,9 @@
 "use client";
 
-import { Archive, Bell, Filter, Hash, Inbox, Star } from "lucide-react";
+import { Archive, Bell, Filter, Hash, Inbox, Star, Users } from "lucide-react";
 import { useState } from "react";
 
-import { ReminderSettingsSheet } from "@/app/todos/reminders";
+import { NotificationSettingsSheet } from "@/app/todos/reminders";
 import { colourVar, Dot, NewProject, useTodos, type Project } from "@/app/todos/shell";
 import { AppBar, Screen } from "@/components/app/frame";
 import { List, ListRow } from "@/components/app/list";
@@ -47,7 +47,7 @@ export default function BrowsePage() {
             Filters &amp; labels
           </ListRow>
           <ListRow icon={<Bell />} onClick={() => setSettings(true)}>
-            Reminders
+            Notifications
           </ListRow>
         </List>
         {favourites.length > 0 && (
@@ -73,7 +73,7 @@ export default function BrowsePage() {
           </List>
         )}
       </Screen>
-      <ReminderSettingsSheet open={settings} onOpenChange={setSettings} />
+      <NotificationSettingsSheet open={settings} onOpenChange={setSettings} />
     </>
   );
 }
@@ -89,7 +89,10 @@ function ProjectTree({ projects, parent = null, depth = 0 }: { projects: Project
           detail={p.open_task_count || undefined}
           indent={depth}
         >
-          {p.name}
+          <span className="flex items-center gap-1.5">
+            <span className="truncate">{p.name}</span>
+            {p.is_shared && <Users aria-label="Shared" className="text-muted-foreground size-3.5 shrink-0" />}
+          </span>
         </ListRow>
         <ProjectTree projects={projects} parent={p.id} depth={depth + 1} />
       </div>

@@ -12,6 +12,9 @@ import { clearSession, getSession, setSession } from "@/lib/auth/session";
  */
 const baseUrl = process.env.NEXT_PUBLIC_API_ORIGIN ?? "";
 
+/** A path Django hands out (a signed file link), as the browser can open it. */
+export const apiUrl = (path: string) => baseUrl + path;
+
 /** No credentials and no retries: only for rotating the tokens. */
 const bare = createClient<paths>({ baseUrl });
 

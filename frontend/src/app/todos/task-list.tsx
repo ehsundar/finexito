@@ -12,13 +12,14 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronRight, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, MessageSquare, Plus } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { closeTask, moveTask, reopenTask, reorder } from "@/app/todos/actions";
 import { DueLabel, dueText } from "@/app/todos/due";
+import { Avatar, usePeople } from "@/app/todos/people";
 import { colourVar, useTodos, type Project, type Task } from "@/app/todos/shell";
 import { InlineMarkdown } from "@/components/markdown/inline";
 import { cn } from "@/lib/utils";
@@ -339,11 +340,15 @@ export function TaskCheck({ task, onComplete }: { task: Task; onComplete: () => 
 }
 
 export function TaskMeta({ task }: { task: Task }) {
-  const { labels } = useTodos();
+  const { labels, projects } = useTodos();
   const own = labels.filter((l) => task.labels?.includes(l.id));
-  if (!task.subtask_count && !own.length && !task.description && !task.due_date) return null;
+  const people = usePeople(task.assignee ? projects.find((p) => p.id === task.project) : undefined);
+  const assignee = people.find((p) => p.id === task.assignee);
+  if (!task.subtask_count && !own.length && !task.description && !task.due_date && !task.comment_count && !assignee)
+    return null;
   return (
     <div className="text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+      {assignee && <Avatar person={assignee} className="size-4 text-[8px]" />}
       <DueLabel task={task} />
       {task.subtask_count > 0 && (
         <span className="tabular-nums">
@@ -351,6 +356,12 @@ export function TaskMeta({ task }: { task: Task }) {
         </span>
       )}
       {task.description && <span aria-label="Has a description">≡</span>}
+      {task.comment_count > 0 && (
+        <span className="flex items-center gap-0.5 tabular-nums" aria-label={`${task.comment_count} comments`}>
+          <MessageSquare className="size-3" />
+          {task.comment_count}
+        </span>
+      )}
       {own.map((l) => (
         <span key={l.id} style={{ color: colourVar(l.colour) }}>
           #{l.name}
