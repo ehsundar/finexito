@@ -219,3 +219,16 @@ Each reads `FINEXITO_<name>` from the environment.
 
 `frontend/src/app/todos/`: the screens, the writes in `actions.ts`, and the
 keyboard shortcuts (press `?` in the app for the list).
+
+Offline: `offline.ts` keeps a copy of the member's projects, sections, tasks and
+labels in IndexedDB (Dexie), from `sync/`, and sits under the API client: when
+the server can't be reached, todos reads are answered from the copy (running
+the same list rules, filters included, as `tasks/`), other reads get the last
+answer to the same URL, and writes to the copy, and comments, queue in an outbox
+and apply locally. It syncs on opening, on focus, on reconnecting and every
+minute; `connection.tsx` shows a line while offline or while changes wait. The
+service worker (`frontend/worker/sw.ts`, built by `serwist build` after `next
+build`) precaches the exported pages and caches scripts as they're used, and
+offers "Update available" when a new version is deployed. A new built-in filter
+needs its rule in `offline.ts` too. Date phrases typed offline stay in the
+task's text; the server reads dates only online.

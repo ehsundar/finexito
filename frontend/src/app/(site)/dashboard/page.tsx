@@ -23,6 +23,8 @@ export default function DashboardPage() {
     const refresh = getSession()?.refresh;
     if (refresh) await api.POST("/api/v1/auth/logout/", { body: { refresh } }).catch(() => undefined);
     clearSession();
+    // Apps' offline copies (the todos client's) go with the session.
+    for (const { name } of (await indexedDB.databases?.()) ?? []) if (name) indexedDB.deleteDatabase(name);
     router.replace("/");
   }
 

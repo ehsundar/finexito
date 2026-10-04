@@ -6,6 +6,7 @@ import { createContext, use, useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { createProject } from "@/app/todos/actions";
+import { Connection } from "@/app/todos/connection";
 import { isoDate } from "@/app/todos/due";
 import { QuickAdd, type Prefill } from "@/app/todos/quick-add";
 import { AppFrame, Fab, Tab, TabBar } from "@/components/app/frame";
@@ -91,6 +92,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <TodosContext value={{ projects, sections, labels, filters, quickAdd, confirm }}>
       <AppFrame>
+        <Connection />
         {children}
         <TabBar
           action={

@@ -69,7 +69,18 @@ async function authedFetch(request: Request) {
   return response;
 }
 
-export const api = createClient<paths>({ baseUrl, fetch: authedFetch });
+type Offline = (request: Request, network: (request: Request) => Promise<Response>) => Promise<Response>;
+let offline: Offline | null = null;
+
+/** Lets an app answer its calls when the server can't be reached (the todos client's offline.ts). */
+export function handleOffline(handler: Offline | null) {
+  offline = handler;
+}
+
+export const api = createClient<paths>({
+  baseUrl,
+  fetch: (request) => (offline ? offline(request, authedFetch) : authedFetch(request)),
+});
 
 /**
  * Starts a session from fresh tokens, noting whether it belongs to staff (see
