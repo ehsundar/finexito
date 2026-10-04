@@ -429,6 +429,36 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/v1/todos/dates/parse/:
+    post:
+      operationId: todos_dates_parse_create
+      description: |-
+        What a phrase means as a due date, for the date field's preview, and where
+        one is in a task's text, for quick add's.
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DueParseRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DueParseRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DueParseRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DueParse'
+          description: ''
   /api/v1/todos/filters/:
     get:
       operationId: todos_filters_list
@@ -825,6 +855,26 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/todos/reminders/{id}/:
+    delete:
+      operationId: todos_reminders_destroy
+      description: Removing one of a task's reminders.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this reminder.
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/todos/sections/:
     get:
       operationId: todos_sections_list
@@ -1053,6 +1103,12 @@ paths:
           type: string
         description: A built-in filter's slug.
       - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
+      - in: query
         name: label
         schema:
           type: string
@@ -1075,6 +1131,20 @@ paths:
         schema:
           type: string
         description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
       tags:
       - todos
       security:
@@ -1104,6 +1174,12 @@ paths:
           type: string
         description: A built-in filter's slug.
       - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
+      - in: query
         name: label
         schema:
           type: string
@@ -1126,6 +1202,20 @@ paths:
         schema:
           type: string
         description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
       tags:
       - todos
       requestBody:
@@ -1165,6 +1255,12 @@ paths:
         schema:
           type: string
         description: A built-in filter's slug.
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
       - in: path
         name: id
         schema:
@@ -1195,6 +1291,20 @@ paths:
         schema:
           type: string
         description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
       tags:
       - todos
       security:
@@ -1221,6 +1331,12 @@ paths:
         schema:
           type: string
         description: A built-in filter's slug.
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
       - in: path
         name: id
         schema:
@@ -1251,6 +1367,20 @@ paths:
         schema:
           type: string
         description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
       tags:
       - todos
       requestBody:
@@ -1288,6 +1418,12 @@ paths:
         schema:
           type: string
         description: A built-in filter's slug.
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
       - in: path
         name: id
         schema:
@@ -1318,6 +1454,20 @@ paths:
         schema:
           type: string
         description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
       tags:
       - todos
       security:
@@ -1341,6 +1491,12 @@ paths:
         schema:
           type: string
         description: A built-in filter's slug.
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
       - in: path
         name: id
         schema:
@@ -1371,6 +1527,20 @@ paths:
         schema:
           type: string
         description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
       tags:
       - todos
       security:
@@ -1382,6 +1552,174 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Task'
+          description: ''
+  /api/v1/todos/tasks/{id}/reminders/:
+    get:
+      operationId: todos_tasks_reminders_list
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reminder'
+          description: ''
+    post:
+      operationId: todos_tasks_reminders_create
+      description: The caller's own rows; anyone else's are 404.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this task.
+        required: true
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReminderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReminderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReminderRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reminder'
           description: ''
   /api/v1/todos/tasks/{id}/reopen/:
     post:
@@ -1398,6 +1736,12 @@ paths:
         schema:
           type: string
         description: A built-in filter's slug.
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
       - in: path
         name: id
         schema:
@@ -1428,6 +1772,20 @@ paths:
         schema:
           type: string
         description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
       tags:
       - todos
       security:
@@ -1456,6 +1814,12 @@ paths:
           type: string
         description: A built-in filter's slug.
       - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
+      - in: query
         name: label
         schema:
           type: string
@@ -1478,6 +1842,20 @@ paths:
         schema:
           type: string
         description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
       tags:
       - todos
       requestBody:
@@ -1500,6 +1878,84 @@ paths:
               items:
                 type: string
                 format: uuid
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/tasks/reschedule/:
+    post:
+      operationId: todos_tasks_reschedule_create
+      description: Move tasks to a date, each keeping its time.
+      parameters:
+      - in: query
+        name: completed
+        schema:
+          type: boolean
+        description: 'Completed tasks only, newest first. Default: open.'
+      - in: query
+        name: filter
+        schema:
+          type: string
+        description: A built-in filter's slug.
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default today.
+      - in: query
+        name: label
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+        description: A task id, or `none` for the top level.
+      - in: query
+        name: project
+        schema:
+          type: string
+      - in: query
+        name: q
+        schema:
+          type: string
+        description: Text in the content or description.
+      - in: query
+        name: section
+        schema:
+          type: string
+        description: A section id, or `none` for no section.
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: For `view=upcoming`; default a week on.
+      - in: query
+        name: view
+        schema:
+          type: string
+          enum:
+          - today
+          - upcoming
+        description: '`today`: overdue and due today. `upcoming`: due `from` to `to`.'
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RescheduleRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RescheduleRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RescheduleRequestRequest'
         required: true
       security:
       - jwtAuth: []
@@ -1564,6 +2020,61 @@ components:
         * `image/webp` - image/webp
         * `image/avif` - image/avif
         * `application/pdf` - application/pdf
+    Due:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          nullable: true
+        time:
+          type: string
+          format: time
+          nullable: true
+        string:
+          type: string
+        is_recurring:
+          type: boolean
+          readOnly: true
+        from_completion:
+          type: boolean
+      required:
+      - date
+      - from_completion
+      - is_recurring
+      - string
+      - time
+    DueParse:
+      type: object
+      properties:
+        due:
+          allOf:
+          - $ref: '#/components/schemas/Due'
+          nullable: true
+        match:
+          type: array
+          items:
+            type: integer
+          nullable: true
+          description: Where the phrase starts and ends in the text.
+        content:
+          type: string
+          description: The text without the phrase.
+      required:
+      - content
+    DueParseRequestRequest:
+      type: object
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 500
+        find:
+          type: boolean
+          default: false
+          description: Look for a phrase inside the text.
+      required:
+      - text
     Error:
       type: object
       description: Documents the single error envelope every failing response uses.
@@ -1922,9 +2433,11 @@ components:
     PatchedTaskRequest:
       type: object
       description: |-
-        Saves through the model's ``full_clean()``, so its rules and limits apply.
+        Due dates and times read and write in the caller's time zone.
 
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        Writing ``due_string`` parses it and sets the rest; writing ``due_date`` or
+        ``due_time`` sets those, keeping whichever isn't sent, and a recurring task
+        keeps recurring.
       properties:
         project:
           type: string
@@ -1956,6 +2469,17 @@ components:
           items:
             type: string
             format: uuid
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        due_time:
+          type: string
+          format: time
+          nullable: true
+        due_string:
+          type: string
+          maxLength: 200
         extra: {}
     PriorityEnum:
       enum:
@@ -2004,7 +2528,7 @@ components:
           readOnly: true
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/ProfileStatusEnum'
           readOnly: true
         enrolled_at:
           type: string
@@ -2020,6 +2544,16 @@ components:
       - id
       - role
       - status
+    ProfileStatusEnum:
+      enum:
+      - active
+      - pending
+      - suspended
+      type: string
+      description: |-
+        * `active` - Active
+        * `pending` - Pending
+        * `suspended` - Suspended
     Project:
       type: object
       description: |-
@@ -2124,6 +2658,73 @@ components:
       - display_name
       - id
       - role
+    Reminder:
+      type: object
+      description: 'One of a task''s reminders: ``minutes_before`` its due time, or
+        ``at`` a moment.'
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        minutes_before:
+          type: integer
+          maximum: 40320
+          minimum: 0
+          nullable: true
+        at:
+          type: string
+          format: date-time
+        next_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReminderStatusEnum'
+          readOnly: true
+      required:
+      - id
+      - next_at
+      - status
+    ReminderRequest:
+      type: object
+      description: 'One of a task''s reminders: ``minutes_before`` its due time, or
+        ``at`` a moment.'
+      properties:
+        minutes_before:
+          type: integer
+          maximum: 40320
+          minimum: 0
+          nullable: true
+        at:
+          type: string
+          format: date-time
+    ReminderStatusEnum:
+      enum:
+      - scheduled
+      - done
+      - failed
+      type: string
+      description: |-
+        * `scheduled` - Scheduled
+        * `done` - Done
+        * `failed` - Failed
+    RescheduleRequestRequest:
+      type: object
+      properties:
+        tasks:
+          type: array
+          items:
+            type: string
+            format: uuid
+        date:
+          type: string
+          format: date
+      required:
+      - date
+      - tasks
     RoleEnum:
       enum:
       - member
@@ -2205,16 +2806,6 @@ components:
         * `priority` - Priority
         * `name` - Name
         * `added` - Date added
-    StatusEnum:
-      enum:
-      - active
-      - pending
-      - suspended
-      type: string
-      description: |-
-        * `active` - Active
-        * `pending` - Pending
-        * `suspended` - Suspended
     StoredObject:
       type: object
       properties:
@@ -2265,9 +2856,11 @@ components:
     Task:
       type: object
       description: |-
-        Saves through the model's ``full_clean()``, so its rules and limits apply.
+        Due dates and times read and write in the caller's time zone.
 
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        Writing ``due_string`` parses it and sets the rest; writing ``due_date`` or
+        ``due_time`` sets those, keeping whichever isn't sent, and a recurring task
+        keeps recurring.
       properties:
         id:
           type: string
@@ -2310,6 +2903,27 @@ components:
           format: date-time
           readOnly: true
           nullable: true
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        due_time:
+          type: string
+          format: time
+          nullable: true
+        due_string:
+          type: string
+          maxLength: 200
+        is_recurring:
+          type: boolean
+          readOnly: true
+        due_from_completion:
+          type: boolean
+          readOnly: true
+          description: '`every!`: the next date counts from completion.'
+        is_overdue:
+          type: boolean
+          readOnly: true
         extra: {}
         subtask_count:
           type: integer
@@ -2332,7 +2946,10 @@ components:
       - completed_subtask_count
       - content
       - created_at
+      - due_from_completion
       - id
+      - is_overdue
+      - is_recurring
       - order
       - project
       - subtask_count
@@ -2340,9 +2957,11 @@ components:
     TaskRequest:
       type: object
       description: |-
-        Saves through the model's ``full_clean()``, so its rules and limits apply.
+        Due dates and times read and write in the caller's time zone.
 
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        Writing ``due_string`` parses it and sets the rest; writing ``due_date`` or
+        ``due_time`` sets those, keeping whichever isn't sent, and a recurring task
+        keeps recurring.
       properties:
         project:
           type: string
@@ -2374,6 +2993,17 @@ components:
           items:
             type: string
             format: uuid
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        due_time:
+          type: string
+          format: time
+          nullable: true
+        due_string:
+          type: string
+          maxLength: 200
         extra: {}
       required:
       - content

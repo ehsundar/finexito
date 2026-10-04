@@ -7,16 +7,21 @@ API and the admin enforce the same ones.
 """
 
 import json
+from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
 from django.db.models.functions import Lower
+from django.dispatch import receiver
 from django.utils import timezone as tz
 from django.utils.translation import gettext_lazy as _
 
 from apps.common.models import BaseModel
+from apps.messaging.models import EmailMessage
+from apps.reminders.models import Reminder, next_occurrence, reminder_due, zone
 
 MAX_PROJECT_DEPTH = 3
 MAX_TASK_DEPTH = 4
@@ -290,6 +295,21 @@ class Label(BaseModel):
         super().save(*args, **kwargs)
 
 
+def member_zone(user) -> str:
+    """The member's time zone name, from their profile; UTC without one."""
+    profile = getattr(user, "profile", None)
+    return profile.timezone if profile else "UTC"
+
+
+def member_today(user) -> date:
+    return tz.now().astimezone(zone(member_zone(user))).date()
+
+
+# A member's reminder preferences, kept in their profile's ``extra``.
+REMINDER_DEFAULT_KEY = "todos_reminder_before"  # minutes, or "off"; default 30
+REMINDER_EMAILS_KEY = "todos_reminder_emails"  # "false" turns them off
+
+
 class Priority(models.IntegerChoices):
     P1 = 1, _("Priority 1")
     P2 = 2, _("Priority 2")
@@ -307,6 +327,13 @@ class TaskQuerySet(models.QuerySet):
     def open(self):
         return self.filter(completed_at__isnull=True)
 
+    def overdue(self, user):
+        """Open tasks whose day has passed, or whose time has."""
+        return self.open().filter(
+            models.Q(due_at__isnull=True, due_date__lt=member_today(user))
+            | models.Q(due_at__lt=tz.now())
+        )
+
 
 class Task(TrackedModel):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="tasks")
@@ -322,6 +349,25 @@ class Task(TrackedModel):
     priority = models.PositiveSmallIntegerField(choices=Priority, default=Priority.P4)
     labels = models.ManyToManyField(Label, blank=True, related_name="tasks")
     completed_at = models.DateTimeField(null=True, blank=True, editable=False)
+    # The day it's due, in the owner's time zone; with a time, also the instant,
+    # which is what counts for a timed task.
+    due_date = models.DateField(null=True, blank=True, db_index=True)
+    due_at = models.DateTimeField(null=True, blank=True)
+    due_string = models.CharField(max_length=200, blank=True, help_text=_("As typed."))
+    due_rule = models.TextField(blank=True, help_text=_("DTSTART and RRULE, if it repeats."))
+    due_from_completion = models.BooleanField(
+        default=False, help_text=_("`every!`: the next date counts from completion.")
+    )
+    # A completed copy of a recurring task, one per completion.
+    completion_of = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="completions",
+        editable=False,
+    )
+    reminders = GenericRelation(Reminder)
 
     objects = TaskQuerySet.as_manager()
 
@@ -382,6 +428,10 @@ class Task(TrackedModel):
             }
         if self.section_id and self.section.project_id != self.project_id:
             errors["section"] = _("Choose a section in this task's project.")
+        if self.due_at and not self.due_date:
+            errors["due_date"] = _("A time needs a date.")
+        if self.due_rule and not self.due_date:
+            errors["due_date"] = _("A recurring task needs a date.")
         if self.parent_id:
             if self.parent.pk == self.pk or self.parent.pk in self.descendant_ids():
                 errors["parent"] = _("A task can't go inside itself.")
@@ -398,10 +448,19 @@ class Task(TrackedModel):
         if errors:
             raise ValidationError(errors)
 
+    @property
+    def owner(self):
+        return self.project.owner
+
     def save(self, *args, **kwargs):
         moved = not self._state.adding and (
             self.changed("project_id") or self.changed("section_id")
         )
+        redated = self.changed("due_date") or self.changed("due_at")
+        was_timed = getattr(self, "_loaded", {}).get("due_at") is not None
+        if not self.due_date:
+            self.due_at, self.due_string, self.due_rule = None, "", ""
+            self.due_from_completion = False
         # New tasks, and tasks moved somewhere new, go to the end.
         if self.changed("project_id") or self.changed("section_id") or self.changed("parent_id"):
             self.order = next_order(
@@ -414,10 +473,80 @@ class Task(TrackedModel):
             Task.objects.filter(pk__in=self.descendant_ids()).update(
                 project_id=self.project_id, section_id=self.section_id
             )
+        if redated:
+            self.follow_due(newly_timed=self.due_at is not None and not was_timed)
+
+    def follow_due(self, newly_timed: bool):
+        """Move relative reminders with the due time; no date, no reminders.
+
+        A task that has just got a time gets the owner's default reminder.
+        """
+        if not self.due_date:
+            self.reminders.all().delete()
+            return
+        for reminder in self.reminders.all():
+            if (before := reminder.extra.get("minutes_before")) is None:
+                continue
+            if self.due_at is None:
+                reminder.delete()
+            else:
+                reminder.start_at = self.due_at - timedelta(minutes=int(before))
+                reminder.save()
+        if newly_timed and self.completion_of_id is None:
+            profile = getattr(self.owner, "profile", None)
+            default = (profile.extra if profile else {}).get(REMINDER_DEFAULT_KEY, "30")
+            if default.isdigit() and not self.reminders.exists():
+                self.add_reminder(minutes_before=int(default))
+
+    def add_reminder(self, minutes_before: int | None = None, at: datetime | None = None):
+        """A reminder ``minutes_before`` the due time, or ``at`` a moment."""
+        if self.reminders.count() >= settings.TODOS_MAX_REMINDERS_PER_TASK:
+            raise ValidationError(
+                _("A task holds up to %(max)s reminders.")
+                % {"max": settings.TODOS_MAX_REMINDERS_PER_TASK}
+            )
+        if minutes_before is not None:
+            if self.due_at is None:
+                raise ValidationError(_("Give the task a time first."))
+            at = self.due_at - timedelta(minutes=minutes_before)
+        return Reminder.objects.create(
+            user=self.owner,
+            target=self,
+            start_at=at,
+            timezone=member_zone(self.owner),
+            extra={} if minutes_before is None else {"minutes_before": str(minutes_before)},
+        )
+
+    def next_due(self) -> datetime | None:
+        """When a recurring task is next due, as the owner's wall-clock time.
+
+        After the current due date, or after today if it's overdue or `every!`.
+        None once the series has run out.
+        """
+        name = member_zone(self.owner)
+        local = zone(name)
+        now = tz.now().astimezone(local)
+        current = self.due_at or datetime.combine(self.due_date, time(), tzinfo=local)
+        rule = self.due_rule
+        if self.due_from_completion:
+            # Counted from today, at the task's time of day.
+            rule = rule.split("\n")[-1]
+            start = datetime.combine(now.date(), current.astimezone(local).time(), tzinfo=local)
+            return next_occurrence(rule, name, start, start=start)
+        if self.due_date < now.date():
+            current = datetime.combine(now.date(), time.max, tzinfo=local)
+        return next_occurrence(rule, name, current)
 
     def close(self):
-        """Complete this task and its open sub-tasks."""
+        """Complete this task and its open sub-tasks.
+
+        A recurring task stays open: a completed copy records the completion, the
+        task moves to its next date, and its sub-tasks reopen with it.
+        """
         if self.completed_at:
+            return
+        if self.due_rule and (upcoming := self.next_due()):
+            self.complete_occurrence(upcoming)
             return
         now = tz.now()
         Task.objects.filter(pk__in=[self.pk, *self.descendant_ids()]).open().update(
@@ -425,9 +554,41 @@ class Task(TrackedModel):
         )
         self.completed_at = now
 
+    def complete_occurrence(self, upcoming: datetime):
+        labels = list(self.labels.all())
+        done = Task(
+            project_id=self.project_id,
+            section_id=self.section_id,
+            parent_id=self.parent_id,
+            content=self.content,
+            description=self.description,
+            priority=self.priority,
+            due_date=self.due_date,
+            due_at=self.due_at,
+            due_string=self.due_string,
+            completion_of=self,
+            completed_at=tz.now(),
+            extra=self.extra,
+        )
+        done.save()
+        done.labels.set(labels)
+        self.due_date = upcoming.date()
+        self.due_at = upcoming if self.due_at else None
+        self.save()
+        Task.objects.filter(pk__in=self.descendant_ids()).update(
+            completed_at=None, updated_at=tz.now()
+        )
+
     def reopen(self):
-        """Undo: reopen this task, the sub-tasks completed with it, and completed parents."""
+        """Undo: reopen this task, the sub-tasks completed with it, and completed parents.
+
+        For a recurring task, undo its last completion: back to that date.
+        """
         if not self.completed_at:
+            if last := self.completions.order_by("-completed_at").first():
+                self.due_date, self.due_at = last.due_date, last.due_at
+                self.save()
+                last.delete()
             return
         together = Task.objects.filter(
             pk__in=self.descendant_ids(), completed_at=self.completed_at
@@ -458,3 +619,32 @@ class FavouriteFilter(BaseModel):
 
     def __str__(self) -> str:
         return self.slug
+
+
+@receiver(reminder_due)
+def email_reminder(sender, reminder, **kwargs):
+    """Email the owner about their task, unless it's done or they've opted out."""
+    task = reminder.target
+    if not isinstance(task, Task) or task.completed_at:
+        return
+    owner = task.owner
+    profile = getattr(owner, "profile", None)
+    if profile and profile.extra.get(REMINDER_EMAILS_KEY) == "false":
+        return
+    local = zone(member_zone(owner))
+    when = (
+        task.due_at.astimezone(local).strftime("%-d %b, %H:%M")
+        if task.due_at
+        else task.due_date.strftime("%-d %b")
+        if task.due_date
+        else ""
+    )
+    lines = [task.content, f"Due {when}" if when else None, f"In {task.project.name}"]
+    lines += ["", f"Open it: {settings.PUBLIC_ORIGIN}/todos/task?id={task.pk}"]
+    lines += ["", f"— {settings.SITE_NAME}"]
+    EmailMessage.objects.create(
+        to=owner.email,
+        subject=f"Reminder: {task.content}",
+        body="\n".join(line for line in lines if line is not None),
+        extra={"purpose": "todos_reminder", "task": str(task.pk)},
+    )

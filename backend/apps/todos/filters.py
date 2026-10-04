@@ -8,7 +8,7 @@ from datetime import timedelta
 
 from django.utils import timezone as tz
 
-from apps.todos.models import Priority, Task
+from apps.todos.models import Priority, Task, member_today
 
 
 class Filter:
@@ -54,3 +54,37 @@ class RecentlyCompleted(Filter):
     def queryset(self, user):
         since = tz.now() - timedelta(days=7)
         return self.tasks(user).filter(completed_at__gte=since).order_by("-completed_at")
+
+
+class Overdue(Filter):
+    slug, name = "overdue", "Overdue"
+
+    def queryset(self, user):
+        return self.tasks(user).overdue(user).order_by("due_date", "due_at", "priority")
+
+
+class NextSevenDays(Filter):
+    slug, name = "next-7-days", "Next 7 days"
+
+    def queryset(self, user):
+        today = member_today(user)
+        return (
+            self.tasks(user)
+            .open()
+            .filter(due_date__gte=today, due_date__lt=today + timedelta(days=7))
+            .order_by("due_date", "due_at", "priority")
+        )
+
+
+class NoDueDate(Filter):
+    slug, name = "no-due-date", "No due date"
+
+    def queryset(self, user):
+        return self.tasks(user).open().filter(due_date__isnull=True)
+
+
+class Recurring(Filter):
+    slug, name = "recurring", "Recurring"
+
+    def queryset(self, user):
+        return self.tasks(user).open().exclude(due_rule="").order_by("due_date", "due_at")

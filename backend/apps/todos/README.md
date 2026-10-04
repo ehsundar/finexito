@@ -3,7 +3,8 @@
 A personal task manager: an Inbox, projects, sections, tasks and sub-tasks,
 priorities, labels, built-in filters and search, with one-line quick add. It is
 optional: take `apps.todos` out of `INSTALLED_APPS` (and its settings import)
-and it is gone. The full spec is [docs/prd/todos/1-core.md](../../../docs/prd/todos/1-core.md).
+and it is gone. It needs `profiles` (time zone), `messaging` (reminder email) and
+`reminders`. The specs are [docs/prd/todos/](../../../docs/prd/todos/).
 
 ## Models
 
@@ -29,6 +30,32 @@ through `full_clean()`, so the admin and the API enforce the same ones:
   reopens it, the sub-tasks completed with it, and any completed parents.
 - `extra` is any JSON object up to `TODOS_MAX_EXTRA_BYTES`, stored as is.
 
+## Due dates
+
+A task has a `due_date`, in its owner's time zone (their profile's); a timed
+one also has `due_at`, the instant, which is what counts for it, so it stays put
+when the owner travels. The API reads and writes `due_date` and `due_time` in
+the caller's zone.
+
+`dates.py` reads English phrases (`tomorrow 9am`, `every other friday`,
+`every! 3 days until dec 1`): `Due.parse()` a whole phrase, `Due.find()` one
+inside a task's text. Calendar dates go to dateparser, recurrence to dateutil's
+rrule; `due_rule` holds the DTSTART and RRULE.
+
+- Closing a recurring task keeps it open and moves it to its next date: after
+  its current one, or after today if it's overdue or `every!`. A completed copy
+  (`completion_of`) records each completion, and its sub-tasks reopen.
+  Reopening the task undoes its last completion. When the series runs out it
+  closes like any task. The maths is `reminders.models.next_occurrence`.
+- Reminders are `reminders.Reminder` rows pointing at the task: `minutes_before`
+  its due time (kept in the reminder's `extra`, and moved with the due time) or
+  at a fixed moment. A task that gets a time gets the owner's default reminder;
+  losing its date drops them all. Firing emails the owner, unless the task is
+  done or they've opted out.
+- The member's preferences live in their profile's `extra`:
+  `todos_reminder_before` (minutes, or `off`; default 30) and
+  `todos_reminder_emails` (`false` turns the emails off).
+
 Colours are names (`Colour`), not hex values; the frontend maps each to a
 theme variable.
 
@@ -48,11 +75,15 @@ The rules live in `frontend/src/app/todos/quick-add.tsx`.
 
 `projects/`, `sections/`, `tasks/`, `labels/` (list, create, read, `PATCH`, `DELETE`, and
 `POST …/reorder/` with the ordered list of sibling ids), `tasks/{id}/close/`,
-`tasks/{id}/reopen/`, `filters/` and
+`tasks/{id}/reopen/`, `tasks/reschedule/` (`{"tasks": [ids], "date": …}`, each
+keeping its time), `tasks/{id}/reminders/` (`GET`, `POST`), `reminders/{id}/`
+(`DELETE`), `dates/parse/` (`{"text": …, "find": true}` to look inside a task's
+text), `filters/` and
 `filters/{slug}/favourite/` (`POST` pins, `DELETE` unpins).
 
 `tasks/` lists open tasks by default; it takes `?project=&section=&parent=`
-(`none` for no section or the top level) `&label=&filter=&q=&completed=true`.
+(`none` for no section or the top level) `&label=&filter=&q=&completed=true`,
+or `?view=today` (overdue and today) or `?view=upcoming&from=&to=` (by day).
 `sections/` takes `?project=&q=`. `q` searches
 content and description, open tasks first. Lists aren't paginated: the limits
 below bound them.
@@ -69,6 +100,7 @@ Everything is the caller's own; anyone else's rows are `404`.
 | `TODOS_MAX_LABELS` | 500 per member |
 | `TODOS_MAX_EXTRA_BYTES` | 16 KB |
 | `TODOS_WRITE_RATE` | `1000/hour` per member, writes only |
+| `TODOS_MAX_REMINDERS_PER_TASK` | 10 |
 
 Each reads `FINEXITO_<name>` from the environment.
 

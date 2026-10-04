@@ -1,21 +1,37 @@
+from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError as ModelValidationError
 from django.db import transaction
 from django.db.models import Count, F, Q
-from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import serializers, status, viewsets
+from drf_spectacular.utils import OpenApiParameter, extend_schema, inline_serializer
+from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.permissions import SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 
+from apps.reminders.models import Reminder, zone
+from apps.todos.dates import Due
 from apps.todos.filters import Filter
-from apps.todos.models import FavouriteFilter, Label, Project, Section, Task
+from apps.todos.models import (
+    FavouriteFilter,
+    Label,
+    Project,
+    Section,
+    Task,
+    member_today,
+    member_zone,
+)
 from apps.todos.serializers import (
+    DueParseSerializer,
     FilterSerializer,
     LabelSerializer,
     ProjectSerializer,
+    ReminderSerializer,
     SectionSerializer,
     TaskSerializer,
 )
@@ -170,6 +186,14 @@ class LabelViewSet(TodosViewSet):
         OpenApiParameter(
             "completed", bool, description="Completed tasks only, newest first. Default: open."
         ),
+        OpenApiParameter(
+            "view",
+            str,
+            enum=("today", "upcoming"),
+            description="`today`: overdue and due today. `upcoming`: due `from` to `to`.",
+        ),
+        OpenApiParameter("from", date, description="For `view=upcoming`; default today."),
+        OpenApiParameter("to", date, description="For `view=upcoming`; default a week on."),
     ]
 )
 class TaskViewSet(TodosViewSet):
@@ -184,6 +208,8 @@ class TaskViewSet(TodosViewSet):
                 if slug not in Filter.registry:
                     raise NotFound()
                 tasks = Filter.registry[slug].queryset(user)
+            elif view := params.get("view"):
+                tasks = self.dated(tasks.open(), view)
             elif params.get("completed") in ("true", "1"):
                 tasks = tasks.exclude(completed_at=None).order_by("-completed_at")
             elif not params.get("q"):
@@ -202,6 +228,34 @@ class TaskViewSet(TodosViewSet):
             completed_subtask_count=Count(
                 "subtasks", filter=Q(subtasks__completed_at__isnull=False), distinct=True
             ),
+        )
+
+    def dated(self, tasks, view):
+        """Today: overdue oldest first, then today's, timed ones by time, then by
+        priority and project. Upcoming: by day from ``from`` to ``to``."""
+        user, params = self.request.user, self.request.query_params
+        local, today = zone(member_zone(user)), member_today(user)
+        if view == "today":
+            first, last = None, today
+        elif view == "upcoming":
+            try:
+                first = date.fromisoformat(params.get("from") or today.isoformat())
+                last = date.fromisoformat(params["to"]) if params.get("to") else None
+            except ValueError:
+                raise ValidationError("Dates are YYYY-MM-DD.") from None
+            last = last or first + timedelta(days=6)
+            if (last - first).days > 92:
+                raise ValidationError("Ask for up to three months at a time.")
+        else:
+            raise ValidationError("Unknown view.")
+        end = datetime.combine(last + timedelta(days=1), time(), tzinfo=local)
+        untimed = Q(due_at__isnull=True, due_date__lte=last)
+        timed = Q(due_at__lt=end)
+        if first:
+            untimed &= Q(due_date__gte=first)
+            timed &= Q(due_at__gte=datetime.combine(first, time(), tzinfo=local))
+        return tasks.filter(untimed | timed).order_by(
+            "due_date", F("due_at").asc(nulls_last=True), "priority", "project__order", "order"
         )
 
     def sibling_key(self, row):
@@ -232,6 +286,106 @@ class TaskViewSet(TodosViewSet):
         task = self.get_object()
         task.reopen()
         return self.respond(task)
+
+    @extend_schema(
+        request=inline_serializer(
+            "RescheduleRequest",
+            {
+                "tasks": serializers.ListField(child=serializers.UUIDField()),
+                "date": serializers.DateField(),
+            },
+        ),
+        responses={204: None},
+        description="Move tasks to a date, each keeping its time.",
+    )
+    @action(detail=False, methods=["post"])
+    @transaction.atomic
+    def reschedule(self, request):
+        ids = serializers.ListField(child=serializers.UUIDField(), max_length=5000).run_validation(
+            request.data.get("tasks")
+        )
+        day = serializers.DateField().run_validation(request.data.get("date"))
+        tasks = list(self.rows().filter(pk__in=ids))
+        if len(tasks) != len(set(ids)):
+            raise NotFound()
+        local = zone(member_zone(request.user))
+        for task in tasks:
+            if task.due_at:
+                task.due_at = datetime.combine(day, task.due_at.astimezone(local).time(), local)
+            if not task.due_rule:
+                task.due_string = ""
+            task.due_date = day
+            task.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @extend_schema(request=ReminderSerializer, responses=ReminderSerializer(many=True))
+    @action(detail=True, methods=["get", "post"])
+    def reminders(self, request, pk=None):
+        task = self.get_object()
+        if request.method == "POST":
+            serializer = ReminderSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            try:
+                task.add_reminder(
+                    minutes_before=serializer.validated_data.get("minutes_before"),
+                    at=serializer.validated_data.get("start_at"),
+                )
+            except ModelValidationError as error:
+                raise ValidationError(error.messages) from None
+        reminders = task.reminders.order_by("start_at")
+        code = status.HTTP_201_CREATED if request.method == "POST" else status.HTTP_200_OK
+        return Response(ReminderSerializer(reminders, many=True).data, status=code)
+
+
+class ReminderViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
+    """Removing one of a task's reminders."""
+
+    serializer_class = ReminderSerializer
+    throttle_classes = (WriteThrottle,)
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Reminder.objects.none()
+        mine = Task.objects.visible_to(self.request.user).values("pk")
+        return Reminder.objects.filter(
+            content_type=ContentType.objects.get_for_model(Task), object_id__in=mine
+        )
+
+
+class DueDateParseView(APIView):
+    """What a phrase means as a due date, for the date field's preview, and where
+    one is in a task's text, for quick add's."""
+
+    throttle_classes = ()
+
+    @extend_schema(
+        request=inline_serializer(
+            "DueParseRequest",
+            {
+                "text": serializers.CharField(max_length=500),
+                "find": serializers.BooleanField(
+                    default=False, help_text="Look for a phrase inside the text."
+                ),
+            },
+        ),
+        responses=DueParseSerializer,
+    )
+    def post(self, request):
+        text = serializers.CharField(max_length=500, trim_whitespace=False).run_validation(
+            request.data.get("text")
+        )
+        today = member_today(request.user)
+        if request.data.get("find"):
+            found = Due.find(text, today)
+            if found is None:
+                return Response(DueParseSerializer({"content": text}).data)
+            due, span, rest = found
+            return Response(DueParseSerializer({"due": due, "match": span, "content": rest}).data)
+        try:
+            due = Due.parse(text, today)
+        except ValueError:
+            raise ValidationError({"text": "Couldn't understand that date."}) from None
+        return Response(DueParseSerializer({"due": due, "content": ""}).data)
 
 
 class FilterViewSet(viewsets.GenericViewSet):

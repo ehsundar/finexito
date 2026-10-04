@@ -239,6 +239,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/todos/dates/parse/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description What a phrase means as a due date, for the date field's preview, and where
+         *     one is in a task's text, for quick add's.
+         */
+        post: operations["todos_dates_parse_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/todos/filters/": {
         parameters: {
             query?: never;
@@ -382,6 +402,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/todos/reminders/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** @description Removing one of a task's reminders. */
+        delete: operations["todos_reminders_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/todos/sections/": {
         parameters: {
             query?: never;
@@ -490,6 +527,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/todos/tasks/{id}/reminders/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The caller's own rows; anyone else's are 404. */
+        get: operations["todos_tasks_reminders_list"];
+        put?: never;
+        /** @description The caller's own rows; anyone else's are 404. */
+        post: operations["todos_tasks_reminders_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/todos/tasks/{id}/reopen/": {
         parameters: {
             query?: never;
@@ -518,6 +573,23 @@ export interface paths {
         put?: never;
         /** @description Put sibling rows in the order given. */
         post: operations["todos_tasks_reorder_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/tasks/reschedule/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Move tasks to a date, each keeping its time. */
+        post: operations["todos_tasks_reschedule_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -556,6 +628,30 @@ export interface components {
          * @enum {string}
          */
         ContentTypeEnum: "image/jpeg" | "image/png" | "image/gif" | "image/webp" | "image/avif" | "application/pdf";
+        Due: {
+            /** Format: date */
+            date: string | null;
+            /** Format: time */
+            time: string | null;
+            string: string;
+            readonly is_recurring: boolean;
+            from_completion: boolean;
+        };
+        DueParse: {
+            due?: components["schemas"]["Due"] | null;
+            /** @description Where the phrase starts and ends in the text. */
+            match?: number[] | null;
+            /** @description The text without the phrase. */
+            content: string;
+        };
+        DueParseRequestRequest: {
+            text: string;
+            /**
+             * @description Look for a phrase inside the text.
+             * @default false
+             */
+            find: boolean;
+        };
         /** @description Documents the single error envelope every failing response uses. */
         Error: {
             readonly error: components["schemas"]["ErrorDetail"];
@@ -727,9 +823,11 @@ export interface components {
             is_archived?: boolean;
         };
         /**
-         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         * @description Due dates and times read and write in the caller's time zone.
          *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         *     Writing ``due_string`` parses it and sets the rest; writing ``due_date`` or
+         *     ``due_time`` sets those, keeping whichever isn't sent, and a recurring task
+         *     keeps recurring.
          */
         PatchedTaskRequest: {
             /** Format: uuid */
@@ -744,6 +842,11 @@ export interface components {
             description?: string;
             priority?: components["schemas"]["PriorityEnum"];
             labels?: string[];
+            /** Format: date */
+            due_date?: string | null;
+            /** Format: time */
+            due_time?: string | null;
+            due_string?: string;
             extra?: unknown;
         };
         /**
@@ -765,13 +868,20 @@ export interface components {
             locale?: string;
             timezone?: string;
             readonly role: components["schemas"]["RoleEnum"];
-            readonly status: components["schemas"]["StatusEnum"];
+            readonly status: components["schemas"]["ProfileStatusEnum"];
             /** Format: date-time */
             readonly enrolled_at: string;
             extra?: {
                 [key: string]: string;
             };
         };
+        /**
+         * @description * `active` - Active
+         *     * `pending` - Pending
+         *     * `suspended` - Suspended
+         * @enum {string}
+         */
+        ProfileStatusEnum: "active" | "pending" | "suspended";
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
@@ -820,6 +930,35 @@ export interface components {
             readonly bio: string;
             readonly role: components["schemas"]["RoleEnum"];
         };
+        /** @description One of a task's reminders: ``minutes_before`` its due time, or ``at`` a moment. */
+        Reminder: {
+            /** Format: uuid */
+            readonly id: string;
+            minutes_before?: number | null;
+            /** Format: date-time */
+            at?: string;
+            /** Format: date-time */
+            readonly next_at: string | null;
+            readonly status: components["schemas"]["ReminderStatusEnum"];
+        };
+        /** @description One of a task's reminders: ``minutes_before`` its due time, or ``at`` a moment. */
+        ReminderRequest: {
+            minutes_before?: number | null;
+            /** Format: date-time */
+            at?: string;
+        };
+        /**
+         * @description * `scheduled` - Scheduled
+         *     * `done` - Done
+         *     * `failed` - Failed
+         * @enum {string}
+         */
+        ReminderStatusEnum: "scheduled" | "done" | "failed";
+        RescheduleRequestRequest: {
+            tasks: string[];
+            /** Format: date */
+            date: string;
+        };
         /**
          * @description * `member` - Member
          *     * `moderator` - Moderator
@@ -865,13 +1004,6 @@ export interface components {
          * @enum {string}
          */
         SortEnum: "manual" | "priority" | "name" | "added";
-        /**
-         * @description * `active` - Active
-         *     * `pending` - Pending
-         *     * `suspended` - Suspended
-         * @enum {string}
-         */
-        StatusEnum: "active" | "pending" | "suspended";
         StoredObject: {
             /** Format: uuid */
             readonly id: string;
@@ -890,9 +1022,11 @@ export interface components {
          */
         StoredObjectVisibilityEnum: "public" | "private";
         /**
-         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         * @description Due dates and times read and write in the caller's time zone.
          *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         *     Writing ``due_string`` parses it and sets the rest; writing ``due_date`` or
+         *     ``due_time`` sets those, keeping whichever isn't sent, and a recurring task
+         *     keeps recurring.
          */
         Task: {
             /** Format: uuid */
@@ -912,6 +1046,15 @@ export interface components {
             labels?: string[];
             /** Format: date-time */
             readonly completed_at: string | null;
+            /** Format: date */
+            due_date?: string | null;
+            /** Format: time */
+            due_time?: string | null;
+            due_string?: string;
+            readonly is_recurring: boolean;
+            /** @description `every!`: the next date counts from completion. */
+            readonly due_from_completion: boolean;
+            readonly is_overdue: boolean;
             extra?: unknown;
             /** @default 0 */
             readonly subtask_count: number;
@@ -923,9 +1066,11 @@ export interface components {
             readonly updated_at: string;
         };
         /**
-         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
+         * @description Due dates and times read and write in the caller's time zone.
          *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         *     Writing ``due_string`` parses it and sets the rest; writing ``due_date`` or
+         *     ``due_time`` sets those, keeping whichever isn't sent, and a recurring task
+         *     keeps recurring.
          */
         TaskRequest: {
             /** Format: uuid */
@@ -940,6 +1085,11 @@ export interface components {
             description?: string;
             priority?: components["schemas"]["PriorityEnum"];
             labels?: string[];
+            /** Format: date */
+            due_date?: string | null;
+            /** Format: time */
+            due_time?: string | null;
+            due_string?: string;
             extra?: unknown;
         };
         /**
@@ -1408,6 +1558,31 @@ export interface operations {
             };
         };
     };
+    todos_dates_parse_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DueParseRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DueParseRequestRequest"];
+                "multipart/form-data": components["schemas"]["DueParseRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DueParse"];
+                };
+            };
+        };
+    };
     todos_filters_list: {
         parameters: {
             query?: never;
@@ -1763,6 +1938,27 @@ export interface operations {
             };
         };
     };
+    todos_reminders_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this reminder. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     todos_sections_list: {
         parameters: {
             query?: {
@@ -1933,6 +2129,8 @@ export interface operations {
                 completed?: boolean;
                 /** @description A built-in filter's slug. */
                 filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
                 label?: string;
                 /** @description A task id, or `none` for the top level. */
                 parent?: string;
@@ -1941,6 +2139,10 @@ export interface operations {
                 q?: string;
                 /** @description A section id, or `none` for no section. */
                 section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
             };
             header?: never;
             path?: never;
@@ -1965,6 +2167,8 @@ export interface operations {
                 completed?: boolean;
                 /** @description A built-in filter's slug. */
                 filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
                 label?: string;
                 /** @description A task id, or `none` for the top level. */
                 parent?: string;
@@ -1973,6 +2177,10 @@ export interface operations {
                 q?: string;
                 /** @description A section id, or `none` for no section. */
                 section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
             };
             header?: never;
             path?: never;
@@ -2003,6 +2211,8 @@ export interface operations {
                 completed?: boolean;
                 /** @description A built-in filter's slug. */
                 filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
                 label?: string;
                 /** @description A task id, or `none` for the top level. */
                 parent?: string;
@@ -2011,6 +2221,10 @@ export interface operations {
                 q?: string;
                 /** @description A section id, or `none` for no section. */
                 section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
             };
             header?: never;
             path: {
@@ -2038,6 +2252,8 @@ export interface operations {
                 completed?: boolean;
                 /** @description A built-in filter's slug. */
                 filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
                 label?: string;
                 /** @description A task id, or `none` for the top level. */
                 parent?: string;
@@ -2046,6 +2262,10 @@ export interface operations {
                 q?: string;
                 /** @description A section id, or `none` for no section. */
                 section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
             };
             header?: never;
             path: {
@@ -2072,6 +2292,8 @@ export interface operations {
                 completed?: boolean;
                 /** @description A built-in filter's slug. */
                 filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
                 label?: string;
                 /** @description A task id, or `none` for the top level. */
                 parent?: string;
@@ -2080,6 +2302,10 @@ export interface operations {
                 q?: string;
                 /** @description A section id, or `none` for no section. */
                 section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
             };
             header?: never;
             path: {
@@ -2113,6 +2339,8 @@ export interface operations {
                 completed?: boolean;
                 /** @description A built-in filter's slug. */
                 filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
                 label?: string;
                 /** @description A task id, or `none` for the top level. */
                 parent?: string;
@@ -2121,6 +2349,10 @@ export interface operations {
                 q?: string;
                 /** @description A section id, or `none` for no section. */
                 section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
             };
             header?: never;
             path: {
@@ -2141,13 +2373,15 @@ export interface operations {
             };
         };
     };
-    todos_tasks_reopen_create: {
+    todos_tasks_reminders_list: {
         parameters: {
             query?: {
                 /** @description Completed tasks only, newest first. Default: open. */
                 completed?: boolean;
                 /** @description A built-in filter's slug. */
                 filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
                 label?: string;
                 /** @description A task id, or `none` for the top level. */
                 parent?: string;
@@ -2156,6 +2390,98 @@ export interface operations {
                 q?: string;
                 /** @description A section id, or `none` for no section. */
                 section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this task. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reminder"][];
+                };
+            };
+        };
+    };
+    todos_tasks_reminders_create: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this task. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReminderRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReminderRequest"];
+                "multipart/form-data": components["schemas"]["ReminderRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reminder"][];
+                };
+            };
+        };
+    };
+    todos_tasks_reopen_create: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
             };
             header?: never;
             path: {
@@ -2183,6 +2509,8 @@ export interface operations {
                 completed?: boolean;
                 /** @description A built-in filter's slug. */
                 filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
                 label?: string;
                 /** @description A task id, or `none` for the top level. */
                 parent?: string;
@@ -2191,6 +2519,10 @@ export interface operations {
                 q?: string;
                 /** @description A section id, or `none` for no section. */
                 section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
             };
             header?: never;
             path?: never;
@@ -2201,6 +2533,49 @@ export interface operations {
                 "application/json": string[];
                 "application/x-www-form-urlencoded": string[];
                 "multipart/form-data": string[];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_tasks_reschedule_create: {
+        parameters: {
+            query?: {
+                /** @description Completed tasks only, newest first. Default: open. */
+                completed?: boolean;
+                /** @description A built-in filter's slug. */
+                filter?: string;
+                /** @description For `view=upcoming`; default today. */
+                from?: string;
+                label?: string;
+                /** @description A task id, or `none` for the top level. */
+                parent?: string;
+                project?: string;
+                /** @description Text in the content or description. */
+                q?: string;
+                /** @description A section id, or `none` for no section. */
+                section?: string;
+                /** @description For `view=upcoming`; default a week on. */
+                to?: string;
+                /** @description `today`: overdue and due today. `upcoming`: due `from` to `to`. */
+                view?: "today" | "upcoming";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RescheduleRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RescheduleRequestRequest"];
+                "multipart/form-data": components["schemas"]["RescheduleRequestRequest"];
             };
         };
         responses: {
