@@ -10,6 +10,7 @@ task works off; a failed push stays and is retried by the connection's reminder
 (the reminders cron), which also renews the channel before it expires.
 """
 
+import base64
 import json
 import urllib.parse
 import urllib.request
@@ -24,6 +25,7 @@ from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.tasks import task as background
 from django.utils import timezone as tz
+from django.utils.crypto import salted_hmac
 from django.utils.translation import gettext_lazy as _
 from google.auth.exceptions import RefreshError
 from google.oauth2.credentials import Credentials
@@ -43,7 +45,12 @@ CHECK_RULE = "FREQ=MINUTELY;INTERVAL=15"
 
 
 def fernet() -> Fernet:
-    return Fernet(settings.TODOS_GOOGLE_ENCRYPTION_KEY.encode())
+    """Refresh tokens' key, derived from SECRET_KEY: changing that disconnects everyone."""
+    return Fernet(
+        base64.urlsafe_b64encode(
+            salted_hmac("todos.google", "refresh-token", algorithm="sha256").digest()
+        )
+    )
 
 
 def redirect_uri() -> str:

@@ -3,10 +3,8 @@ import json
 from datetime import date, datetime, timedelta
 from unittest import mock
 
-from cryptography.fernet import Fernet
 from django.contrib.auth import get_user_model
 from django.core import signing
-from django.test import override_settings
 from django.urls import reverse
 from google.auth.exceptions import RefreshError
 from googleapiclient.errors import HttpError
@@ -14,20 +12,18 @@ from httplib2 import Response as HttpResponse
 
 from apps.common.testing import PlatformTestCase
 from apps.reminders.models import Reminder
-from apps.todos.google.models import Connection, Push, event_id
+from apps.todos.google.models import Connection, Push, event_id, fernet
 from apps.todos.google.views import STATE_SALT
 from apps.todos.projects.models import Project
 from apps.todos.tasks.models import Task
 
 User = get_user_model()
-KEY = Fernet.generate_key().decode()
 
 
 def not_found():
     return HttpError(HttpResponse({"status": 404}), b"")
 
 
-@override_settings(TODOS_GOOGLE_ENCRYPTION_KEY=KEY)
 class GoogleTests(PlatformTestCase):
     def setUp(self):
         super().setUp()
@@ -41,7 +37,7 @@ class GoogleTests(PlatformTestCase):
     def connected(self, **fields):
         return Connection.objects.create(
             user=self.user,
-            refresh_token=Fernet(KEY.encode()).encrypt(b"refresh"),
+            refresh_token=fernet().encrypt(b"refresh"),
             calendar_id="cal",
             **fields,
         )

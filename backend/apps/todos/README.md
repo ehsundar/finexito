@@ -118,8 +118,8 @@ refer to rows the server hasn't seen yet. Conflicts resolve by arrival: the last
 `google/models.py`. Connecting asks Google for the narrowest scope that works
 (`calendar.app.created`: only calendars the app makes) on top of sign-in, with
 the same OAuth client; the Calendar API must be on in that Google Cloud project.
-`Connection.connect()` keeps the refresh token encrypted
-(`TODOS_GOOGLE_ENCRYPTION_KEY`), makes a calendar named "Tasks — `SITE_NAME`",
+`Connection.connect()` keeps the refresh token encrypted (with a key derived
+from `SECRET_KEY`, so changing that disconnects everyone), makes a calendar named "Tasks — `SITE_NAME`",
 watches it, and sends the member's dated tasks: their own projects (or the ones
 they chose) and shared projects' tasks assigned to them.
 
@@ -244,7 +244,6 @@ Everything is the caller's, or in a project they're in; anything else is `404`.
 | `TODOS_SYNC_TOMBSTONE_DAYS` | 30 |
 | `TODOS_SYNC_MAX_OPERATIONS` | 200 per `POST` |
 | `TODOS_GOOGLE_EVENT_MINUTES` | 30 |
-| `TODOS_GOOGLE_ENCRYPTION_KEY` | a Fernet key; a GitHub secret |
 
 Each reads `FINEXITO_<name>` from the environment.
 
