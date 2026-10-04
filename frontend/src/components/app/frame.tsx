@@ -1,8 +1,9 @@
 "use client";
 
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createContext, use } from "react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,7 @@ export function AppBar({
   actions?: React.ReactNode;
   children?: React.ReactNode;
 }) {
+  if (use(ActiveTabContext)?.noAppBar) return null;
   return (
     <header className="bg-background/90 sticky top-0 z-20 flex min-h-14 items-center gap-1 px-2 pt-[env(safe-area-inset-top)] backdrop-blur">
       {back ? (
@@ -51,28 +53,22 @@ export function AppBar({
   );
 }
 
-/** A screen's scrolling body, clear of the tab bar. */
+/** A screen's scrolling body, clear of the tab bar (and of the notch, with no top bar). */
 export function Screen({ className, ...props }: React.ComponentProps<"main">) {
-  return <main className={cn("flex flex-1 flex-col gap-6 px-4 pt-2 pb-28", className)} {...props} />;
-}
-
-/** The bottom tabs, with an optional floating action above them. */
-export function TabBar({ action, children }: { action?: React.ReactNode; children: React.ReactNode }) {
+  const noAppBar = use(ActiveTabContext)?.noAppBar;
   return (
-    <nav className="bg-background/95 sticky bottom-0 z-20 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur">
-      {action && <div className="absolute right-4 bottom-full mb-4">{action}</div>}
-      <ul className="flex h-16">{children}</ul>
-    </nav>
+    <main
+      className={cn(
+        "flex flex-1 flex-col gap-6 px-4 pt-2 pb-28",
+        noAppBar && "pt-[calc(env(safe-area-inset-top)+0.5rem)]",
+        className,
+      )}
+      {...props}
+    />
   );
 }
 
-export function Tab({
-  href,
-  icon,
-  label,
-  badge,
-  match = [],
-}: {
+export type Tab = {
   href: string;
   icon: React.ReactNode;
   label: string;
@@ -80,13 +76,59 @@ export function Tab({
   badge?: number;
   /** Other paths that belong to this tab. */
   match?: string[];
+  /** Leave out the top bar on this tab's screens. */
+  noAppBar?: boolean;
+  /** Leave out the floating action on this tab's screens. */
+  noFab?: boolean;
+};
+
+/** The Me tab: always last, with its own icon and label. */
+export type MeTab = Omit<Tab, "icon" | "label">;
+
+const ActiveTabContext = createContext<Tab | undefined>(undefined);
+
+/**
+ * A mini app's frame: its screens, the bottom tabs and the floating action.
+ * Two to four tabs of its own, then Me (the account and the app's settings),
+ * so three to five in all.
+ */
+export function AppShell({
+  tabs,
+  me,
+  fab,
+  children,
+}: {
+  tabs: [Tab, Tab] | [Tab, Tab, Tab] | [Tab, Tab, Tab, Tab];
+  me: MeTab;
+  /** The main action, floating above the tabs. */
+  fab?: React.ReactNode;
+  children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const active = pathname === href || match.some((path) => pathname.startsWith(path));
+  const all: Tab[] = [...tabs, { icon: <UserRound />, label: "Me", ...me }];
+  const active = all.find((tab) => pathname === tab.href || tab.match?.some((path) => pathname.startsWith(path)));
+  return (
+    <ActiveTabContext value={active}>
+      <AppFrame>
+        {children}
+        <nav className="bg-background/95 sticky bottom-0 z-20 border-t pb-[env(safe-area-inset-bottom)] backdrop-blur">
+          {fab && !active?.noFab && <div className="absolute right-4 bottom-full mb-4">{fab}</div>}
+          <ul className="flex h-16">
+            {all.map((tab) => (
+              <TabLink key={tab.href} tab={tab} active={tab === active} />
+            ))}
+          </ul>
+        </nav>
+      </AppFrame>
+    </ActiveTabContext>
+  );
+}
+
+function TabLink({ tab, active }: { tab: Tab; active: boolean }) {
   return (
     <li className="flex-1">
       <Link
-        href={href}
+        href={tab.href}
         aria-current={active ? "page" : undefined}
         className={cn(
           "text-muted-foreground flex h-full flex-col items-center justify-center gap-1 text-xs [&_svg]:size-5",
@@ -94,14 +136,14 @@ export function Tab({
         )}
       >
         <span className="relative">
-          {icon}
-          {badge != null && (
+          {tab.icon}
+          {tab.badge != null && (
             <span className="bg-primary text-primary-foreground absolute -top-1.5 left-3.5 min-w-4 rounded-full px-1 text-[10px] leading-4 font-medium tabular-nums">
-              {badge}
+              {tab.badge}
             </span>
           )}
         </span>
-        {label}
+        {tab.label}
       </Link>
     </li>
   );

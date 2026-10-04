@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CalendarRange, Inbox, LayoutList, Plus, Search, UserRound } from "lucide-react";
+import { CalendarDays, CalendarRange, Inbox, LayoutList, Plus } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createContext, use, useCallback, useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { createProject } from "@/app/todos/actions";
 import { Connection } from "@/app/todos/connection";
 import { isoDate } from "@/app/todos/due";
 import { QuickAdd, type Prefill } from "@/app/todos/quick-add";
-import { AppFrame, Fab, Tab, TabBar } from "@/components/app/frame";
+import { AppShell, Fab } from "@/components/app/frame";
 import { ActionSheet, PromptSheet } from "@/components/app/sheet";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@/lib/api/client";
@@ -91,29 +91,28 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <TodosContext value={{ projects, sections, labels, filters, quickAdd, confirm }}>
-      <AppFrame>
+      <AppShell
+        tabs={[
+          { href: "/todos", icon: <Inbox />, label: "Inbox" },
+          { href: "/todos/today", icon: <CalendarDays />, label: "Today", badge: today?.length || undefined },
+          { href: "/todos/upcoming", icon: <CalendarRange />, label: "Upcoming" },
+          {
+            href: "/todos/browse",
+            icon: <LayoutList />,
+            label: "Browse",
+            match: ["/todos/project", "/todos/filter", "/todos/label", "/todos/templates"],
+          },
+        ]}
+        me={{ href: "/todos/me", noAppBar: true, noFab: true }}
+        fab={
+          <Fab aria-label="Add task" onClick={() => quickAdd({ project, due })}>
+            <Plus />
+          </Fab>
+        }
+      >
         <Connection />
         {children}
-        <TabBar
-          action={
-            <Fab aria-label="Add task" onClick={() => quickAdd({ project, due })}>
-              <Plus />
-            </Fab>
-          }
-        >
-          <Tab href="/todos" icon={<Inbox />} label="Inbox" />
-          <Tab href="/todos/today" icon={<CalendarDays />} label="Today" badge={today?.length || undefined} />
-          <Tab href="/todos/upcoming" icon={<CalendarRange />} label="Upcoming" />
-          <Tab href="/todos/search" icon={<Search />} label="Search" />
-          <Tab
-            href="/todos/browse"
-            icon={<LayoutList />}
-            label="Browse"
-            match={["/todos/project", "/todos/filter", "/todos/label", "/todos/templates"]}
-          />
-          <Tab href="/todos/me" icon={<UserRound />} label="Me" />
-        </TabBar>
-      </AppFrame>
+      </AppShell>
 
       <QuickAdd prefill={prefill} onClose={() => setPrefill(null)} />
       <ActionSheet
