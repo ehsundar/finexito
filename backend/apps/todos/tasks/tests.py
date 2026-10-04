@@ -11,7 +11,7 @@ from django.urls import reverse
 from apps.common.testing import PlatformTestCase
 from apps.messaging.models import EmailMessage
 from apps.profiles.models import Profile
-from apps.reminders.models import Reminder
+from apps.reminders.models import Reminder, reminder_due
 from apps.todos.projects.models import Project, Section
 from apps.todos.tasks.dates import Due
 from apps.todos.tasks.models import Label, Task
@@ -773,3 +773,138 @@ class TaskReminderTests(DatedTestCase):
         self.fire(task)
 
         self.assertFalse(EmailMessage.objects.exists())
+
+
+class SharedTaskTests(DatedTestCase):
+    def setUp(self):
+        super().setUp()
+        self.home = Project.objects.create(owner=self.user, name="Home")
+        self.other = User.objects.create_user(email="other@example.com")
+        Profile.objects.create(user=self.other, timezone="Europe/London", display_name="Other")
+        self.home.join(self.other)
+
+    def test_collaborators_see_and_edit_tasks(self):
+        task = self.task("Shop", project=self.home)
+        self.authenticate(self.other)
+
+        listed = self.client.get(reverse("todo-task-list"), {"project": self.home.pk}).data
+        self.assertEqual([t["content"] for t in listed], ["Shop"])
+        response = self.client.patch(
+            reverse("todo-task-detail", args=[task.pk]), {"content": "Shop now"}
+        )
+        self.assertEqual(response.status_code, 200)
+        made = self.client.post(
+            reverse("todo-task-list"), {"project": self.home.pk, "content": "Cook"}
+        )
+        self.assertEqual(str(made.data["created_by"]), str(self.other.pk))
+
+    def test_collaborators_cannot_move_tasks_out(self):
+        task = self.task("Shop", project=self.home)
+        self.authenticate(self.other)
+        mine = Project.objects.inbox(self.other)
+
+        response = self.client.patch(
+            reverse("todo-task-detail", args=[task.pk]), {"project": mine.pk}
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_assigning_someone_else_emails_them(self):
+        task = self.task("Shop", project=self.home)
+
+        response = self.client.patch(
+            reverse("todo-task-detail", args=[task.pk]), {"assignee": self.other.pk}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        email = EmailMessage.objects.get(extra__purpose="todos_assigned")
+        self.assertEqual(email.to, "other@example.com")
+        # Assigning yourself sends nothing.
+        self.client.patch(reverse("todo-task-detail", args=[task.pk]), {"assignee": self.user.pk})
+        self.assertEqual(EmailMessage.objects.filter(extra__purpose="todos_assigned").count(), 1)
+
+    def test_only_people_in_the_project_can_be_assigned(self):
+        task = self.task("Shop", project=self.home)
+        stranger = User.objects.create_user(email="stranger@example.com")
+
+        response = self.client.patch(
+            reverse("todo-task-detail", args=[task.pk]), {"assignee": stranger.pk}
+        )
+
+        self.assertEqual(response.status_code, 400)
+
+    def test_moving_to_a_project_without_the_assignee_unassigns(self):
+        task = self.task("Shop", project=self.home, assignee=self.other)
+
+        self.client.patch(reverse("todo-task-detail", args=[task.pk]), {"project": self.inbox.pk})
+
+        task.refresh_from_db()
+        self.assertIsNone(task.assignee)
+
+    def test_assigned_filters(self):
+        self.task("Mine", project=self.home, assignee=self.user)
+        self.task("Theirs", project=self.home, assignee=self.other)
+
+        def names(slug):
+            response = self.client.get(reverse("todo-task-list"), {"filter": slug})
+            return [t["content"] for t in response.data]
+
+        self.assertEqual(names("assigned-to-me"), ["Mine"])
+        self.assertEqual(names("assigned-to-others"), ["Theirs"])
+
+    def test_each_person_sees_and_sets_only_their_labels(self):
+        task = self.task("Shop", project=self.home)
+        mine = Label.objects.create(owner=self.user, name="errand")
+        theirs = Label.objects.create(owner=self.other, name="weekend")
+        task.labels.add(mine)
+        self.authenticate(self.other)
+
+        url = reverse("todo-task-detail", args=[task.pk])
+        self.assertEqual(self.client.get(url).data["labels"], [])
+        response = self.client.patch(url, {"labels": [theirs.pk]}, format="json")
+        self.assertEqual(response.data["labels"], [str(theirs.pk)])
+        self.assertEqual(set(task.labels.all()), {mine, theirs})
+        # Someone else's label isn't theirs to set.
+        response = self.client.patch(url, {"labels": [mine.pk]}, format="json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_the_default_reminder_goes_to_the_assignee_or_everyone(self):
+        unassigned = self.task("Shop", project=self.home)
+        assigned = self.task("Cook", project=self.home, assignee=self.other)
+
+        self.due(unassigned, "tomorrow 9am")
+        self.due(assigned, "tomorrow 9am")
+
+        self.assertEqual({r.user for r in unassigned.reminders.all()}, {self.user, self.other})
+        self.assertEqual([r.user for r in assigned.reminders.all()], [self.other])
+        # Each sees only their own.
+        listed = self.client.get(reverse("todo-task-reminders", args=[assigned.pk])).data
+        self.assertEqual(listed, [])
+
+    def test_leaving_takes_assignments_reminders_and_labels(self):
+        task = self.task("Shop", project=self.home, assignee=self.other)
+        self.due(task, "tomorrow 9am")
+        label = Label.objects.create(owner=self.other, name="weekend")
+        task.labels.add(label)
+
+        self.home.remove(self.other)
+
+        task.refresh_from_db()
+        self.assertIsNone(task.assignee)
+        self.assertFalse(task.reminders.filter(user=self.other).exists())
+        self.assertFalse(task.labels.exists())
+        self.authenticate(self.other)
+        self.assertEqual(
+            self.client.get(reverse("todo-task-detail", args=[task.pk])).status_code, 404
+        )
+
+    def test_reminder_emails_go_to_the_reminders_member(self):
+        task = self.task("Shop", project=self.home, assignee=self.other)
+        self.due(task, "tomorrow 9am")
+        reminder = task.reminders.get()
+
+        reminder_due.send(Reminder, reminder=reminder)
+
+        self.assertEqual(
+            EmailMessage.objects.get(extra__purpose="todos_reminder").to, "other@example.com"
+        )

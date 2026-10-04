@@ -46,6 +46,9 @@ class TaskSerializer(CleanedSerializer):
             "description",
             "priority",
             "labels",
+            "assignee",
+            "created_by",
+            "comment_count",
             "completed_at",
             "due_date",
             "due_time",
@@ -62,11 +65,31 @@ class TaskSerializer(CleanedSerializer):
         read_only_fields = (
             "id",
             "order",
+            "created_by",
+            "comment_count",
             "completed_at",
             "due_from_completion",
             "created_at",
             "updated_at",
         )
+
+    def caller(self):
+        return self.context["request"].user
+
+    def validate_project(self, project):
+        moving_out = self.instance and self.instance.project_id != project.pk
+        if moving_out and self.instance.project.owner_id != self.caller().pk:
+            raise serializers.ValidationError("Only the project's owner can move tasks out.")
+        return project
+
+    def persist(self, task, data):
+        """Labels are the caller's: setting them leaves everyone else's alone."""
+        labels = data.pop("labels", None)
+        task = super().persist(task, data)
+        if labels is not None:
+            theirs = task.labels.exclude(owner=self.caller())
+            task.labels.set([*theirs, *labels])
+        return task
 
     def zone(self):
         return zone(member_zone(self.context["request"].user))
@@ -83,6 +106,9 @@ class TaskSerializer(CleanedSerializer):
 
     def to_representation(self, task):
         data = super().to_representation(task)
+        data["labels"] = [
+            str(label.pk) for label in task.labels.all() if label.owner_id == self.caller().pk
+        ]
         if task.due_at:
             local = task.due_at.astimezone(self.zone())
             data["due_date"], data["due_time"] = local.date().isoformat(), local.strftime("%H:%M")

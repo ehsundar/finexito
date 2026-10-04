@@ -496,10 +496,58 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/todos/join/{token}/:
+    get:
+      operationId: todos_join_retrieve
+      description: |-
+        An invite link: anyone holding it sees the project's name and who shared it;
+        a signed-in member joins with POST.
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinPreview'
+          description: ''
+    post:
+      operationId: todos_join_create
+      description: |-
+        An invite link: anyone holding it sees the project's name and who shared it;
+        a signed-in member joins with POST.
+      parameters:
+      - in: path
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinPreview'
+          description: ''
   /api/v1/todos/labels/:
     get:
       operationId: todos_labels_list
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       tags:
       - todos
       security:
@@ -516,7 +564,7 @@ paths:
           description: ''
     post:
       operationId: todos_labels_create
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       tags:
       - todos
       requestBody:
@@ -544,7 +592,7 @@ paths:
   /api/v1/todos/labels/{id}/:
     get:
       operationId: todos_labels_retrieve
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: path
         name: id
@@ -567,7 +615,7 @@ paths:
           description: ''
     patch:
       operationId: todos_labels_partial_update
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: path
         name: id
@@ -601,7 +649,7 @@ paths:
           description: ''
     delete:
       operationId: todos_labels_destroy
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: path
         name: id
@@ -654,7 +702,7 @@ paths:
   /api/v1/todos/projects/:
     get:
       operationId: todos_projects_list
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: archived
@@ -677,7 +725,7 @@ paths:
           description: ''
     post:
       operationId: todos_projects_create
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: archived
@@ -711,7 +759,7 @@ paths:
   /api/v1/todos/projects/{id}/:
     get:
       operationId: todos_projects_retrieve
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: archived
@@ -739,7 +787,7 @@ paths:
           description: ''
     patch:
       operationId: todos_projects_partial_update
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: archived
@@ -778,7 +826,7 @@ paths:
           description: ''
     delete:
       operationId: todos_projects_destroy
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: archived
@@ -800,10 +848,190 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/todos/projects/{id}/collaborators/:
+    get:
+      operationId: todos_projects_collaborators_list
+      description: The owner first, then everyone who joined.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project.
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Person'
+          description: ''
+    delete:
+      operationId: todos_projects_collaborators_destroy
+      description: Remove someone (`?user=`), or leave, with your own id.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project.
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/projects/{id}/invite-link/:
+    get:
+      operationId: todos_projects_invite_link_retrieve
+      description: GET reads the link's token, POST makes a new one (the old one stops
+        working), DELETE turns joining by link off.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project.
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteLink'
+          description: ''
+    post:
+      operationId: todos_projects_invite_link_create
+      description: GET reads the link's token, POST makes a new one (the old one stops
+        working), DELETE turns joining by link off.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project.
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InviteLink'
+          description: ''
+    delete:
+      operationId: todos_projects_invite_link_destroy
+      description: GET reads the link's token, POST makes a new one (the old one stops
+        working), DELETE turns joining by link off.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project.
+        required: true
+      tags:
+      - todos
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/todos/projects/{id}/transfer/:
+    post:
+      operationId: todos_projects_transfer_create
+      description: Hand the project to one of its collaborators.
+      parameters:
+      - in: query
+        name: archived
+        schema:
+          type: boolean
+        description: Archived projects instead.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this project.
+        required: true
+      tags:
+      - todos
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+          description: ''
   /api/v1/todos/projects/reorder/:
     post:
       operationId: todos_projects_reorder_create
-      description: Put sibling rows in the order given.
+      description: Put sibling projects in the order given, as the caller places them.
       parameters:
       - in: query
         name: archived
@@ -862,7 +1090,7 @@ paths:
   /api/v1/todos/sections/:
     get:
       operationId: todos_sections_list
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: project
@@ -889,7 +1117,7 @@ paths:
           description: ''
     post:
       operationId: todos_sections_create
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: project
@@ -927,7 +1155,7 @@ paths:
   /api/v1/todos/sections/{id}/:
     get:
       operationId: todos_sections_retrieve
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: path
         name: id
@@ -959,7 +1187,7 @@ paths:
           description: ''
     patch:
       operationId: todos_sections_partial_update
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: path
         name: id
@@ -1002,7 +1230,7 @@ paths:
           description: ''
     delete:
       operationId: todos_sections_destroy
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: path
         name: id
@@ -1074,7 +1302,7 @@ paths:
   /api/v1/todos/tasks/:
     get:
       operationId: todos_tasks_list
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: completed
@@ -1145,7 +1373,7 @@ paths:
           description: ''
     post:
       operationId: todos_tasks_create
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: completed
@@ -1227,7 +1455,7 @@ paths:
   /api/v1/todos/tasks/{id}/:
     get:
       operationId: todos_tasks_retrieve
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: completed
@@ -1303,7 +1531,7 @@ paths:
           description: ''
     patch:
       operationId: todos_tasks_partial_update
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: completed
@@ -1390,7 +1618,7 @@ paths:
           description: ''
     delete:
       operationId: todos_tasks_destroy
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: completed
@@ -1463,7 +1691,7 @@ paths:
   /api/v1/todos/tasks/{id}/close/:
     post:
       operationId: todos_tasks_close_create
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: completed
@@ -1540,7 +1768,7 @@ paths:
   /api/v1/todos/tasks/{id}/reminders/:
     get:
       operationId: todos_tasks_reminders_list
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: completed
@@ -1618,7 +1846,7 @@ paths:
           description: ''
     post:
       operationId: todos_tasks_reminders_create
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: completed
@@ -1708,7 +1936,7 @@ paths:
   /api/v1/todos/tasks/{id}/reopen/:
     post:
       operationId: todos_tasks_reopen_create
-      description: The caller's own rows; anyone else's are 404.
+      description: Rows the caller can see; anything else is 404.
       parameters:
       - in: query
         name: completed
@@ -2138,12 +2366,44 @@ components:
       - code_verifier
       - state
       - url
+    InviteLink:
+      type: object
+      properties:
+        token:
+          type: string
+          nullable: true
+          description: Null when joining is off.
+        is_full:
+          type: boolean
+      required:
+      - is_full
+      - token
+    JoinPreview:
+      type: object
+      properties:
+        project:
+          type: string
+          format: uuid
+        name:
+          type: string
+        invited_by:
+          $ref: '#/components/schemas/Person'
+        is_member:
+          type: boolean
+        is_full:
+          type: boolean
+      required:
+      - invited_by
+      - is_full
+      - is_member
+      - name
+      - project
     Label:
       type: object
       description: |-
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        Related fields only offer rows the caller can see; anything else reads as missing.
       properties:
         id:
           type: string
@@ -2174,7 +2434,7 @@ components:
       description: |-
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        Related fields only offer rows the caller can see; anything else reads as missing.
       properties:
         name:
           type: string
@@ -2335,7 +2595,7 @@ components:
       description: |-
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        Related fields only offer rows the caller can see; anything else reads as missing.
       properties:
         name:
           type: string
@@ -2376,9 +2636,8 @@ components:
     PatchedProjectRequest:
       type: object
       description: |-
-        Saves through the model's ``full_clean()``, so its rules and limits apply.
-
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        For a collaborator, ``parent``, ``order``, ``colour`` and ``is_favourite``
+        are their own place for the project.
       properties:
         name:
           type: string
@@ -2403,7 +2662,7 @@ components:
       description: |-
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        Related fields only offer rows the caller can see; anything else reads as missing.
       properties:
         project:
           type: string
@@ -2453,6 +2712,10 @@ components:
           items:
             type: string
             format: uuid
+        assignee:
+          type: string
+          format: uuid
+          nullable: true
         due_date:
           type: string
           format: date
@@ -2465,6 +2728,27 @@ components:
           type: string
           maxLength: 200
         extra: {}
+    Person:
+      type: object
+      description: Someone in a project, as the others in it see them.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          readOnly: true
+        email:
+          type: string
+          format: email
+        avatar_url:
+          type: string
+          readOnly: true
+      required:
+      - avatar_url
+      - email
+      - id
+      - name
     PriorityEnum:
       enum:
       - 1
@@ -2541,9 +2825,8 @@ components:
     Project:
       type: object
       description: |-
-        Saves through the model's ``full_clean()``, so its rules and limits apply.
-
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        For a collaborator, ``parent``, ``order``, ``colour`` and ``is_favourite``
+        are their own place for the project.
       properties:
         id:
           type: string
@@ -2572,6 +2855,12 @@ components:
         order:
           type: integer
           readOnly: true
+        is_owner:
+          type: boolean
+          readOnly: true
+        is_shared:
+          type: boolean
+          readOnly: true
         open_task_count:
           type: integer
           readOnly: true
@@ -2584,15 +2873,16 @@ components:
       - created_at
       - id
       - is_inbox
+      - is_owner
+      - is_shared
       - name
       - open_task_count
       - order
     ProjectRequest:
       type: object
       description: |-
-        Saves through the model's ``full_clean()``, so its rules and limits apply.
-
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        For a collaborator, ``parent``, ``order``, ``colour`` and ``is_favourite``
+        are their own place for the project.
       properties:
         name:
           type: string
@@ -2724,7 +3014,7 @@ components:
       description: |-
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        Related fields only offer rows the caller can see; anything else reads as missing.
       properties:
         id:
           type: string
@@ -2756,7 +3046,7 @@ components:
       description: |-
         Saves through the model's ``full_clean()``, so its rules and limits apply.
 
-        Related fields only offer the caller's own rows; anything else reads as missing.
+        Related fields only offer rows the caller can see; anything else reads as missing.
       properties:
         project:
           type: string
@@ -2874,6 +3164,18 @@ components:
           items:
             type: string
             format: uuid
+        assignee:
+          type: string
+          format: uuid
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        comment_count:
+          type: integer
+          readOnly: true
         completed_at:
           type: string
           format: date-time
@@ -2918,10 +3220,12 @@ components:
           format: date-time
           readOnly: true
       required:
+      - comment_count
       - completed_at
       - completed_subtask_count
       - content
       - created_at
+      - created_by
       - due_from_completion
       - id
       - is_overdue
@@ -2969,6 +3273,10 @@ components:
           items:
             type: string
             format: uuid
+        assignee:
+          type: string
+          format: uuid
+          nullable: true
         due_date:
           type: string
           format: date
@@ -3019,6 +3327,14 @@ components:
           minLength: 1
       required:
       - token
+    TransferRequest:
+      type: object
+      properties:
+        user:
+          type: string
+          format: uuid
+      required:
+      - user
     User:
       type: object
       properties:

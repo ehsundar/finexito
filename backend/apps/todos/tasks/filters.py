@@ -88,3 +88,17 @@ class Recurring(Filter):
 
     def queryset(self, user):
         return self.tasks(user).open().exclude(due_rule="").order_by("due_date", "due_at")
+
+
+class AssignedToMe(Filter):
+    slug, name = "assigned-to-me", "Assigned to me"
+
+    def queryset(self, user):
+        return self.tasks(user).open().filter(assignee=user)
+
+
+class AssignedToOthers(Filter):
+    slug, name = "assigned-to-others", "Assigned to others"
+
+    def queryset(self, user):
+        return self.tasks(user).open().exclude(assignee=None).exclude(assignee=user)

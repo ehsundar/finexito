@@ -9,7 +9,9 @@ import json
 from datetime import date, datetime, time, timedelta
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.fields import GenericRelation
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
 from django.db import models
@@ -21,7 +23,14 @@ from django.utils.translation import gettext_lazy as _
 from apps.common.models import BaseModel
 from apps.messaging.models import EmailMessage
 from apps.reminders.models import Reminder, next_occurrence, reminder_due, zone
-from apps.todos.projects.models import Colour, Project, Section, TrackedModel, next_order
+from apps.todos.projects.models import (
+    Colour,
+    Project,
+    Section,
+    TrackedModel,
+    member_left,
+    next_order,
+)
 
 MAX_TASK_DEPTH = 4
 
@@ -91,9 +100,15 @@ def member_today(user) -> date:
     return tz.now().astimezone(zone(member_zone(user))).date()
 
 
-# A member's reminder preferences, kept in their profile's ``extra``.
+# A member's preferences, kept in their profile's ``extra``.
 REMINDER_DEFAULT_KEY = "todos_reminder_before"  # minutes, or "off"; default 30
 REMINDER_EMAILS_KEY = "todos_reminder_emails"  # "false" turns them off
+ASSIGNED_EMAILS_KEY = "todos_assigned_emails"  # "false" turns them off
+
+
+def preference(user, key: str, default: str) -> str:
+    profile = getattr(user, "profile", None)
+    return (profile.extra if profile else {}).get(key, default)
 
 
 class Priority(models.IntegerChoices):
@@ -105,10 +120,10 @@ class Priority(models.IntegerChoices):
 
 class TaskQuerySet(models.QuerySet):
     def visible_to(self, user):
-        """The member's tasks, leaving out archived projects and sections."""
-        return self.filter(project__owner=user, project__is_archived=False).exclude(
-            section__is_archived=True
-        )
+        """Tasks in the member's projects, leaving out archived projects and sections."""
+        return self.filter(
+            project__in=Project.objects.visible_to(user), project__is_archived=False
+        ).exclude(section__is_archived=True)
 
     def open(self):
         return self.filter(completed_at__isnull=True)
@@ -133,7 +148,25 @@ class Task(TrackedModel):
     content = models.CharField(max_length=500, help_text=_("Inline Markdown."))
     description = models.TextField(max_length=16_000, blank=True, help_text=_("Markdown."))
     priority = models.PositiveSmallIntegerField(choices=Priority, default=Priority.P4)
+    # Each person's own labels: on a shared task, everyone sees only theirs.
     labels = models.ManyToManyField(Label, blank=True, related_name="tasks")
+    assignee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="todo_assigned_tasks",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="+",
+        editable=False,
+    )
+    # Kept by the comments app, so lists can show it without counting.
+    comment_count = models.PositiveIntegerField(default=0, editable=False)
     completed_at = models.DateTimeField(null=True, blank=True, editable=False)
     # The day it's due, in the owner's time zone; with a time, also the instant,
     # which is what counts for a timed task.
@@ -202,8 +235,14 @@ class Task(TrackedModel):
                 self.section = None
         elif self.parent_id and self.changed("section_id"):
             self.parent = None
+        people = self.project.people_ids()
+        # Someone outside the project it moved to can't stay assigned.
+        if self.assignee_id and self.changed("project_id") and self.assignee_id not in people:
+            self.assignee = None
 
         errors = {}
+        if self.assignee_id and self.assignee_id not in people:
+            errors["assignee"] = _("Choose someone in this project.")
         if not self.content:
             errors["content"] = _("Write something.")
         if not isinstance(self.extra, dict):
@@ -278,15 +317,20 @@ class Task(TrackedModel):
             else:
                 reminder.start_at = self.due_at - timedelta(minutes=int(before))
                 reminder.save()
-        if newly_timed and self.completion_of_id is None:
-            profile = getattr(self.owner, "profile", None)
-            default = (profile.extra if profile else {}).get(REMINDER_DEFAULT_KEY, "30")
-            if default.isdigit() and not self.reminders.exists():
-                self.add_reminder(minutes_before=int(default))
+        if newly_timed and self.completion_of_id is None and not self.reminders.exists():
+            # On a shared project: the assignee, or everyone if no one is assigned.
+            people = [self.assignee] if self.assignee else self.project_people()
+            for user in people:
+                default = preference(user, REMINDER_DEFAULT_KEY, "30")
+                if default.isdigit():
+                    self.add_reminder(user, minutes_before=int(default))
 
-    def add_reminder(self, minutes_before: int | None = None, at: datetime | None = None):
-        """A reminder ``minutes_before`` the due time, or ``at`` a moment."""
-        if self.reminders.count() >= settings.TODOS_TASKS_MAX_REMINDERS:
+    def project_people(self) -> list:
+        return list(get_user_model().objects.filter(pk__in=self.project.people_ids()))
+
+    def add_reminder(self, user, minutes_before: int | None = None, at: datetime | None = None):
+        """A reminder for ``user``, ``minutes_before`` the due time, or ``at`` a moment."""
+        if self.reminders.filter(user=user).count() >= settings.TODOS_TASKS_MAX_REMINDERS:
             raise ValidationError(
                 _("A task holds up to %(max)s reminders.")
                 % {"max": settings.TODOS_TASKS_MAX_REMINDERS}
@@ -296,10 +340,10 @@ class Task(TrackedModel):
                 raise ValidationError(_("Give the task a time first."))
             at = self.due_at - timedelta(minutes=minutes_before)
         return Reminder.objects.create(
-            user=self.owner,
+            user=user,
             target=self,
             start_at=at,
-            timezone=member_zone(self.owner),
+            timezone=member_zone(user),
             extra={} if minutes_before is None else {"minutes_before": str(minutes_before)},
         )
 
@@ -349,6 +393,8 @@ class Task(TrackedModel):
             content=self.content,
             description=self.description,
             priority=self.priority,
+            assignee=self.assignee,
+            created_by=self.created_by,
             due_date=self.due_date,
             due_at=self.due_at,
             due_string=self.due_string,
@@ -385,6 +431,23 @@ class Task(TrackedModel):
         )
         self.completed_at = None
 
+    def tell_assignee(self, by):
+        """Email the assignee that ``by`` gave them this task, unless they did it
+        themselves or have opted out."""
+        user = self.assignee
+        if user is None or user == by or preference(user, ASSIGNED_EMAILS_KEY, "") == "false":
+            return
+        name = getattr(getattr(by, "profile", None), "display_name", "") or by.email
+        lines = [f"{name} assigned you a task in {self.project.name}:", "", self.content]
+        lines += ["", f"Open it: {settings.PUBLIC_ORIGIN}/todos/task?id={self.pk}"]
+        lines += ["", f"— {settings.SITE_NAME}"]
+        EmailMessage.objects.create(
+            to=user.email,
+            subject=f"Assigned to you: {self.content}",
+            body="\n".join(lines),
+            extra={"purpose": "todos_assigned", "task": str(self.pk)},
+        )
+
 
 class FavouriteFilter(BaseModel):
     """A member's pin of a built-in filter (``todos.filters``), shown in the sidebar."""
@@ -407,17 +470,27 @@ class FavouriteFilter(BaseModel):
         return self.slug
 
 
+@receiver(member_left)
+def forget_member(sender, project, user, **kwargs):
+    """Someone leaving takes their assignments, reminders and labels with them."""
+    tasks = Task.objects.filter(project=project)
+    tasks.filter(assignee=user).update(assignee=None)
+    Reminder.objects.filter(
+        user=user, content_type=ContentType.objects.get_for_model(Task), object_id__in=tasks
+    ).delete()
+    Task.labels.through.objects.filter(task__in=tasks, label__owner=user).delete()
+
+
 @receiver(reminder_due)
 def email_reminder(sender, reminder, **kwargs):
-    """Email the owner about their task, unless it's done or they've opted out."""
+    """Email the reminder's member about the task, unless it's done or they've opted out."""
     task = reminder.target
     if not isinstance(task, Task) or task.completed_at:
         return
-    owner = task.owner
-    profile = getattr(owner, "profile", None)
-    if profile and profile.extra.get(REMINDER_EMAILS_KEY) == "false":
+    user = reminder.user
+    if preference(user, REMINDER_EMAILS_KEY, "") == "false":
         return
-    local = zone(member_zone(owner))
+    local = zone(member_zone(user))
     when = (
         task.due_at.astimezone(local).strftime("%-d %b, %H:%M")
         if task.due_at
@@ -429,7 +502,7 @@ def email_reminder(sender, reminder, **kwargs):
     lines += ["", f"Open it: {settings.PUBLIC_ORIGIN}/todos/task?id={task.pk}"]
     lines += ["", f"— {settings.SITE_NAME}"]
     EmailMessage.objects.create(
-        to=owner.email,
+        to=user.email,
         subject=f"Reminder: {task.content}",
         body="\n".join(line for line in lines if line is not None),
         extra={"purpose": "todos_reminder", "task": str(task.pk)},

@@ -1,16 +1,29 @@
 from django.contrib import admin
 from django.db.models import Count
 
-from apps.todos.projects.models import Project, Section
+from apps.todos.projects.models import Project, ProjectMember, Section
+
+
+class MemberInline(admin.TabularInline):
+    model = ProjectMember
+    fk_name = "project"
+    fields = ("user", "created_at")
+    readonly_fields = fields
+    extra = 0
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Project)
 class ProjectAdmin(admin.ModelAdmin):
+    inlines = (MemberInline,)
     list_display = ("name", "owner", "task_count", "is_archived", "is_inbox", "created_at")
     list_filter = ("is_archived", "is_inbox")
     search_fields = ("name", "owner__email")
     raw_id_fields = ("owner", "parent")
-    readonly_fields = ("is_inbox", "created_at", "updated_at")
+    readonly_fields = ("is_inbox", "invite_token", "created_at", "updated_at")
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(task_count=Count("tasks"))

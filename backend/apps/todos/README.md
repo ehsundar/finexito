@@ -20,8 +20,9 @@ starting from the bottom of the table.
 | Model            | What |
 | ---------------- | ---- |
 | `Project`        | A member's project; nests 3 levels. One per member is the Inbox (`is_inbox`), made the first time it is asked for (`Project.objects.inbox(user)`), and can't be renamed, archived, nested or deleted. |
+| `ProjectMember`  | Someone a project is shared with, and their own place for it (parent, order, colour, favourite). |
 | `Section`        | A heading inside one project. |
-| `Task`           | In a project, optionally in one of its sections, optionally under another task; nests 4 levels. |
+| `Task`           | In a project, optionally in one of its sections, optionally under another task; nests 4 levels. Optionally assigned to someone in the project. |
 | `Label`          | A member's tag; names are unique per member, case-insensitively. |
 | `FavouriteFilter`| A member's pin of a built-in filter's slug. |
 
@@ -38,6 +39,26 @@ through `full_clean()`, so the admin and the API enforce the same ones:
 - `Task.close()` completes a task and its open sub-tasks. `Task.reopen()`
   reopens it, the sub-tasks completed with it, and any completed parents.
 - `extra` is any JSON object up to `TODOS_TASKS_MAX_EXTRA_BYTES`, stored as is.
+
+## Sharing
+
+A project has an owner and collaborators, who join through its invite link
+(`Project.invite_token`; blank turns joining off). Nothing is ever emailed to
+someone who hasn't joined. The Inbox can't be shared, and sharing a project
+doesn't share its sub-projects.
+
+- Collaborators do everything with sections and tasks inside the project, but
+  can't move them out, or rename, archive, delete or share the project. Changing
+  its parent, colour or favourite changes only their own place for it.
+- `Project.remove(user)` takes someone out (or lets them leave) and sends
+  `member_left`; the tasks app unassigns them there and drops their reminders
+  and labels on its tasks. `Project.transfer(user)` swaps the owner with a
+  collaborator.
+- Labels are each person's own: on a shared task, everyone sees and sets only
+  theirs. Reminders are each person's too; a task getting a time gives the
+  assignee their default reminder, or everyone if no one is assigned.
+- `Task.tell_assignee(by)` emails someone given a task by someone else, unless
+  their profile's `todos_assigned_emails` is `false`.
 
 ## Due dates
 
@@ -90,6 +111,12 @@ keeping its time), `tasks/{id}/reminders/` (`GET`, `POST`), `reminders/{id}/`
 text), `filters/` and
 `filters/{slug}/favourite/` (`POST` pins, `DELETE` unpins).
 
+Sharing: `projects/{id}/collaborators/` (`GET` the owner then the rest;
+`DELETE ?user=` removes someone, or leaves with your own id),
+`projects/{id}/transfer/` (`{"user": …}`), `projects/{id}/invite-link/` (`GET`;
+`POST` makes a new token; `DELETE` turns joining off), and `join/{token}/`
+(`GET` a preview anyone holding the link may see; `POST` joins).
+
 `tasks/` lists open tasks by default; it takes `?project=&section=&parent=`
 (`none` for no section or the top level) `&label=&filter=&q=&completed=true`,
 or `?view=today` (overdue and today) or `?view=upcoming&from=&to=` (by day).
@@ -97,7 +124,7 @@ or `?view=today` (overdue and today) or `?view=upcoming&from=&to=` (by day).
 content and description, open tasks first. Lists aren't paginated: the limits
 below bound them.
 
-Everything is the caller's own; anyone else's rows are `404`.
+Everything is the caller's, or in a project they're in; anything else is `404`.
 
 ## Settings
 
@@ -109,7 +136,9 @@ Everything is the caller's own; anyone else's rows are `404`.
 | `TODOS_TASKS_MAX_LABELS` | 500 per member |
 | `TODOS_TASKS_MAX_EXTRA_BYTES` | 16 KB |
 | `TODOS_PROJECTS_WRITE_RATE` | `1000/hour` per member, writes only |
-| `TODOS_TASKS_MAX_REMINDERS` | 10 |
+| `TODOS_TASKS_MAX_REMINDERS` | 10 per member per task |
+| `TODOS_PROJECTS_MAX_COLLABORATORS` | 50 |
+| `TODOS_PROJECTS_JOIN_RATE` | `30/hour` per member or address |
 
 Each reads `FINEXITO_<name>` from the environment.
 

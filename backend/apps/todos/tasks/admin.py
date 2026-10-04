@@ -9,12 +9,19 @@ from apps.todos.tasks.models import FavouriteFilter, Label, Task
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ("content", "project", "section", "priority", "completed_at")
+    list_display = ("content", "project", "assignee", "priority", "completed_at")
     list_filter = ("priority", ("completed_at", admin.EmptyFieldListFilter))
     search_fields = ("content",)
-    raw_id_fields = ("project", "section", "parent")
+    raw_id_fields = ("project", "section", "parent", "assignee")
     filter_horizontal = ("labels",)
-    readonly_fields = ("completed_at", "extra_json", "created_at", "updated_at")
+    readonly_fields = (
+        "completed_at",
+        "created_by",
+        "comment_count",
+        "extra_json",
+        "created_at",
+        "updated_at",
+    )
     exclude = ("extra",)
 
     @admin.display(description="Extra")

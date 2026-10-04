@@ -277,6 +277,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/todos/join/{token}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description An invite link: anyone holding it sees the project's name and who shared it;
+         *     a signed-in member joins with POST.
+         */
+        get: operations["todos_join_retrieve"];
+        put?: never;
+        /**
+         * @description An invite link: anyone holding it sees the project's name and who shared it;
+         *     a signed-in member joins with POST.
+         */
+        post: operations["todos_join_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/todos/labels/": {
         parameters: {
             query?: never;
@@ -284,10 +308,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         get: operations["todos_labels_list"];
         put?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         post: operations["todos_labels_create"];
         delete?: never;
         options?: never;
@@ -302,15 +326,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         get: operations["todos_labels_retrieve"];
         put?: never;
         post?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         delete: operations["todos_labels_destroy"];
         options?: never;
         head?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         patch: operations["todos_labels_partial_update"];
         trace?: never;
     };
@@ -338,10 +362,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         get: operations["todos_projects_list"];
         put?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         post: operations["todos_projects_create"];
         delete?: never;
         options?: never;
@@ -356,16 +380,70 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         get: operations["todos_projects_retrieve"];
         put?: never;
         post?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         delete: operations["todos_projects_destroy"];
         options?: never;
         head?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         patch: operations["todos_projects_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/todos/projects/{id}/collaborators/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The owner first, then everyone who joined. */
+        get: operations["todos_projects_collaborators_list"];
+        put?: never;
+        post?: never;
+        /** @description Remove someone (`?user=`), or leave, with your own id. */
+        delete: operations["todos_projects_collaborators_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/projects/{id}/invite-link/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description GET reads the link's token, POST makes a new one (the old one stops working), DELETE turns joining by link off. */
+        get: operations["todos_projects_invite_link_retrieve"];
+        put?: never;
+        /** @description GET reads the link's token, POST makes a new one (the old one stops working), DELETE turns joining by link off. */
+        post: operations["todos_projects_invite_link_create"];
+        /** @description GET reads the link's token, POST makes a new one (the old one stops working), DELETE turns joining by link off. */
+        delete: operations["todos_projects_invite_link_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/todos/projects/{id}/transfer/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Hand the project to one of its collaborators. */
+        post: operations["todos_projects_transfer_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/todos/projects/reorder/": {
@@ -377,7 +455,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Put sibling rows in the order given. */
+        /** @description Put sibling projects in the order given, as the caller places them. */
         post: operations["todos_projects_reorder_create"];
         delete?: never;
         options?: never;
@@ -409,10 +487,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         get: operations["todos_sections_list"];
         put?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         post: operations["todos_sections_create"];
         delete?: never;
         options?: never;
@@ -427,15 +505,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         get: operations["todos_sections_retrieve"];
         put?: never;
         post?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         delete: operations["todos_sections_destroy"];
         options?: never;
         head?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         patch: operations["todos_sections_partial_update"];
         trace?: never;
     };
@@ -463,10 +541,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         get: operations["todos_tasks_list"];
         put?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         post: operations["todos_tasks_create"];
         delete?: never;
         options?: never;
@@ -481,15 +559,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         get: operations["todos_tasks_retrieve"];
         put?: never;
         post?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         delete: operations["todos_tasks_destroy"];
         options?: never;
         head?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         patch: operations["todos_tasks_partial_update"];
         trace?: never;
     };
@@ -502,7 +580,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         post: operations["todos_tasks_close_create"];
         delete?: never;
         options?: never;
@@ -517,10 +595,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         get: operations["todos_tasks_reminders_list"];
         put?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         post: operations["todos_tasks_reminders_create"];
         delete?: never;
         options?: never;
@@ -537,7 +615,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description The caller's own rows; anyone else's are 404. */
+        /** @description Rows the caller can see; anything else is 404. */
         post: operations["todos_tasks_reopen_create"];
         delete?: never;
         options?: never;
@@ -663,10 +741,23 @@ export interface components {
             readonly state: string;
             readonly code_verifier: string;
         };
+        InviteLink: {
+            /** @description Null when joining is off. */
+            token: string | null;
+            is_full: boolean;
+        };
+        JoinPreview: {
+            /** Format: uuid */
+            project: string;
+            name: string;
+            invited_by: components["schemas"]["Person"];
+            is_member: boolean;
+            is_full: boolean;
+        };
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         *     Related fields only offer rows the caller can see; anything else reads as missing.
          */
         Label: {
             /** Format: uuid */
@@ -681,7 +772,7 @@ export interface components {
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         *     Related fields only offer rows the caller can see; anything else reads as missing.
          */
         LabelRequest: {
             name: string;
@@ -762,7 +853,7 @@ export interface components {
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         *     Related fields only offer rows the caller can see; anything else reads as missing.
          */
         PatchedLabelRequest: {
             name?: string;
@@ -780,9 +871,8 @@ export interface components {
             };
         };
         /**
-         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
-         *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         * @description For a collaborator, ``parent``, ``order``, ``colour`` and ``is_favourite``
+         *     are their own place for the project.
          */
         PatchedProjectRequest: {
             name?: string;
@@ -797,7 +887,7 @@ export interface components {
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         *     Related fields only offer rows the caller can see; anything else reads as missing.
          */
         PatchedSectionRequest: {
             /** Format: uuid */
@@ -825,12 +915,23 @@ export interface components {
             description?: string;
             priority?: components["schemas"]["PriorityEnum"];
             labels?: string[];
+            /** Format: uuid */
+            assignee?: string | null;
             /** Format: date */
             due_date?: string | null;
             /** Format: time */
             due_time?: string | null;
             due_string?: string;
             extra?: unknown;
+        };
+        /** @description Someone in a project, as the others in it see them. */
+        Person: {
+            /** Format: uuid */
+            id: string;
+            readonly name: string;
+            /** Format: email */
+            email: string;
+            readonly avatar_url: string;
         };
         /**
          * @description * `1` - Priority 1
@@ -866,9 +967,8 @@ export interface components {
          */
         ProfileStatusEnum: "active" | "pending" | "suspended";
         /**
-         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
-         *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         * @description For a collaborator, ``parent``, ``order``, ``colour`` and ``is_favourite``
+         *     are their own place for the project.
          */
         Project: {
             /** Format: uuid */
@@ -883,15 +983,16 @@ export interface components {
             view?: components["schemas"]["ViewEnum"];
             sort?: components["schemas"]["SortEnum"];
             readonly order: number;
+            readonly is_owner: boolean;
+            readonly is_shared: boolean;
             /** @default 0 */
             readonly open_task_count: number;
             /** Format: date-time */
             readonly created_at: string;
         };
         /**
-         * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
-         *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         * @description For a collaborator, ``parent``, ``order``, ``colour`` and ``is_favourite``
+         *     are their own place for the project.
          */
         ProjectRequest: {
             name: string;
@@ -952,7 +1053,7 @@ export interface components {
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         *     Related fields only offer rows the caller can see; anything else reads as missing.
          */
         Section: {
             /** Format: uuid */
@@ -968,7 +1069,7 @@ export interface components {
         /**
          * @description Saves through the model's ``full_clean()``, so its rules and limits apply.
          *
-         *     Related fields only offer the caller's own rows; anything else reads as missing.
+         *     Related fields only offer rows the caller can see; anything else reads as missing.
          */
         SectionRequest: {
             /** Format: uuid */
@@ -1024,6 +1125,11 @@ export interface components {
             description?: string;
             priority?: components["schemas"]["PriorityEnum"];
             labels?: string[];
+            /** Format: uuid */
+            assignee?: string | null;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            readonly comment_count: number;
             /** Format: date-time */
             readonly completed_at: string | null;
             /** Format: date */
@@ -1065,6 +1171,8 @@ export interface components {
             description?: string;
             priority?: components["schemas"]["PriorityEnum"];
             labels?: string[];
+            /** Format: uuid */
+            assignee?: string | null;
             /** Format: date */
             due_date?: string | null;
             /** Format: time */
@@ -1088,6 +1196,10 @@ export interface components {
         };
         TokenVerifyRequest: {
             token: string;
+        };
+        TransferRequest: {
+            /** Format: uuid */
+            user: string;
         };
         User: {
             /** Format: uuid */
@@ -1603,6 +1715,48 @@ export interface operations {
             };
         };
     };
+    todos_join_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinPreview"];
+                };
+            };
+        };
+    };
+    todos_join_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                token: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JoinPreview"];
+                };
+            };
+        };
+    };
     todos_labels_list: {
         parameters: {
             query?: never;
@@ -1859,6 +2013,160 @@ export interface operations {
                 "application/json": components["schemas"]["PatchedProjectRequest"];
                 "application/x-www-form-urlencoded": components["schemas"]["PatchedProjectRequest"];
                 "multipart/form-data": components["schemas"]["PatchedProjectRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+        };
+    };
+    todos_projects_collaborators_list: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this project. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Person"][];
+                };
+            };
+        };
+    };
+    todos_projects_collaborators_destroy: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this project. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_projects_invite_link_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this project. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteLink"];
+                };
+            };
+        };
+    };
+    todos_projects_invite_link_create: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this project. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteLink"];
+                };
+            };
+        };
+    };
+    todos_projects_invite_link_destroy: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this project. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    todos_projects_transfer_create: {
+        parameters: {
+            query?: {
+                /** @description Archived projects instead. */
+                archived?: boolean;
+            };
+            header?: never;
+            path: {
+                /** @description A UUID string identifying this project. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TransferRequest"];
+                "multipart/form-data": components["schemas"]["TransferRequest"];
             };
         };
         responses: {

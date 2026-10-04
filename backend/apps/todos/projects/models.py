@@ -1,12 +1,19 @@
-"""A member's projects and the sections in them.
+"""A member's projects, the sections in them, and the people they're shared with.
 
 Projects nest, and a section belongs to one project. The rules live in each
 model's ``clean()``, so the API and the admin enforce the same ones.
+
+A project has one owner, and collaborators who joined through its invite link
+(``ProjectMember``). Each collaborator keeps their own place for it: parent,
+order, colour and favourite live on their membership, the owner's on the project.
 """
+
+import secrets
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
+from django.dispatch import Signal
 from django.utils.translation import gettext_lazy as _
 
 from apps.common.models import BaseModel
@@ -50,14 +57,25 @@ def next_order(siblings) -> int:
     return (siblings.aggregate(models.Max("order"))["order__max"] or 0) + 1
 
 
+# Sent once someone has left a project, or been removed from it, with
+# ``project`` and ``user``, so what they had there can go with them.
+member_left = Signal()
+
+
+def new_invite_token() -> str:
+    return secrets.token_urlsafe(24)
+
+
 class ProjectQuerySet(models.QuerySet):
     def visible_to(self, user):
-        return self.filter(owner=user)
+        """Projects the member owns or has joined."""
+        joined = ProjectMember.objects.filter(user=user).values("project")
+        return self.filter(models.Q(owner=user) | models.Q(pk__in=joined))
 
     def inbox(self, user) -> "Project":
         """The member's Inbox, made the first time it is asked for."""
         project, _created = self.get_or_create(
-            owner=user, is_inbox=True, defaults={"name": "Inbox"}
+            owner=user, is_inbox=True, defaults={"name": "Inbox", "invite_token": ""}
         )
         return project
 
@@ -89,6 +107,10 @@ class Project(TrackedModel):
     view = models.CharField(max_length=10, choices=ProjectView, default=ProjectView.LIST)
     sort = models.CharField(max_length=10, choices=ProjectSort, default=ProjectSort.MANUAL)
     order = models.IntegerField(default=0)
+    # Blank when joining by link is off.
+    invite_token = models.CharField(
+        max_length=40, blank=True, default=new_invite_token, editable=False, db_index=True
+    )
 
     objects = ProjectQuerySet.as_manager()
 
@@ -179,10 +201,106 @@ class Project(TrackedModel):
             raise ValidationError(_("The Inbox can't be deleted."))
         return super().delete(*args, **kwargs)
 
+    def people_ids(self) -> list:
+        """The owner and the collaborators."""
+        return [self.owner_id, *self.members.values_list("user_id", flat=True)]
+
+    def is_full(self) -> bool:
+        return self.members.count() >= settings.TODOS_PROJECTS_MAX_COLLABORATORS
+
+    def join(self, user) -> "ProjectMember":
+        """Add someone who opened the invite link; joining twice changes nothing."""
+        if self.is_inbox or not self.invite_token:
+            raise ValidationError(_("This invite link doesn't work any more."))
+        if user.pk in self.people_ids():
+            return self.members.filter(user=user).first()
+        if self.is_full():
+            raise ValidationError(_("This project is full."))
+        return ProjectMember.objects.create(
+            project=self,
+            user=user,
+            colour=self.colour,
+            order=next_order(ProjectMember.objects.filter(user=user, parent=None)),
+        )
+
+    def remove(self, user):
+        """Take a collaborator out: they leave, or the owner removes them."""
+        if self.members.filter(user=user).delete()[0]:
+            member_left.send(Project, project=self, user=user)
+
+    @transaction.atomic
+    def transfer(self, user):
+        """Hand the project to a collaborator, who swaps places with the owner.
+
+        The old owner's sub-projects stay theirs, so they move up a level.
+        """
+        member = self.members.filter(user=user).first()
+        if member is None:
+            raise ValidationError(_("Choose someone in this project."))
+        Project.objects.filter(parent=self).update(parent=self.parent)
+        old = ProjectMember(
+            project=self,
+            user_id=self.owner_id,
+            parent=self.parent,
+            order=self.order,
+            colour=self.colour,
+            is_favourite=self.is_favourite,
+        )
+        self.owner_id, self.parent_id = member.user_id, member.parent_id
+        self.colour, self.is_favourite = member.colour, member.is_favourite
+        member.delete()
+        old.save()
+        # Saved without full_clean(): the new owner's place was already checked.
+        self.save()
+
+
+class ProjectMember(BaseModel):
+    """Someone a project is shared with, and their own place for it."""
+
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name="members")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="todo_memberships"
+    )
+    parent = models.ForeignKey(
+        Project, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    colour = models.CharField(max_length=20, choices=Colour, default=Colour.NEUTRAL)
+    is_favourite = models.BooleanField(default=False)
+    order = models.IntegerField(default=0)
+
+    class Meta(BaseModel.Meta):
+        verbose_name = _("project member")
+        verbose_name_plural = _("project members")
+        ordering = ("created_at",)
+        constraints = [
+            models.UniqueConstraint(fields=("project", "user"), name="todos_one_membership")
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.user} in {self.project}"
+
+    def clean(self):
+        super().clean()
+        if self.parent_id:
+            parent = self.parent
+            if parent.owner_id != self.user_id or parent.is_inbox:
+                raise ValidationError({"parent": _("Choose one of your projects.")})
+            if len(parent.ancestors()) + 2 > MAX_PROJECT_DEPTH:
+                raise ValidationError(
+                    {
+                        "parent": _("Projects nest up to %(max)s levels.")
+                        % {"max": MAX_PROJECT_DEPTH}
+                    }
+                )
+
 
 class SectionQuerySet(models.QuerySet):
     def visible_to(self, user):
-        return self.filter(project__owner=user, project__is_archived=False, is_archived=False)
+        return self.filter(
+            project__in=Project.objects.visible_to(user),
+            project__is_archived=False,
+            is_archived=False,
+        )
 
 
 class Section(TrackedModel):

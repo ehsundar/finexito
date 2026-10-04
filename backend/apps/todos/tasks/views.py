@@ -131,6 +131,16 @@ class TaskViewSet(TodosViewSet):
     def sibling_key(self, row):
         return (row.project_id, row.section_id, row.parent_id)
 
+    def perform_create(self, serializer):
+        task = serializer.save(created_by=self.request.user)
+        task.tell_assignee(by=self.request.user)
+
+    def perform_update(self, serializer):
+        before = serializer.instance.assignee_id
+        task = serializer.save()
+        if task.assignee_id != before:
+            task.tell_assignee(by=self.request.user)
+
     def get_object(self):
         task = self.rows().filter(pk=self.kwargs["pk"]).first()
         if task is None:
@@ -197,12 +207,13 @@ class TaskViewSet(TodosViewSet):
             serializer.is_valid(raise_exception=True)
             try:
                 task.add_reminder(
+                    request.user,
                     minutes_before=serializer.validated_data.get("minutes_before"),
                     at=serializer.validated_data.get("start_at"),
                 )
             except ModelValidationError as error:
                 raise ValidationError(error.messages) from None
-        reminders = task.reminders.order_by("start_at")
+        reminders = task.reminders.filter(user=request.user).order_by("start_at")
         code = status.HTTP_201_CREATED if request.method == "POST" else status.HTTP_200_OK
         return Response(ReminderSerializer(reminders, many=True).data, status=code)
 
@@ -218,7 +229,9 @@ class ReminderViewSet(mixins.DestroyModelMixin, viewsets.GenericViewSet):
             return Reminder.objects.none()
         mine = Task.objects.visible_to(self.request.user).values("pk")
         return Reminder.objects.filter(
-            content_type=ContentType.objects.get_for_model(Task), object_id__in=mine
+            user=self.request.user,
+            content_type=ContentType.objects.get_for_model(Task),
+            object_id__in=mine,
         )
 
 
