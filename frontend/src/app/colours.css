@@ -7,7 +7,10 @@
 :root {
   --palette-navy: #0b1b33;
   --palette-harbour: #17305a;
-  --palette-deep: #1f3d6e;
+  /* Dark mode's surfaces: near black, with a trace of the navy. */
+  --palette-ink: #0b0f16;
+  --palette-ink-raised: #151b25;
+  --palette-ink-high: #1f2733;
   --palette-sky: #5aa9ff;
   --palette-azure: #2f7bea;
   --palette-cobalt: #1a56c4;
@@ -93,19 +96,19 @@
 }
 
 .dark {
-  --background: var(--palette-navy);
+  --background: var(--palette-ink);
   --foreground: var(--palette-cream);
-  --card: var(--palette-harbour);
+  --card: var(--palette-ink-raised);
   --card-foreground: var(--palette-cream);
-  --popover: var(--palette-harbour);
+  --popover: var(--palette-ink-raised);
   --popover-foreground: var(--palette-cream);
   --primary: var(--palette-sky);
   --primary-foreground: var(--palette-navy);
-  --secondary: var(--palette-harbour);
+  --secondary: var(--palette-ink-raised);
   --secondary-foreground: var(--palette-cream);
-  --muted: var(--palette-harbour);
+  --muted: var(--palette-ink-raised);
   --muted-foreground: var(--palette-slate-300);
-  --accent: var(--palette-deep);
+  --accent: var(--palette-ink-high);
   --accent-foreground: var(--palette-cream);
   --destructive: var(--palette-loss-bright);
   --border: color-mix(in srgb, var(--palette-cream) 10%, transparent);
@@ -116,11 +119,11 @@
   --chart-3: var(--palette-cream);
   --chart-4: var(--palette-slate-300);
   --chart-5: var(--palette-slate-500);
-  --sidebar: var(--palette-navy);
+  --sidebar: var(--palette-ink);
   --sidebar-foreground: var(--palette-cream);
   --sidebar-primary: var(--palette-sky);
   --sidebar-primary-foreground: var(--palette-navy);
-  --sidebar-accent: var(--palette-harbour);
+  --sidebar-accent: var(--palette-ink-raised);
   --sidebar-accent-foreground: var(--palette-cream);
   --sidebar-border: color-mix(in srgb, var(--palette-cream) 10%, transparent);
   --sidebar-ring: var(--palette-sky);
@@ -139,5 +142,5 @@
   --priority-4: var(--palette-slate-500);
   --mark-frame: var(--palette-cream);
   --mark-door: var(--palette-sky);
-  --mark-knob: var(--palette-navy);
+  --mark-knob: var(--palette-ink);
 }
