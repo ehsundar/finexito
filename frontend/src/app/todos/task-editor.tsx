@@ -13,7 +13,7 @@ import { colourVar, Dot, useTodos, type Task } from "@/app/todos/shell";
 import { priorityVar, TaskCheck, withoutId } from "@/app/todos/task-list";
 import { List, ListRow } from "@/components/app/list";
 import { ActionSheet, Sheet } from "@/components/app/sheet";
-import { Button } from "@/components/ui/button";
+import { MarkdownEditor } from "@/components/markdown/editor";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
@@ -74,38 +74,18 @@ export function TaskEditor({ task, description }: { task: Task; description: Rea
         />
       </div>
 
-      {editing ? (
-        <form
-          className="flex flex-col gap-2"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            const value = String(new FormData(event.currentTarget).get("description") ?? "");
-            if (await save({ description: value })) setEditing(false);
-          }}
-        >
-          <textarea
-            name="description"
-            defaultValue={task.description}
-            maxLength={16000}
-            rows={8}
-            autoFocus
-            placeholder="Description (Markdown)"
-            className="border-input bg-card rounded-xl border p-3 text-base"
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <Button type="button" size="lg" variant="outline" onClick={() => setEditing(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" size="lg">
-              Save
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <button type="button" onClick={() => setEditing(true)} className="active:bg-accent -mx-2 rounded-lg p-2 text-left">
-          {description ?? <span className="text-muted-foreground">Add a description</span>}
-        </button>
-      )}
+      <button type="button" onClick={() => setEditing(true)} className="active:bg-accent -mx-2 rounded-lg p-2 text-left">
+        {description ?? <span className="text-muted-foreground">Add a description</span>}
+      </button>
+      <MarkdownEditor
+        open={editing}
+        onOpenChange={setEditing}
+        title="Description"
+        initial={task.description ?? ""}
+        placeholder="Add details, a checklist or links"
+        maxLength={16000}
+        onSave={(description) => save({ description })}
+      />
 
       <List>
         <ListRow
