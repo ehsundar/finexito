@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, use } from "react";
 
+import { useProfileTheme } from "@/components/app/theme";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -105,6 +106,8 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  // Every signed-in app follows the theme saved in the profile.
+  useProfileTheme();
   const all: Tab[] = [...tabs, { icon: <UserRound />, label: "Me", ...me }];
   const active = all.find((tab) => pathname === tab.href || tab.match?.some((path) => pathname.startsWith(path)));
   return (

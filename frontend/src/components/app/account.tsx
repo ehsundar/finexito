@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { LogOut, SunMoon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -8,7 +8,8 @@ import { toast } from "sonner";
 import { Pending } from "@/components/app/pending";
 import { Avatar } from "@/components/app/avatar";
 import { List, ListRow } from "@/components/app/list";
-import { PromptSheet } from "@/components/app/sheet";
+import { ActionSheet, PromptSheet } from "@/components/app/sheet";
+import { THEMES, useProfileTheme } from "@/components/app/theme";
 import { api, errorMessage, revalidate, signOut, useQuery } from "@/lib/api/client";
 
 /**
@@ -20,6 +21,8 @@ export function Account({ children }: { children?: React.ReactNode }) {
   const { data: me, error } = useQuery("/api/v1/auth/me/");
   const { data: profile } = useQuery("/api/v1/profiles/me/");
   const [renaming, setRenaming] = useState(false);
+  const [theming, setTheming] = useState(false);
+  const { theme, choose } = useProfileTheme();
   if (!me) return <Pending error={error} />;
   const name = profile?.display_name || me.email.split("@")[0];
 
@@ -37,6 +40,9 @@ export function Account({ children }: { children?: React.ReactNode }) {
           Name
         </ListRow>
         <ListRow detail={profile?.timezone}>Time zone</ListRow>
+        <ListRow icon={<SunMoon />} onClick={() => setTheming(true)} detail={THEMES.find((t) => t.value === theme)?.label}>
+          Appearance
+        </ListRow>
       </List>
       {children}
       <List>
@@ -51,6 +57,13 @@ export function Account({ children }: { children?: React.ReactNode }) {
           Sign out
         </ListRow>
       </List>
+      <ActionSheet
+        open={theming}
+        onOpenChange={setTheming}
+        title="Appearance"
+        description="System follows this device's setting."
+        actions={THEMES.map((t) => ({ label: t.label, checked: t.value === theme, onSelect: () => choose(t.value) }))}
+      />
       <PromptSheet
         open={renaming}
         onOpenChange={setRenaming}
