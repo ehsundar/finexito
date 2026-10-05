@@ -80,6 +80,16 @@
   --priority-2: var(--palette-orange);
   --priority-3: var(--palette-azure);
   --priority-4: var(--palette-slate-300);
+  /* The mark beside the site name (components/app/mark.tsx). */
+  --mark-frame: var(--palette-navy);
+  --mark-door: var(--palette-azure);
+  --mark-knob: var(--palette-white);
+  /* The app's icons: favicon, home screen and install (app/brand-icon.tsx),
+     drawn from these when the app is built. */
+  --icon-tile: var(--palette-navy);
+  --icon-frame: var(--palette-cream);
+  --icon-door: var(--palette-sky);
+  --icon-knob: var(--palette-navy);
 }
 
 .dark {
@@ -127,4 +137,7 @@
   --priority-2: var(--palette-orange-bright);
   --priority-3: var(--palette-sky);
   --priority-4: var(--palette-slate-500);
+  --mark-frame: var(--palette-cream);
+  --mark-door: var(--palette-sky);
+  --mark-knob: var(--palette-navy);
 }

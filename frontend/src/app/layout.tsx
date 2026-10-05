@@ -24,6 +24,8 @@ export const viewport: Viewport = { viewportFit: "cover" };
 // wants; Caddy writes this deployment's name into it (deploy/Caddyfile).
 export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
+  // Drawn from colours.css when the app is built (app/brand/[icon]/route.tsx).
+  icons: { icon: "/brand/favicon.png", apple: "/brand/apple-icon.png" },
   appleWebApp: { capable: true },
 };
 

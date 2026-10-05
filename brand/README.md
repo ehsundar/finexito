@@ -12,14 +12,9 @@ brand, and the product's name always comes from `FINEXITO_SITE_NAME`.
 | File | What it is |
 | --- | --- |
 | `brand/guide.html` | The brand guide: idea, logo rules, palette, type, voice. |
-| `brand/logo-light.svg`, `brand/logo-dark.svg` | Logo with wordmark, for documents and marketing. |
-| `brand/app-icon.svg` | App icon in its tile. |
 | `brand/mark-mono.svg` | One-colour mark (`currentColor`). |
-| `frontend/public/brand/mark.svg` | The mark beside the site name in the app header. |
-| `frontend/src/app/icon.svg` | Favicon. |
-| `frontend/public/brand/icon-192.png`, `icon-512.png` | App icon for the installed app (from `brand/app-icon.svg`). |
-| `frontend/src/app/apple-icon.png` | App icon on an iPhone's home screen, 180×180. |
-| `frontend/src/app/colours.css` | Every colour: the palette, and the light and dark themes made from it. The only file with colour values in it; the guide reads it too. |
+| `frontend/src/components/app/mark.tsx` | The mark (a door left open), drawn once: in the app header, and in the app's icons. |
+| `frontend/src/app/colours.css` | Every colour: the palette, and the light and dark themes made from it. The only file with colour values in it. The mark and the app's icons (favicon, iPhone, installed app) take theirs from it too: the icons are drawn when the app is built (`frontend/src/app/brand-icon.tsx`), so a new palette needs no new image files. The guide reads it too. |
 | `frontend/src/app/layout.tsx` | The typeface, loaded with `next/font`. |
 
 ## Finexito at a glance
