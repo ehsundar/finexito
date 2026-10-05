@@ -1,0 +1,130 @@
+/*
+ * Every colour the app uses, and the only place one is written down
+ * (brand/README.md). A fork recolours the product by editing this file:
+ * the palette names each colour once; the light and dark themes below
+ * give each role in the interface a colour from it.
+ */
+:root {
+  --palette-navy: #0b1b33;
+  --palette-harbour: #17305a;
+  --palette-deep: #1f3d6e;
+  --palette-sky: #5aa9ff;
+  --palette-azure: #2f7bea;
+  --palette-cobalt: #1a56c4;
+  --palette-paper: #fbfaf6;
+  --palette-cream: #f3efe6;
+  --palette-white: #ffffff;
+  --palette-slate-700: #3b4658;
+  --palette-slate-500: #5f6b7d;
+  --palette-slate-300: #c7cdd6;
+  --palette-slate-100: #e6e9ee;
+  --palette-gain: #12805c;
+  --palette-gain-bright: #4cc196;
+  --palette-loss: #c8413a;
+  --palette-loss-bright: #e5675f;
+  --palette-caution: #9c6500;
+  --palette-caution-bright: #e0b24a;
+  --palette-orange: #c76a1e;
+  --palette-orange-bright: #ec9450;
+  --palette-teal: #127a80;
+  --palette-teal-bright: #4cbcc1;
+  --palette-purple: #7a4fc4;
+  --palette-purple-bright: #a98bf0;
+  --palette-pink: #c43f86;
+  --palette-pink-bright: #ec7bb7;
+}
+
+:root {
+  --background: var(--palette-paper);
+  --foreground: var(--palette-navy);
+  --card: var(--palette-white);
+  --card-foreground: var(--palette-navy);
+  --popover: var(--palette-white);
+  --popover-foreground: var(--palette-navy);
+  --primary: var(--palette-navy);
+  --primary-foreground: var(--palette-cream);
+  --secondary: var(--palette-cream);
+  --secondary-foreground: var(--palette-navy);
+  --muted: var(--palette-cream);
+  --muted-foreground: var(--palette-slate-500);
+  --accent: var(--palette-slate-100);
+  --accent-foreground: var(--palette-navy);
+  --destructive: var(--palette-loss);
+  --border: var(--palette-slate-100);
+  --input: var(--palette-slate-300);
+  --ring: var(--palette-azure);
+  --chart-1: var(--palette-azure);
+  --chart-2: var(--palette-cobalt);
+  --chart-3: var(--palette-harbour);
+  --chart-4: var(--palette-slate-500);
+  --chart-5: var(--palette-slate-300);
+  --sidebar: var(--palette-cream);
+  --sidebar-foreground: var(--palette-navy);
+  --sidebar-primary: var(--palette-navy);
+  --sidebar-primary-foreground: var(--palette-cream);
+  --sidebar-accent: var(--palette-slate-100);
+  --sidebar-accent-foreground: var(--palette-navy);
+  --sidebar-border: var(--palette-slate-100);
+  --sidebar-ring: var(--palette-azure);
+  /* Named colours members pick for projects and labels, and task priorities. */
+  --tag-neutral: var(--palette-slate-500);
+  --tag-red: var(--palette-loss);
+  --tag-orange: var(--palette-orange);
+  --tag-yellow: var(--palette-caution);
+  --tag-green: var(--palette-gain);
+  --tag-teal: var(--palette-teal);
+  --tag-blue: var(--palette-azure);
+  --tag-purple: var(--palette-purple);
+  --tag-pink: var(--palette-pink);
+  --priority-1: var(--palette-loss);
+  --priority-2: var(--palette-orange);
+  --priority-3: var(--palette-azure);
+  --priority-4: var(--palette-slate-300);
+}
+
+.dark {
+  --background: var(--palette-navy);
+  --foreground: var(--palette-cream);
+  --card: var(--palette-harbour);
+  --card-foreground: var(--palette-cream);
+  --popover: var(--palette-harbour);
+  --popover-foreground: var(--palette-cream);
+  --primary: var(--palette-sky);
+  --primary-foreground: var(--palette-navy);
+  --secondary: var(--palette-harbour);
+  --secondary-foreground: var(--palette-cream);
+  --muted: var(--palette-harbour);
+  --muted-foreground: var(--palette-slate-300);
+  --accent: var(--palette-deep);
+  --accent-foreground: var(--palette-cream);
+  --destructive: var(--palette-loss-bright);
+  --border: color-mix(in srgb, var(--palette-cream) 10%, transparent);
+  --input: color-mix(in srgb, var(--palette-cream) 15%, transparent);
+  --ring: var(--palette-sky);
+  --chart-1: var(--palette-sky);
+  --chart-2: var(--palette-azure);
+  --chart-3: var(--palette-cream);
+  --chart-4: var(--palette-slate-300);
+  --chart-5: var(--palette-slate-500);
+  --sidebar: var(--palette-navy);
+  --sidebar-foreground: var(--palette-cream);
+  --sidebar-primary: var(--palette-sky);
+  --sidebar-primary-foreground: var(--palette-navy);
+  --sidebar-accent: var(--palette-harbour);
+  --sidebar-accent-foreground: var(--palette-cream);
+  --sidebar-border: color-mix(in srgb, var(--palette-cream) 10%, transparent);
+  --sidebar-ring: var(--palette-sky);
+  --tag-neutral: var(--palette-slate-300);
+  --tag-red: var(--palette-loss-bright);
+  --tag-orange: var(--palette-orange-bright);
+  --tag-yellow: var(--palette-caution-bright);
+  --tag-green: var(--palette-gain-bright);
+  --tag-teal: var(--palette-teal-bright);
+  --tag-blue: var(--palette-sky);
+  --tag-purple: var(--palette-purple-bright);
+  --tag-pink: var(--palette-pink-bright);
+  --priority-1: var(--palette-loss-bright);
+  --priority-2: var(--palette-orange-bright);
+  --priority-3: var(--palette-sky);
+  --priority-4: var(--palette-slate-500);
+}

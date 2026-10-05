@@ -6,29 +6,10 @@
 <link rel="icon" href="../frontend/src/app/icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../frontend/src/app/colours.css">
 <style>
-/* The palette; frontend/src/app/globals.css maps it onto the app theme. */
+/* Colours come from the app's own palette (colours.css); swatches show its values. */
 :root {
-  /* Core */
-  --fx-navy: #0B1B33;      /* primary dark: text, frame, dark surfaces */
-  --fx-harbour: #17305A;     /* raised dark surface */
-  --fx-sky: #5AA9FF;     /* the door: accent on dark */
-  --fx-azure: #2F7BEA;  /* the door on light: fills, buttons, charts */
-  --fx-cobalt: #1A56C4;   /* blue text and links on light (AA) */
-  --fx-cream: #F3EFE6;    /* frame on dark, warm surfaces */
-  --fx-paper: #FBFAF6;    /* page background */
-
-  /* Neutrals */
-  --fx-slate-700: #3B4658;
-  --fx-slate-500: #5F6B7D; /* secondary text (AA on paper) */
-  --fx-slate-300: #C7CDD6;
-  --fx-slate-100: #E6E9EE; /* borders, dividers */
-
-  /* Signals */
-  --fx-gain: #12805C;
-  --fx-loss: #C8413A;
-  --fx-caution: #9C6500;
-
   /* Type */
   --fx-font: "Inter", "Helvetica Neue", Arial, sans-serif;
   --fx-font-numbers: "Inter", sans-serif; /* with font-variant-numeric: tabular-nums */
@@ -40,45 +21,45 @@
 }
 
   * { box-sizing: border-box; margin: 0; }
-  body { font-family: var(--fx-font); background: var(--fx-paper); color: var(--fx-navy); line-height: 1.5; }
+  body { font-family: var(--fx-font); background: var(--palette-paper); color: var(--palette-navy); line-height: 1.5; }
   main { max-width: 1040px; margin: 0 auto; padding: 72px 32px 120px; }
-  section { padding: 56px 0; border-top: 1px solid var(--fx-slate-100); }
-  h1 { font-size: 15px; font-weight: 500; color: var(--fx-slate-500); letter-spacing: .02em; }
+  section { padding: 56px 0; border-top: 1px solid var(--palette-slate-100); }
+  h1 { font-size: 15px; font-weight: 500; color: var(--palette-slate-500); letter-spacing: .02em; }
   h2 { font-size: 28px; font-weight: 500; letter-spacing: -.01em; margin-bottom: 8px; }
-  .lede { color: var(--fx-slate-500); max-width: 60ch; margin-bottom: 32px; }
+  .lede { color: var(--palette-slate-500); max-width: 60ch; margin-bottom: 32px; }
   .grid { display: grid; gap: 16px; }
   .g2 { grid-template-columns: repeat(2, 1fr); }
   .g3 { grid-template-columns: repeat(3, 1fr); }
   .g4 { grid-template-columns: repeat(4, 1fr); }
   .tile { border-radius: var(--fx-radius); padding: 40px; display: grid; place-items: center; min-height: 220px; }
   .tile img { max-width: 100%; }
-  .cap { font-size: 13px; color: var(--fx-slate-500); margin-top: 10px; }
+  .cap { font-size: 13px; color: var(--palette-slate-500); margin-top: 10px; }
   .hero { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 48px; padding-bottom: 56px; }
   .hero p { font-size: 40px; font-weight: 500; letter-spacing: -.02em; line-height: 1.15; max-width: 16ch; }
-  .hero em { font-style: normal; color: var(--fx-cobalt); }
-  .sw { border-radius: var(--fx-radius); overflow: hidden; border: 1px solid var(--fx-slate-100); background: #fff; }
+  .hero em { font-style: normal; color: var(--palette-cobalt); }
+  .sw { border-radius: var(--fx-radius); overflow: hidden; border: 1px solid var(--palette-slate-100); background: #fff; }
   .sw div:first-child { height: 120px; }
   .sw.big div:first-child { height: 180px; }
   .sw div:last-child { padding: 12px 14px; font-size: 13px; }
   .sw b { display: block; font-weight: 600; font-size: 14px; }
-  .sw span { color: var(--fx-slate-500); font-variant-numeric: tabular-nums; }
+  .sw span { color: var(--palette-slate-500); font-variant-numeric: tabular-nums; }
   .bar { display: flex; height: 40px; border-radius: var(--fx-radius-sm); overflow: hidden; margin-top: 24px; }
   .type-big { font-size: 96px; font-weight: 500; letter-spacing: -.03em; line-height: 1; }
-  .scale div { display: flex; align-items: baseline; gap: 24px; padding: 14px 0; border-bottom: 1px solid var(--fx-slate-100); }
-  .scale small { width: 120px; flex: none; color: var(--fx-slate-500); font-size: 13px; }
+  .scale div { display: flex; align-items: baseline; gap: 24px; padding: 14px 0; border-bottom: 1px solid var(--palette-slate-100); }
+  .scale small { width: 120px; flex: none; color: var(--palette-slate-500); font-size: 13px; }
   .num { font-variant-numeric: tabular-nums; }
-  .card { background: #fff; border: 1px solid var(--fx-slate-100); border-radius: var(--fx-radius); padding: 24px; }
+  .card { background: #fff; border: 1px solid var(--palette-slate-100); border-radius: var(--fx-radius); padding: 24px; }
   .btn { display: inline-block; font: 500 15px var(--fx-font); padding: 11px 18px; border-radius: var(--fx-radius-sm); border: 0; }
-  .btn.primary { background: var(--fx-navy); color: var(--fx-cream); }
-  .btn.accent { background: var(--fx-cobalt); color: #fff; }
-  .btn.ghost { background: transparent; color: var(--fx-navy); box-shadow: inset 0 0 0 1px var(--fx-slate-300); }
-  .gain { color: var(--fx-gain); } .loss { color: var(--fx-loss); }
+  .btn.primary { background: var(--palette-navy); color: var(--palette-cream); }
+  .btn.accent { background: var(--palette-cobalt); color: #fff; }
+  .btn.ghost { background: transparent; color: var(--palette-navy); box-shadow: inset 0 0 0 1px var(--palette-slate-300); }
+  .gain { color: var(--palette-gain); } .loss { color: var(--palette-loss); }
   ul.rules { list-style: none; padding: 0; display: grid; gap: 10px; }
   ul.rules li { padding-left: 28px; position: relative; }
-  ul.rules li::before { content: ""; position: absolute; left: 0; top: .45em; width: 12px; height: 12px; border-radius: 3px; background: var(--fx-azure); }
-  ul.no li::before { background: var(--fx-loss); }
-  .voice td { padding: 12px 16px 12px 0; vertical-align: top; border-bottom: 1px solid var(--fx-slate-100); }
-  .voice td:first-child { color: var(--fx-slate-500); width: 50%; text-decoration: line-through; text-decoration-color: var(--fx-slate-300); }
+  ul.rules li::before { content: ""; position: absolute; left: 0; top: .45em; width: 12px; height: 12px; border-radius: 3px; background: var(--palette-azure); }
+  ul.no li::before { background: var(--palette-loss); }
+  .voice td { padding: 12px 16px 12px 0; vertical-align: top; border-bottom: 1px solid var(--palette-slate-100); }
+  .voice td:first-child { color: var(--palette-slate-500); width: 50%; text-decoration: line-through; text-decoration-color: var(--palette-slate-300); }
 </style>
 </head>
 <body>
@@ -101,14 +82,14 @@
     <h2>Logo</h2>
     <p class="lede">The full logo for headers and documents, the mark on its own where space is tight, and the app icon wherever the platform puts it in a tile.</p>
     <div class="grid g2">
-      <div><div class="tile" style="background:#fff;border:1px solid var(--fx-slate-100)"><img src="logo-light.svg" width="300" alt=""></div><p class="cap">logo-light.svg: on paper, cream and white</p></div>
-      <div><div class="tile" style="background:var(--fx-navy)"><img src="logo-dark.svg" width="300" alt=""></div><p class="cap">logo-dark.svg: on navy and harbour</p></div>
+      <div><div class="tile" style="background:#fff;border:1px solid var(--palette-slate-100)"><img src="logo-light.svg" width="300" alt=""></div><p class="cap">logo-light.svg: on paper, cream and white</p></div>
+      <div><div class="tile" style="background:var(--palette-navy)"><img src="logo-dark.svg" width="300" alt=""></div><p class="cap">logo-dark.svg: on navy and harbour</p></div>
     </div>
     <div class="grid g4" style="margin-top:16px">
-      <div><div class="tile" style="background:#fff;border:1px solid var(--fx-slate-100)"><img src="../frontend/public/brand/mark.svg" width="64" alt=""></div><p class="cap">mark.svg (frontend/public/brand/): beside the site name in the app header</p></div>
-      <div><div class="tile" style="background:var(--fx-cream);color:var(--fx-navy)"><svg width="64" viewBox="30 18 60 88" fill="currentColor"><path d="M40 94 V26 H80 V94" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/><path fill-rule="evenodd" d="M40 26 L62 34 L62 100 L40 94 Z M57 63.4 a2.6 2.6 0 1 0 0.01 0 Z"/></svg></div><p class="cap">mark-mono.svg: one colour (currentColor), for stamps, embossing and fax-grade print</p></div>
-      <div><div class="tile" style="background:var(--fx-slate-100)"><img src="app-icon.svg" width="120" alt=""></div><p class="cap">app-icon.svg</p></div>
-      <div><div class="tile" style="background:var(--fx-slate-100)"><img src="../frontend/src/app/icon.svg" width="32" alt=""></div><p class="cap">icon.svg (frontend/src/app/): the favicon, simplified (no handle) for 16–32 px</p></div>
+      <div><div class="tile" style="background:#fff;border:1px solid var(--palette-slate-100)"><img src="../frontend/public/brand/mark.svg" width="64" alt=""></div><p class="cap">mark.svg (frontend/public/brand/): beside the site name in the app header</p></div>
+      <div><div class="tile" style="background:var(--palette-cream);color:var(--palette-navy)"><svg width="64" viewBox="30 18 60 88" fill="currentColor"><path d="M40 94 V26 H80 V94" fill="none" stroke="currentColor" stroke-width="7" stroke-linejoin="round"/><path fill-rule="evenodd" d="M40 26 L62 34 L62 100 L40 94 Z M57 63.4 a2.6 2.6 0 1 0 0.01 0 Z"/></svg></div><p class="cap">mark-mono.svg: one colour (currentColor), for stamps, embossing and fax-grade print</p></div>
+      <div><div class="tile" style="background:var(--palette-slate-100)"><img src="app-icon.svg" width="120" alt=""></div><p class="cap">app-icon.svg</p></div>
+      <div><div class="tile" style="background:var(--palette-slate-100)"><img src="../frontend/src/app/icon.svg" width="32" alt=""></div><p class="cap">icon.svg (frontend/src/app/): the favicon, simplified (no handle) for 16–32 px</p></div>
     </div>
     <div class="grid g2" style="margin-top:32px">
       <div><h3 style="font-size:15px;font-weight:600;margin-bottom:12px">Do</h3><ul class="rules">
@@ -128,28 +109,28 @@
     <h2>Colour</h2>
     <p class="lede">Deep navy, a warm paper and one bright blue. Blue is always the door: the step forward, the primary action. Use it sparingly so it keeps meaning something. The rough mix is shown in the bar below.</p>
     <div class="grid g3">
-      <div class="sw big"><div style="background:#0B1B33"></div><div><b>Navy</b><span>#0B1B33 · text, the frame, dark surfaces</span></div></div>
-      <div class="sw big"><div style="background:#5AA9FF"></div><div><b>Sky</b><span>#5AA9FF · the door, accents on dark</span></div></div>
-      <div class="sw big"><div style="background:#FBFAF6"></div><div><b>Paper</b><span>#FBFAF6 · the page</span></div></div>
+      <div class="sw big"><div style="background:var(--palette-navy)"></div><div><b>Navy</b><span><code data-colour="navy"></code> · text, the frame, dark surfaces</span></div></div>
+      <div class="sw big"><div style="background:var(--palette-sky)"></div><div><b>Sky</b><span><code data-colour="sky"></code> · the door, accents on dark</span></div></div>
+      <div class="sw big"><div style="background:var(--palette-paper)"></div><div><b>Paper</b><span><code data-colour="paper"></code> · the page</span></div></div>
     </div>
     <div class="grid g4" style="margin-top:16px">
-      <div class="sw"><div style="background:#17305A"></div><div><b>Harbour</b><span>#17305A · raised dark surface</span></div></div>
-      <div class="sw"><div style="background:#2F7BEA"></div><div><b>Azure</b><span>#2F7BEA · door on light, fills, charts</span></div></div>
-      <div class="sw"><div style="background:#1A56C4"></div><div><b>Cobalt</b><span>#1A56C4 · blue text and links, accent buttons</span></div></div>
-      <div class="sw"><div style="background:#F3EFE6"></div><div><b>Cream</b><span>#F3EFE6 · frame on dark, warm panels</span></div></div>
+      <div class="sw"><div style="background:var(--palette-harbour)"></div><div><b>Harbour</b><span><code data-colour="harbour"></code> · raised dark surface</span></div></div>
+      <div class="sw"><div style="background:var(--palette-azure)"></div><div><b>Azure</b><span><code data-colour="azure"></code> · door on light, fills, charts</span></div></div>
+      <div class="sw"><div style="background:var(--palette-cobalt)"></div><div><b>Cobalt</b><span><code data-colour="cobalt"></code> · blue text and links, accent buttons</span></div></div>
+      <div class="sw"><div style="background:var(--palette-cream)"></div><div><b>Cream</b><span><code data-colour="cream"></code> · frame on dark, warm panels</span></div></div>
     </div>
     <div class="grid g4" style="margin-top:16px">
-      <div class="sw"><div style="background:#3B4658"></div><div><b>Slate 700</b><span>#3B4658</span></div></div>
-      <div class="sw"><div style="background:#5F6B7D"></div><div><b>Slate 500</b><span>#5F6B7D · secondary text</span></div></div>
-      <div class="sw"><div style="background:#C7CDD6"></div><div><b>Slate 300</b><span>#C7CDD6 · strong borders</span></div></div>
-      <div class="sw"><div style="background:#E6E9EE"></div><div><b>Slate 100</b><span>#E6E9EE · dividers</span></div></div>
+      <div class="sw"><div style="background:var(--palette-slate-700)"></div><div><b>Slate 700</b><span><code data-colour="slate-700"></code></span></div></div>
+      <div class="sw"><div style="background:var(--palette-slate-500)"></div><div><b>Slate 500</b><span><code data-colour="slate-500"></code> · secondary text</span></div></div>
+      <div class="sw"><div style="background:var(--palette-slate-300)"></div><div><b>Slate 300</b><span><code data-colour="slate-300"></code> · strong borders</span></div></div>
+      <div class="sw"><div style="background:var(--palette-slate-100)"></div><div><b>Slate 100</b><span><code data-colour="slate-100"></code> · dividers</span></div></div>
     </div>
     <div class="grid g3" style="margin-top:16px">
-      <div class="sw"><div style="background:#12805C;height:56px"></div><div><b>Gain</b><span>#12805C</span></div></div>
-      <div class="sw"><div style="background:#C8413A;height:56px"></div><div><b>Loss</b><span>#C8413A</span></div></div>
-      <div class="sw"><div style="background:#9C6500;height:56px"></div><div><b>Caution</b><span>#9C6500</span></div></div>
+      <div class="sw"><div style="background:var(--palette-gain);height:56px"></div><div><b>Gain</b><span><code data-colour="gain"></code></span></div></div>
+      <div class="sw"><div style="background:var(--palette-loss);height:56px"></div><div><b>Loss</b><span><code data-colour="loss"></code></span></div></div>
+      <div class="sw"><div style="background:var(--palette-caution);height:56px"></div><div><b>Caution</b><span><code data-colour="caution"></code></span></div></div>
     </div>
-    <div class="bar"><div style="flex:55;background:#FBFAF6;border:1px solid #E6E9EE"></div><div style="flex:30;background:#0B1B33"></div><div style="flex:10;background:#C7CDD6"></div><div style="flex:5;background:#5AA9FF"></div></div>
+    <div class="bar"><div style="flex:55;background:var(--palette-paper);border:1px solid var(--palette-slate-100)"></div><div style="flex:30;background:var(--palette-navy)"></div><div style="flex:10;background:var(--palette-slate-300)"></div><div style="flex:5;background:var(--palette-sky)"></div></div>
     <p class="cap">Proportion: about 55 paper, 30 navy, 10 slate, 5 blue. Every text pairing passes WCAG AA: navy on paper 16.5:1, cobalt 6.3:1, slate 500 5.2:1, gain 4.7:1, loss 4.7:1, caution 4.7:1, sky on navy 7.0:1, white on cobalt 6.6:1. Gain stays green so it never reads as the brand. Azure and sky are never text on light backgrounds.</p>
   </section>
 
@@ -164,7 +145,7 @@
       <div><small>Display · 40/500</small><span style="font-size:40px;font-weight:500;letter-spacing:-.02em">Your exit, in sight</span></div>
       <div><small>Heading · 28/500</small><span style="font-size:28px;font-weight:500">Monthly overview</span></div>
       <div><small>Body · 16/400</small><span style="font-size:16px">You're 14 months closer than you were in January.</span></div>
-      <div><small>Label · 13/600</small><span style="font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--fx-slate-500)">NET WORTH</span></div>
+      <div><small>Label · 13/600</small><span style="font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--palette-slate-500)">NET WORTH</span></div>
       <div><small>Figures · tabular</small><span class="num" style="font-size:28px;font-weight:500">£248,310.42 <span class="gain" style="font-size:16px">+2.4%</span></span></div>
     </div>
   </section>
@@ -174,18 +155,18 @@
     <p class="lede">Flat surfaces, hairline borders, generous space and one blue moment per screen.</p>
     <div class="grid g2">
       <div class="card">
-        <p style="font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--fx-slate-500)">NET WORTH</p>
+        <p style="font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--palette-slate-500)">NET WORTH</p>
         <p class="num" style="font-size:40px;font-weight:500;letter-spacing:-.02em;margin:6px 0 2px">£248,310</p>
         <p class="num" style="font-size:14px"><span class="gain">+£5,820 this month</span> · <span class="loss">−£410 fees</span></p>
-        <svg viewBox="0 0 300 80" style="width:100%;margin:20px 0 4px"><polyline fill="none" stroke="#2F7BEA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="0,66 30,62 60,64 90,52 120,55 150,44 180,40 210,34 240,30 270,20 300,12"/></svg>
+        <svg viewBox="0 0 300 80" style="width:100%;margin:20px 0 4px"><polyline fill="none" style="stroke:var(--palette-azure)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" points="0,66 30,62 60,64 90,52 120,55 150,44 180,40 210,34 240,30 270,20 300,12"/></svg>
         <div style="display:flex;gap:10px;margin-top:16px"><span class="btn primary">Add account</span><span class="btn ghost">Details</span></div>
       </div>
-      <div class="card" style="background:var(--fx-navy);border-color:var(--fx-navy);color:var(--fx-cream)">
+      <div class="card" style="background:var(--palette-navy);border-color:var(--palette-navy);color:var(--palette-cream)">
         <img src="logo-dark.svg" width="150" alt="">
         <p style="font-size:28px;font-weight:500;letter-spacing:-.01em;margin:36px 0 8px;line-height:1.2">You're 63% of the way to your exit.</p>
-        <p style="color:var(--fx-slate-300);font-size:15px">At this pace, the door opens in March 2031.</p>
-        <div style="height:6px;background:var(--fx-harbour);border-radius:3px;margin:28px 0"><div style="width:63%;height:100%;background:var(--fx-sky);border-radius:3px"></div></div>
-        <span class="btn" style="background:var(--fx-sky);color:var(--fx-navy)">See the plan</span>
+        <p style="color:var(--palette-slate-300);font-size:15px">At this pace, the door opens in March 2031.</p>
+        <div style="height:6px;background:var(--palette-harbour);border-radius:3px;margin:28px 0"><div style="width:63%;height:100%;background:var(--palette-sky);border-radius:3px"></div></div>
+        <span class="btn" style="background:var(--palette-sky);color:var(--palette-navy)">See the plan</span>
       </div>
     </div>
   </section>
@@ -201,5 +182,11 @@
   </section>
 
 </main>
+<script>
+  // Shows each swatch's value as colours.css sets it.
+  const root = getComputedStyle(document.documentElement);
+  for (const el of document.querySelectorAll("[data-colour]"))
+    el.textContent = root.getPropertyValue(`--palette-${el.dataset.colour}`).trim().toUpperCase();
+</script>
 </body>
 </html>

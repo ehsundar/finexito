@@ -35,7 +35,7 @@ export const COLOURS: Colour[] = [
   "pink",
 ];
 
-/** A colour name's theme variable (globals.css). */
+/** A colour name's theme variable (colours.css). */
 export const colourVar = (colour: Colour | undefined) => `var(--tag-${colour ?? "neutral"})`;
 
 type Todos = {
