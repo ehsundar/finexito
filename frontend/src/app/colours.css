@@ -4,7 +4,8 @@
  * the palette names each colour once; the light and dark themes below
  * give each role in the interface a colour from it.
  */
-:root {
+:root,
+[data-palette="default"] {
   --palette-navy: #0b1b33;
   --palette-harbour: #17305a;
   /* Dark mode's surfaces: near black, with a trace of the navy. */
@@ -35,6 +36,159 @@
   --palette-purple-bright: #a98bf0;
   --palette-pink: #c43f86;
   --palette-pink-bright: #ec7bb7;
+  --palette-blue: #2f7bea;
+  --palette-blue-bright: #5aa9ff;
+}
+
+/*
+ * The palettes a member can pick on the Me tab (components/app/theme.tsx),
+ * each with its own character. A palette swaps the brand colours
+ * above; the names stay (navy is the deep shade, azure the brand colour, sky
+ * its bright form for dark mode, ink the dark surfaces, paper and cream the
+ * light ones), so the light and dark themes below work for every palette.
+ */
+
+[data-palette="vinyl"] {
+  --palette-navy: #191414;
+  --palette-harbour: #1a3d27;
+  --palette-ink: #121212;
+  --palette-ink-raised: #181818;
+  --palette-ink-high: #282828;
+  --palette-sky: #1ed760;
+  --palette-azure: #1db954;
+  --palette-cobalt: #158a3e;
+  --palette-paper: #fafafa;
+  --palette-cream: #eef3ef;
+}
+
+[data-palette="cherry"] {
+  --palette-navy: #5a0006;
+  --palette-harbour: #8c000a;
+  --palette-ink: #120707;
+  --palette-ink-raised: #1d0d0d;
+  --palette-ink-high: #2a1414;
+  --palette-sky: #ff4b4f;
+  --palette-azure: #f40009;
+  --palette-cobalt: #c00007;
+  --palette-paper: #fffaf8;
+  --palette-cream: #f8ece9;
+}
+
+[data-palette="robins-egg"] {
+  --palette-navy: #0c3b3a;
+  --palette-harbour: #0d5c5a;
+  --palette-ink: #071110;
+  --palette-ink-raised: #0f1c1b;
+  --palette-ink-high: #182928;
+  --palette-sky: #81d8d0;
+  --palette-azure: #0abab5;
+  --palette-cobalt: #078c88;
+  --palette-paper: #f9fcfb;
+  --palette-cream: #e9f5f3;
+}
+
+[data-palette="papaya"] {
+  --palette-navy: #3d1d0c;
+  --palette-harbour: #6b3415;
+  --palette-ink: #120c08;
+  --palette-ink-raised: #1e1510;
+  --palette-ink-high: #2b1f18;
+  --palette-sky: #ff8a3d;
+  --palette-azure: #f37021;
+  --palette-cobalt: #c9541a;
+  --palette-paper: #fdf9f3;
+  --palette-cream: #f6ebdc;
+}
+
+[data-palette="plum"] {
+  --palette-navy: #2a0a4a;
+  --palette-harbour: #4b0f7a;
+  --palette-ink: #0e0914;
+  --palette-ink-raised: #18111f;
+  --palette-ink-high: #241a2e;
+  --palette-sky: #b88cf0;
+  --palette-azure: #6b2fb8;
+  --palette-cobalt: #4b0082;
+  --palette-paper: #fbf9fd;
+  --palette-cream: #f0e9f7;
+}
+
+[data-palette="bubblegum"] {
+  --palette-navy: #5e0a3a;
+  --palette-harbour: #9c0f5f;
+  --palette-ink: #140910;
+  --palette-ink-raised: #20101a;
+  --palette-ink-high: #2e1826;
+  --palette-sky: #ff6ec7;
+  --palette-azure: #e0218a;
+  --palette-cobalt: #b5166d;
+  --palette-paper: #fff8fb;
+  --palette-cream: #fbe6f1;
+}
+
+[data-palette="evergreen"] {
+  --palette-navy: #1e3932;
+  --palette-harbour: #00704a;
+  --palette-ink: #0a110f;
+  --palette-ink-raised: #121c19;
+  --palette-ink-high: #1b2925;
+  --palette-sky: #4cc28a;
+  --palette-azure: #00754a;
+  --palette-cobalt: #00623d;
+  --palette-paper: #f9f9f6;
+  --palette-cream: #f2f0eb;
+}
+
+[data-palette="midsummer"] {
+  --palette-navy: #003e72;
+  --palette-harbour: #0058a3;
+  --palette-ink: #070c14;
+  --palette-ink-raised: #0f1724;
+  --palette-ink-high: #182233;
+  --palette-sky: #ffda1a;
+  --palette-azure: #0058a3;
+  --palette-cobalt: #004f93;
+  --palette-paper: #fbfbf7;
+  --palette-cream: #fbf4d6;
+}
+
+[data-palette="espresso"] {
+  --palette-navy: #351c15;
+  --palette-harbour: #5a3a2c;
+  --palette-ink: #100b09;
+  --palette-ink-raised: #1b1411;
+  --palette-ink-high: #281e1a;
+  --palette-sky: #ffb500;
+  --palette-azure: #d99a00;
+  --palette-cobalt: #a87400;
+  --palette-paper: #fcfaf6;
+  --palette-cream: #f4ede2;
+}
+
+[data-palette="periwinkle"] {
+  --palette-navy: #1e2156;
+  --palette-harbour: #3c45a5;
+  --palette-ink: #1e1f22;
+  --palette-ink-raised: #2b2d31;
+  --palette-ink-high: #313338;
+  --palette-sky: #7984f5;
+  --palette-azure: #5865f2;
+  --palette-cobalt: #4752c4;
+  --palette-paper: #fafafc;
+  --palette-cream: #ebedf9;
+}
+
+[data-palette="noir"] {
+  --palette-navy: #000000;
+  --palette-harbour: #2b2b2b;
+  --palette-ink: #000000;
+  --palette-ink-raised: #111111;
+  --palette-ink-high: #1c1c1c;
+  --palette-sky: #f5f0e6;
+  --palette-azure: #3a3a3a;
+  --palette-cobalt: #1a1a1a;
+  --palette-paper: #ffffff;
+  --palette-cream: #f5f0e6;
 }
 
 :root {
@@ -76,12 +230,12 @@
   --tag-yellow: var(--palette-caution);
   --tag-green: var(--palette-gain);
   --tag-teal: var(--palette-teal);
-  --tag-blue: var(--palette-azure);
+  --tag-blue: var(--palette-blue);
   --tag-purple: var(--palette-purple);
   --tag-pink: var(--palette-pink);
   --priority-1: var(--palette-loss);
   --priority-2: var(--palette-orange);
-  --priority-3: var(--palette-azure);
+  --priority-3: var(--palette-blue);
   --priority-4: var(--palette-slate-300);
   /* The mark beside the site name (components/app/mark.tsx). */
   --mark-frame: var(--palette-navy);
@@ -133,12 +287,12 @@
   --tag-yellow: var(--palette-caution-bright);
   --tag-green: var(--palette-gain-bright);
   --tag-teal: var(--palette-teal-bright);
-  --tag-blue: var(--palette-sky);
+  --tag-blue: var(--palette-blue-bright);
   --tag-purple: var(--palette-purple-bright);
   --tag-pink: var(--palette-pink-bright);
   --priority-1: var(--palette-loss-bright);
   --priority-2: var(--palette-orange-bright);
-  --priority-3: var(--palette-sky);
+  --priority-3: var(--palette-blue-bright);
   --priority-4: var(--palette-slate-500);
   --mark-frame: var(--palette-cream);
   --mark-door: var(--palette-sky);

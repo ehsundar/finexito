@@ -4,6 +4,7 @@ import { RotateCcw } from "lucide-react";
 import { ThemeProvider } from "next-themes";
 import { Suspense } from "react";
 
+import { PALETTE_SCRIPT } from "@/components/app/theme";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -37,6 +38,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: PALETTE_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {/* Pages read the query string (useSearchParams), which a static export

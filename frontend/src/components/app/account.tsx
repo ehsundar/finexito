@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, SunMoon } from "lucide-react";
+import { LogOut, Palette, SunMoon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +9,7 @@ import { Pending } from "@/components/app/pending";
 import { Avatar } from "@/components/app/avatar";
 import { List, ListRow } from "@/components/app/list";
 import { ActionSheet, PromptSheet } from "@/components/app/sheet";
-import { THEMES, useProfileTheme } from "@/components/app/theme";
+import { PALETTES, THEMES, useProfileTheme } from "@/components/app/theme";
 import { api, errorMessage, revalidate, signOut, useQuery } from "@/lib/api/client";
 
 /**
@@ -22,7 +22,8 @@ export function Account({ children }: { children?: React.ReactNode }) {
   const { data: profile } = useQuery("/api/v1/profiles/me/");
   const [renaming, setRenaming] = useState(false);
   const [theming, setTheming] = useState(false);
-  const { theme, choose } = useProfileTheme();
+  const [painting, setPainting] = useState(false);
+  const { theme, palette, choose } = useProfileTheme();
   if (!me) return <Pending error={error} />;
   const name = profile?.display_name || me.email.split("@")[0];
 
@@ -43,6 +44,9 @@ export function Account({ children }: { children?: React.ReactNode }) {
         <ListRow icon={<SunMoon />} onClick={() => setTheming(true)} detail={THEMES.find((t) => t.value === theme)?.label}>
           Appearance
         </ListRow>
+        <ListRow icon={<Palette />} onClick={() => setPainting(true)} detail={PALETTES.find((p) => p.value === palette)?.label}>
+          Colours
+        </ListRow>
       </List>
       {children}
       <List>
@@ -62,7 +66,25 @@ export function Account({ children }: { children?: React.ReactNode }) {
         onOpenChange={setTheming}
         title="Appearance"
         description="System follows this device's setting."
-        actions={THEMES.map((t) => ({ label: t.label, checked: t.value === theme, onSelect: () => choose(t.value) }))}
+        actions={THEMES.map((t) => ({ label: t.label, checked: t.value === theme, onSelect: () => choose({ theme: t.value }) }))}
+      />
+      <ActionSheet
+        open={painting}
+        onOpenChange={setPainting}
+        title="Colours"
+        description="Each works in light and dark."
+        actions={PALETTES.map((p) => ({
+          label: p.label,
+          // The palette's own colours, whatever palette is on.
+          icon: (
+            <span data-palette={p.value} className="flex">
+              <span className="size-4 rounded-full bg-(--palette-navy)" />
+              <span className="-ml-1.5 size-4 rounded-full bg-(--palette-azure)" />
+            </span>
+          ),
+          checked: p.value === palette,
+          onSelect: () => choose({ palette: p.value }),
+        }))}
       />
       <PromptSheet
         open={renaming}
