@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { addReminder, deleteReminder, updateProfile } from "@/app/todos/actions";
 import type { Task } from "@/app/todos/shell";
+import { Pending } from "@/components/app/pending";
 import { List, ListRow } from "@/components/app/list";
 import { Sheet } from "@/components/app/sheet";
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,8 @@ export function useReminders(task: Task) {
 }
 
 export function RemindersSheet({ task, ...props }: { task: Task; open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { data: reminders = [] } = useReminders(task);
+  const { data, error } = useReminders(task);
+  const reminders = data ?? [];
   const [at, setAt] = useState("");
   const taken = new Set(reminders.map((r) => r.minutes_before));
 
@@ -47,6 +49,7 @@ export function RemindersSheet({ task, ...props }: { task: Task; open: boolean; 
 
   return (
     <Sheet {...props} title="Reminders" description="By email, when each one is due.">
+      {!data && <Pending error={error} />}
       {reminders.length > 0 && (
         <List>
           {reminders.map((r) => (
@@ -112,7 +115,7 @@ const DEFAULTS = [
 
 /** The member's reminder and email preferences, kept in their profile. */
 export function NotificationSettingsSheet(props: { open: boolean; onOpenChange: (open: boolean) => void }) {
-  const { data: profile } = useQuery("/api/v1/profiles/me/");
+  const { data: profile, error } = useQuery("/api/v1/profiles/me/");
   const extra = profile?.extra ?? {};
   const current = extra.todos_reminder_before ?? "30";
 
@@ -130,6 +133,14 @@ export function NotificationSettingsSheet(props: { open: boolean; onOpenChange: 
       </ListRow>
     );
   };
+
+  if (!profile) {
+    return (
+      <Sheet {...props} title="Notifications">
+        <Pending error={error} />
+      </Sheet>
+    );
+  }
 
   return (
     <Sheet {...props} title="Notifications">

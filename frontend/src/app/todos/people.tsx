@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { inviteLink, leaveProject, removeCollaborator, transferProject } from "@/app/todos/actions";
 import { useTodos, type Project } from "@/app/todos/shell";
+import { Pending } from "@/components/app/pending";
 import { Avatar } from "@/components/app/avatar";
 import { List, ListRow } from "@/components/app/list";
 import { ActionSheet, Sheet } from "@/components/app/sheet";
@@ -48,8 +49,11 @@ export function Avatars({ people, max = 4 }: { people: Person[]; max?: number })
 export function ShareSheet({ project, ...props }: { project: Project; open: boolean; onOpenChange: (open: boolean) => void }) {
   const router = useRouter();
   const { confirm } = useTodos();
-  const people = usePeople({ id: project.id, is_shared: props.open });
-  const { data: link, mutate } = useQuery(
+  const { data: people, error: peopleError } = useQuery(
+    "/api/v1/todos/projects/{id}/collaborators/",
+    props.open ? { params: { path: { id: project.id } } } : null,
+  );
+  const { data: link, error: linkError, mutate } = useQuery(
     "/api/v1/todos/projects/{id}/invite-link/",
     props.open && project.is_owner ? { params: { path: { id: project.id } } } : null,
   );
@@ -70,7 +74,8 @@ export function ShareSheet({ project, ...props }: { project: Project; open: bool
 
   return (
     <Sheet {...props} title={`Share “${project.name}”`}>
-      {project.is_owner && (
+      {project.is_owner && !link && <Pending error={linkError} />}
+      {project.is_owner && link && (
         <>
           {url ? (
             <div className="flex flex-col gap-2">
@@ -108,8 +113,9 @@ export function ShareSheet({ project, ...props }: { project: Project; open: bool
         </>
       )}
       <List title="People">
-        {people.length === 0 && <ListRow>Only you, so far.</ListRow>}
-        {people.map((person, index) => (
+        {!people && <Pending error={peopleError} />}
+        {people?.length === 0 && <ListRow>Only you, so far.</ListRow>}
+        {people?.map((person, index) => (
           <ListRow
             key={person.id}
             icon={<Avatar person={person} />}

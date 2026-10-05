@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { rescheduleTasks } from "@/app/todos/actions";
 import { isoDate } from "@/app/todos/due";
 import { TaskList, type Group } from "@/app/todos/task-list";
+import { Pending } from "@/components/app/pending";
 import { AppBar, Screen } from "@/components/app/frame";
 import { Button } from "@/components/ui/button";
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
@@ -12,8 +13,8 @@ import { useQuery } from "@/lib/api/client";
 
 /** Overdue, oldest first, then today's: timed ones by time, the rest by priority. */
 export default function TodayPage() {
-  const { data: tasks } = useQuery("/api/v1/todos/tasks/", { params: { query: { view: "today" } } });
-  if (!tasks) return null;
+  const { data: tasks, error } = useQuery("/api/v1/todos/tasks/", { params: { query: { view: "today" } } });
+  if (!tasks) return <Pending error={error} />;
   const overdue = tasks.filter((t) => t.is_overdue && t.due_date! < isoDate());
   const today = tasks.filter((t) => !overdue.includes(t));
 

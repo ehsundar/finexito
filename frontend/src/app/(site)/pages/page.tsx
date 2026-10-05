@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 
+import { Pending } from "@/components/app/pending";
 import { Markdown } from "@/components/markdown/markdown";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@/lib/api/client";
@@ -13,10 +14,7 @@ import { useQuery } from "@/lib/api/client";
 export default function ContentPage() {
   const slug = useSearchParams().get("slug") ?? "";
   const { data: page, error } = useQuery("/api/v1/pages/{slug}/", { params: { path: { slug } } });
-  if (error) {
-    return <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-8">This page could not be found.</main>;
-  }
-  if (!page) return null;
+  if (!page) return <Pending error={error} missing="This page could not be found." />;
   const published = page.published_at ? new Date(page.published_at) : null;
 
   return (

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { Pending } from "@/components/app/pending";
 import { Avatar } from "@/components/app/avatar";
 import { List, ListRow } from "@/components/app/list";
 import { PromptSheet } from "@/components/app/sheet";
@@ -16,10 +17,10 @@ import { api, errorMessage, revalidate, signOut, useQuery } from "@/lib/api/clie
  */
 export function Account({ children }: { children?: React.ReactNode }) {
   const router = useRouter();
-  const { data: me } = useQuery("/api/v1/auth/me/");
+  const { data: me, error } = useQuery("/api/v1/auth/me/");
   const { data: profile } = useQuery("/api/v1/profiles/me/");
   const [renaming, setRenaming] = useState(false);
-  if (!me) return null;
+  if (!me) return <Pending error={error} />;
   const name = profile?.display_name || me.email.split("@")[0];
 
   return (

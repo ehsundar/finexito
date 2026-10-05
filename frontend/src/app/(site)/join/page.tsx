@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { joinProject } from "@/app/todos/actions";
 import { Avatar } from "@/app/todos/people";
+import { Pending } from "@/components/app/pending";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@/lib/api/client";
@@ -23,18 +24,7 @@ export default function JoinPage() {
   const signedIn = typeof window !== "undefined" && !!getSession();
   const open = (project: string) => router.push(`/todos/project?id=${project}`);
 
-  if (error)
-    return (
-      <main className="flex flex-1 items-center justify-center p-6">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle>This invite link doesn&apos;t work any more</CardTitle>
-            <CardDescription>Ask whoever sent it for a new one.</CardDescription>
-          </CardHeader>
-        </Card>
-      </main>
-    );
-  if (!invite) return null;
+  if (!invite) return <Pending error={error} missing="This invite link doesn’t work any more. Ask whoever sent it for a new one." />;
 
   return (
     <main className="flex flex-1 items-center justify-center p-6">

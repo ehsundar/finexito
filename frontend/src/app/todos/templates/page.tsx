@@ -13,6 +13,7 @@ import {
   renameTemplate,
 } from "@/app/todos/actions";
 import { Dot, useTodos } from "@/app/todos/shell";
+import { Pending } from "@/components/app/pending";
 import { AppBar, Screen } from "@/components/app/frame";
 import { List, ListRow } from "@/components/app/list";
 import { ActionSheet, PromptSheet } from "@/components/app/sheet";
@@ -26,11 +27,11 @@ type Template = components["schemas"]["Template"];
 export default function TemplatesPage() {
   const router = useRouter();
   const { projects, confirm } = useTodos();
-  const { data: templates = [] } = useQuery("/api/v1/todos/templates/");
+  const { data: templates, error } = useQuery("/api/v1/todos/templates/");
   const [chosen, setChosen] = useState<Template | null>(null);
   const [sheet, setSheet] = useState<"menu" | "into" | "rename" | null>(null);
   const picker = useRef<HTMLInputElement>(null);
-  const categories = [...new Set(templates.map((t) => t.category))];
+  const categories = [...new Set(templates?.map((t) => t.category))];
   const close = (open: boolean) => !open && setSheet(null);
 
   async function start(template: Template, project?: string) {
@@ -66,9 +67,10 @@ export default function TemplatesPage() {
         }}
       />
       <Screen>
-        {categories.map((category) => (
+        {!templates && <Pending error={error} />}
+        {templates && categories.map((category) => (
           <List key={category} title={category}>
-            {templates
+            {templates!
               .filter((t) => t.category === category)
               .map((t) => (
                 <ListRow
@@ -88,7 +90,7 @@ export default function TemplatesPage() {
               ))}
           </List>
         ))}
-        {!templates.some((t) => t.is_mine) && (
+        {templates && !templates.some((t) => t.is_mine) && (
           <p className="text-muted-foreground px-4 text-sm">
             Save any of your projects as a template from its menu, or import a CSV file.
           </p>

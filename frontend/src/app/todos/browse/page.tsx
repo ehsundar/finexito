@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 
 import { colourVar, Dot, NewProject, useTodos, type Project } from "@/app/todos/shell";
 import { TasksByProject } from "@/app/todos/tasks-by-project";
+import { Pending } from "@/components/app/pending";
 import { AppBar, Screen } from "@/components/app/frame";
 import { List, ListRow } from "@/components/app/list";
 import { Input } from "@/components/ui/input";
@@ -122,7 +123,7 @@ function ProjectTree({ projects, parent = null, depth = 0 }: { projects: Project
 function Results({ q }: { q: string }) {
   const { projects, labels } = useTodos();
   const { data: sections = [] } = useQuery("/api/v1/todos/sections/", { params: { query: { q } } });
-  const { data: tasks } = useQuery("/api/v1/todos/tasks/", { params: { query: { q } } });
+  const { data: tasks, error } = useQuery("/api/v1/todos/tasks/", { params: { query: { q } } });
   const needle = q.toLowerCase();
   const names = [
     ...projects
@@ -150,7 +151,7 @@ function Results({ q }: { q: string }) {
           ))}
         </ul>
       )}
-      {tasks && <TasksByProject tasks={tasks} empty="No tasks match." />}
+      {tasks ? <TasksByProject tasks={tasks} empty="No tasks match." /> : <Pending error={error} />}
     </>
   );
 }

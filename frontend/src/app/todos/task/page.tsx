@@ -6,6 +6,7 @@ import { Comments } from "@/app/todos/comments";
 import { TaskEditor } from "@/app/todos/task-editor";
 import type { Task } from "@/app/todos/shell";
 import { TaskList } from "@/app/todos/task-list";
+import { Pending } from "@/components/app/pending";
 import { AppBar, Screen } from "@/components/app/frame";
 import { Markdown } from "@/components/markdown/markdown";
 import { useQuery } from "@/lib/api/client";
@@ -16,12 +17,11 @@ export default function TaskPage() {
   const { data: task, error } = useQuery("/api/v1/todos/tasks/{id}/", { params: { path: { id } } });
   const inProject = task ? { params: { path: { id: task.project } } } : null;
   const { data: project } = useQuery("/api/v1/todos/projects/{id}/", inProject);
-  const { data: siblings } = useQuery(
+  const { data: siblings, error: siblingsError } = useQuery(
     "/api/v1/todos/tasks/",
     task ? { params: { query: { project: task.project } } } : null,
   );
-  if (error) return <Screen>This task doesn&apos;t exist.</Screen>;
-  if (!task || !siblings) return null;
+  if (!task || !siblings) return <Pending error={error ?? siblingsError} missing="This task doesn’t exist." />;
 
   // Open sub-tasks at every level below this one.
   const below: Task[] = [];

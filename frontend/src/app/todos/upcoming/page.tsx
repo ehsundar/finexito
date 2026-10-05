@@ -21,6 +21,7 @@ import { closeTask, reopenTask, updateTask } from "@/app/todos/actions";
 import { addDays, dayName, dueText, isoDate } from "@/app/todos/due";
 import { useTodos, type Task } from "@/app/todos/shell";
 import { TaskCheck, TaskMeta, useClickGuard } from "@/app/todos/task-list";
+import { Pending } from "@/components/app/pending";
 import { AppBar, Screen } from "@/components/app/frame";
 import { Button } from "@/components/ui/button";
 import { InlineMarkdown } from "@/components/markdown/inline";
@@ -36,7 +37,7 @@ export default function UpcomingPage() {
   // Seven days at a time, from today.
   const [from, setFrom] = useState(today);
   const to = addDays(from, 6);
-  const { data: tasks } = useQuery("/api/v1/todos/tasks/", {
+  const { data: tasks, error } = useQuery("/api/v1/todos/tasks/", {
     params: { query: { view: "upcoming", from, to } },
   });
   const { data: overdue = [] } = useQuery("/api/v1/todos/tasks/", { params: { query: { filter: "overdue" } } });
@@ -99,6 +100,7 @@ export default function UpcomingPage() {
           {from === today && overdue.length > 0 && (
             <DaySection title="Overdue" tasks={all.filter((t) => late.has(t.id) && !dayOf(t))} />
           )}
+          {!tasks && <Pending error={error} />}
           {tasks &&
             days.map((day) => (
               <DaySection

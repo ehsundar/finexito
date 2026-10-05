@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { Pending } from "@/components/app/pending";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +13,7 @@ import { signOut, useQuery } from "@/lib/api/client";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { data: user } = useQuery("/api/v1/auth/me/");
+  const { data: user, error: userError } = useQuery("/api/v1/auth/me/");
   const { data: profile, error } = useQuery("/api/v1/profiles/me/");
 
   async function logout() {
@@ -20,7 +21,7 @@ export default function DashboardPage() {
     router.replace("/");
   }
 
-  if (!user) return null;
+  if (!user) return <Pending error={userError} />;
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-6">
@@ -49,9 +50,9 @@ export default function DashboardPage() {
           <CardDescription>Read straight from the Django service.</CardDescription>
         </CardHeader>
         <CardContent>
-          {error ? (
-            <p className="text-destructive text-sm">Could not reach the API.</p>
-          ) : profile && (
+          {!profile ? (
+            <Pending error={error} />
+          ) : (
             <Table>
               <TableBody>
                 <TableRow>

@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 
 import { Comments } from "@/app/todos/comments";
+import { Pending } from "@/components/app/pending";
 import { AppBar, Screen } from "@/components/app/frame";
 import { useQuery } from "@/lib/api/client";
 
@@ -10,8 +11,7 @@ import { useQuery } from "@/lib/api/client";
 export default function ProjectCommentsPage() {
   const id = useSearchParams().get("project") ?? "";
   const { data: project, error } = useQuery("/api/v1/todos/projects/{id}/", { params: { path: { id } } });
-  if (error) return <Screen>This project doesn&apos;t exist.</Screen>;
-  if (!project) return null;
+  if (!project) return <Pending error={error} missing="This project doesn’t exist." />;
   return (
     <>
       <AppBar

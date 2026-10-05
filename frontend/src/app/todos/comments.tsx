@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { createComment, deleteComment, updateComment, uploadAttachment } from "@/app/todos/actions";
 import { Avatar } from "@/app/todos/people";
 import { useTodos, type Project } from "@/app/todos/shell";
+import { Pending } from "@/components/app/pending";
 import { ActionSheet } from "@/components/app/sheet";
 import { Markdown } from "@/components/markdown/markdown";
 import { Button } from "@/components/ui/button";
@@ -30,7 +31,7 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-GB", { dateStyle:
 /** A task's comments, or a project's own, oldest first, with a box to add one. */
 export function Comments({ task, project }: { task?: string; project: Project }) {
   const query = task ? { task } : { project: project.id };
-  const { data: comments } = useQuery("/api/v1/todos/comments/", { params: { query } });
+  const { data: comments, error } = useQuery("/api/v1/todos/comments/", { params: { query } });
   const { data: me } = useQuery("/api/v1/auth/me/");
   const [editing, setEditing] = useState<Comment | null>(null);
   const [chosen, setChosen] = useState<Comment | null>(null);
@@ -39,6 +40,7 @@ export function Comments({ task, project }: { task?: string; project: Project })
   return (
     <section className="flex flex-col gap-3" aria-label="Comments">
       <h2 className="text-muted-foreground text-sm font-medium">Comments</h2>
+      {!comments && <Pending error={error} />}
       {comments?.length === 0 && (
         <p className="text-muted-foreground text-sm">{task ? "No comments yet." : "No notes yet."}</p>
       )}

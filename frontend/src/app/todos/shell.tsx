@@ -9,6 +9,7 @@ import { createProject } from "@/app/todos/actions";
 import { Connection } from "@/app/todos/connection";
 import { isoDate } from "@/app/todos/due";
 import { QuickAdd, type Prefill } from "@/app/todos/quick-add";
+import { Pending } from "@/components/app/pending";
 import { AppShell, Fab } from "@/components/app/frame";
 import { ActionSheet, PromptSheet } from "@/components/app/sheet";
 import { Button } from "@/components/ui/button";
@@ -55,10 +56,10 @@ export function useTodos() {
 }
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  const { data: projects } = useQuery("/api/v1/todos/projects/");
-  const { data: sections } = useQuery("/api/v1/todos/sections/");
-  const { data: labels } = useQuery("/api/v1/todos/labels/");
-  const { data: filters } = useQuery("/api/v1/todos/filters/");
+  const { data: projects, error: projectsError } = useQuery("/api/v1/todos/projects/");
+  const { data: sections, error: sectionsError } = useQuery("/api/v1/todos/sections/");
+  const { data: labels, error: labelsError } = useQuery("/api/v1/todos/labels/");
+  const { data: filters, error: filtersError } = useQuery("/api/v1/todos/filters/");
   const { data: today } = useQuery("/api/v1/todos/tasks/", { params: { query: { view: "today" } } });
   const pathname = usePathname();
   const params = useSearchParams();
@@ -82,7 +83,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   // Everything on screen needs these; SWR fetches them again when the window
   // regains focus, so the client catches up with other tabs and devices.
-  if (!projects || !sections || !labels || !filters) return null;
+  if (!projects || !sections || !labels || !filters) {
+    return <Pending error={projectsError ?? sectionsError ?? labelsError ?? filtersError} className="min-h-dvh" />;
+  }
 
   // On a project's screen, new tasks go to that project.
   const project = (pathname === "/todos/project" && params.get("id")) || undefined;

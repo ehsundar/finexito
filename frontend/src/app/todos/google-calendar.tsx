@@ -4,6 +4,7 @@ import { Check } from "lucide-react";
 import { toast } from "sonner";
 
 import { Dot, useTodos } from "@/app/todos/shell";
+import { Pending } from "@/components/app/pending";
 import { List, ListRow } from "@/components/app/list";
 import { Sheet } from "@/components/app/sheet";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,7 @@ export function useGoogleCalendar() {
 /** Connect, choose which projects the calendar shows, or disconnect. */
 export function GoogleCalendarSheet(props: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { projects, confirm } = useTodos();
-  const { data: google } = useGoogleCalendar();
+  const { data: google, error } = useGoogleCalendar();
   const own = projects.filter((p) => p.is_owner);
   const chosen = google?.projects ? new Set(google.projects) : null;
 
@@ -39,6 +40,7 @@ export function GoogleCalendarSheet(props: { open: boolean; onOpenChange: (open:
       title="Google Calendar"
       description="Your dated tasks in a calendar of their own; moving them there moves them here."
     >
+      {!google && <Pending error={error} />}
       {google?.status === "connected" ? (
         <>
           <List title="Show tasks from">
